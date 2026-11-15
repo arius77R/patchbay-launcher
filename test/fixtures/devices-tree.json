@@ -1,0 +1,394 @@
+{
+  "sha": "6959893eb04191350c496e5eb577a73a92fe7a91",
+  "url": "https://api.github.com/repos/polarity/bitwig-devices/git/trees/6959893eb04191350c496e5eb577a73a92fe7a91",
+  "tree": [
+    {
+      "path": "Bitwig-6.1.3-6.1.4",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "45180221680aabc8f6e34ae83d2d9568cc73b436",
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/trees/45180221680aabc8f6e34ae83d2d9568cc73b436"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Chord Arp.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d2419a63d382932825613f69a90d49fb4d47e185",
+      "size": 64153,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/d2419a63d382932825613f69a90d49fb4d47e185"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/FILAR.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0349115506c0f2babf614a5aea578c6eaa5d822f",
+      "size": 218246,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/0349115506c0f2babf614a5aea578c6eaa5d822f"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Halftime.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "abcd5ab681007a31fb5e63708cc9ac4b36beec79",
+      "size": 45847,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/abcd5ab681007a31fb5e63708cc9ac4b36beec79"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Multiband FX-4.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "94ebff8247301756f93796d3a9270bb7aece9680",
+      "size": 29290,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/94ebff8247301756f93796d3a9270bb7aece9680"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Normalizer.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "228c859791e9586316d0bcc0490eb40f1f2bb835",
+      "size": 42455,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/228c859791e9586316d0bcc0490eb40f1f2bb835"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/OTT.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1b2a172e0e2b66775ae74121a38bd2bd4b791051",
+      "size": 52408,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/1b2a172e0e2b66775ae74121a38bd2bd4b791051"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Orbit.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d0f6cf7651da1fdb0b2504ca8b73c9df945629f8",
+      "size": 45552,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/d0f6cf7651da1fdb0b2504ca8b73c9df945629f8"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Prism.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "82fd8fdfa78fa8ba34222f9308f7fe9554a712a5",
+      "size": 73209,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/82fd8fdfa78fa8ba34222f9308f7fe9554a712a5"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3dc38deb07c0ec7eaa5965b6e4beb35158192746",
+      "size": 1171,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/3dc38deb07c0ec7eaa5965b6e4beb35158192746"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Rivet.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "93781099f2325eb4b938f05fbd527f2e1ad945d4",
+      "size": 79661,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/93781099f2325eb4b938f05fbd527f2e1ad945d4"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/SHARD.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0fee56a50c96009e1094302329420827752f3e03",
+      "size": 235643,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/0fee56a50c96009e1094302329420827752f3e03"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Step Sequencer.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9dfcf0eb4b6f123a837b8d36dfbb98f1d444a646",
+      "size": 109376,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/9dfcf0eb4b6f123a837b8d36dfbb98f1d444a646"
+    },
+    {
+      "path": "Bitwig-6.1.3-6.1.4/Stutter.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1e5cd6f6aae632ea0a36a3e991ddb6708f97bf78",
+      "size": 14792371,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/1e5cd6f6aae632ea0a36a3e991ddb6708f97bf78"
+    },
+    {
+      "path": "Bitwig-6.1.7",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ac4b34890571aaace49003a9c2d8bb2fbcac440a",
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/trees/ac4b34890571aaace49003a9c2d8bb2fbcac440a"
+    },
+    {
+      "path": "Bitwig-6.1.7/Chord Arp.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b8dfcffb9aa0df46a48deddbc7226d73a279190",
+      "size": 51544,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/0b8dfcffb9aa0df46a48deddbc7226d73a279190"
+    },
+    {
+      "path": "Bitwig-6.1.7/FILAR.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fd2132b355b76ce01e6eaf33c57e64fb19e10c31",
+      "size": 181392,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/fd2132b355b76ce01e6eaf33c57e64fb19e10c31"
+    },
+    {
+      "path": "Bitwig-6.1.7/Gesture Loop.bwmodulator",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ceafa69f5833daae0f5d36a03a30fd566420e91e",
+      "size": 21223,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/ceafa69f5833daae0f5d36a03a30fd566420e91e"
+    },
+    {
+      "path": "Bitwig-6.1.7/Halftime.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f0722963c8b56dbc56f94c49f86240cbde0e917a",
+      "size": 35262,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/f0722963c8b56dbc56f94c49f86240cbde0e917a"
+    },
+    {
+      "path": "Bitwig-6.1.7/Multiband FX-4.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e62585ac813cb3121e1c31f0e0fbd20368784cf6",
+      "size": 19496,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/e62585ac813cb3121e1c31f0e0fbd20368784cf6"
+    },
+    {
+      "path": "Bitwig-6.1.7/Normalizer.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b86d14752ff43a39f25fa6caf3ad7706033b9279",
+      "size": 33630,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/b86d14752ff43a39f25fa6caf3ad7706033b9279"
+    },
+    {
+      "path": "Bitwig-6.1.7/OTT.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "97acdad4feed005454b6983443daf84f60b6a979",
+      "size": 35482,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/97acdad4feed005454b6983443daf84f60b6a979"
+    },
+    {
+      "path": "Bitwig-6.1.7/Orbit.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "848c5d6f215fc4d0f2c8089f26cec4e8b88c7b77",
+      "size": 23946,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/848c5d6f215fc4d0f2c8089f26cec4e8b88c7b77"
+    },
+    {
+      "path": "Bitwig-6.1.7/Prism.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23da6850f8a83af4e5f9fd79a4aacb5f1d96cc0b",
+      "size": 45741,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/23da6850f8a83af4e5f9fd79a4aacb5f1d96cc0b"
+    },
+    {
+      "path": "Bitwig-6.1.7/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0c17602e7f95636afb153cc9d543790bc10401cd",
+      "size": 1062,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/0c17602e7f95636afb153cc9d543790bc10401cd"
+    },
+    {
+      "path": "Bitwig-6.1.7/Rivet.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ca7aaf844096e7a230e2a3185bb4f252f9d35cb8",
+      "size": 48733,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/ca7aaf844096e7a230e2a3185bb4f252f9d35cb8"
+    },
+    {
+      "path": "Bitwig-6.1.7/SHARD.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7ab927bd2712fa26041b5d4fd092398a53774a01",
+      "size": 184311,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/7ab927bd2712fa26041b5d4fd092398a53774a01"
+    },
+    {
+      "path": "Bitwig-6.1.7/Step Sequencer.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ee25d8aea6c41159491503d50b1d211aa1df231a",
+      "size": 84821,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/ee25d8aea6c41159491503d50b1d211aa1df231a"
+    },
+    {
+      "path": "Bitwig-6.1.7/Stutter.bwdevice",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4e7725d021f9231ac1b900ceac1dbbd16d56d344",
+      "size": 14775118,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/4e7725d021f9231ac1b900ceac1dbbd16d56d344"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "49e3c45cda548ad2658ba9346b2b21b47dc14ac9",
+      "size": 7804,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/49e3c45cda548ad2658ba9346b2b21b47dc14ac9"
+    },
+    {
+      "path": "grid-modules",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f78cc0e84389b18663c0796baea9315bb15aaf0f",
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/trees/f78cc0e84389b18663c0796baea9315bb15aaf0f"
+    },
+    {
+      "path": "grid-modules/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3fefbfdc7714953618bba4c17b6236be5425ea0c",
+      "size": 79,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/3fefbfdc7714953618bba4c17b6236be5425ea0c"
+    },
+    {
+      "path": "modulators",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c9fd7604e99dd53f2f468cdc9416b35d5467e548",
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/trees/c9fd7604e99dd53f2f468cdc9416b35d5467e548"
+    },
+    {
+      "path": "modulators/Gesture Loop.bwmodulator",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "323bfdbfbb1da4be0f7a26b6d56001b935aac90d",
+      "size": 27718,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/323bfdbfbb1da4be0f7a26b6d56001b935aac90d"
+    },
+    {
+      "path": "previews",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8a6de792cfbeb1cb51a110c9aabcd18c7c1d70e0",
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/trees/8a6de792cfbeb1cb51a110c9aabcd18c7c1d70e0"
+    },
+    {
+      "path": "previews/chord-arp.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "17a898e55d0e4e71b7e72d3ae316c289041380b3",
+      "size": 63536,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/17a898e55d0e4e71b7e72d3ae316c289041380b3"
+    },
+    {
+      "path": "previews/filar.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9149c8772513be60e7c0279741d848445a80ddb8",
+      "size": 81038,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/9149c8772513be60e7c0279741d848445a80ddb8"
+    },
+    {
+      "path": "previews/fx-4.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "87a277afbbacc6f7b60067325507b5e3edc91f5e",
+      "size": 49894,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/87a277afbbacc6f7b60067325507b5e3edc91f5e"
+    },
+    {
+      "path": "previews/gesture-loop.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5b633829ca515be434ad45e79c079bcfe188d62f",
+      "size": 10325,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/5b633829ca515be434ad45e79c079bcfe188d62f"
+    },
+    {
+      "path": "previews/halftime.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9dd4ec0322d26b84beb7884e31458a06756bd8e0",
+      "size": 58669,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/9dd4ec0322d26b84beb7884e31458a06756bd8e0"
+    },
+    {
+      "path": "previews/multiband-fx-4.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "98b84b7e294cc08cfefdb81b6d0ecabd1b0ff940",
+      "size": 13366,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/98b84b7e294cc08cfefdb81b6d0ecabd1b0ff940"
+    },
+    {
+      "path": "previews/normalizer.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b5efaac88709c2d09cc9e8908c59a871d3cfb974",
+      "size": 59926,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/b5efaac88709c2d09cc9e8908c59a871d3cfb974"
+    },
+    {
+      "path": "previews/orbit.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "24448c8f783a1fcd7b0e0a51c1d2f485e273b445",
+      "size": 48110,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/24448c8f783a1fcd7b0e0a51c1d2f485e273b445"
+    },
+    {
+      "path": "previews/ott.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "176a5f9144190b39c8458f30b9ae9411b73a2f40",
+      "size": 70629,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/176a5f9144190b39c8458f30b9ae9411b73a2f40"
+    },
+    {
+      "path": "previews/prism.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "990b8079e9d7913ecfc331ef6c97a646f8bba39e",
+      "size": 69715,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/990b8079e9d7913ecfc331ef6c97a646f8bba39e"
+    },
+    {
+      "path": "previews/rivet.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "385a5c3bdc3147e8538d9d672a9e950dfdfbf22b",
+      "size": 257285,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/385a5c3bdc3147e8538d9d672a9e950dfdfbf22b"
+    },
+    {
+      "path": "previews/shard.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c4adbb7f214f200a9f33648eb8c940e343145198",
+      "size": 29994,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/c4adbb7f214f200a9f33648eb8c940e343145198"
+    },
+    {
+      "path": "previews/step-sequencer.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3e80610d60a18d95540052e7b8212f9320f08125",
+      "size": 61869,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/3e80610d60a18d95540052e7b8212f9320f08125"
+    },
+    {
+      "path": "previews/stutter.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b5ac4b2c418730cd5cbcd2af42c5165601a23894",
+      "size": 124378,
+      "url": "https://api.github.com/repos/polarity/bitwig-devices/git/blobs/b5ac4b2c418730cd5cbcd2af42c5165601a23894"
+    }
+  ],
+  "truncated": false
+}

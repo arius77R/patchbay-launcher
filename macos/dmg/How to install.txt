@@ -1,0 +1,34 @@
+Patchbay Launcher 0.9.1 for macOS
+=================================
+
+Installs, updates and starts Patchbay (the mod loader for Bitwig Studio) and
+downloads mods and devices. Not affiliated with Bitwig GmbH or Patchbay's authors.
+
+Requirements
+- macOS 12 or later
+- Bitwig Studio in Applications (the launcher runs on the Java that comes with it)
+
+Install
+1. Drag "Patchbay Launcher" onto the "Aplikacje (Applications)" shortcut next to it.
+2. Open Patchbay Launcher from Applications.
+3. The first time, macOS says it can't check the app (it isn't signed by Apple).
+   Then:
+   - click "Done" (or "OK"),
+   - open System Settings → Privacy & Security,
+   - scroll down and click "Open Anyway" next to "Patchbay Launcher",
+   - confirm with your password or Touch ID.
+   This is needed once.
+4. In the Patchbay section pick a version and click "Install".
+
+Where things are
+- Patchbay, mods and devices: ~/Library/Application Support/PatchbayLauncher
+- Patchbay's own settings: ~/Library/Application Support/BML
+
+Uninstall
+- Delete Patchbay Launcher from Applications and the folder
+  ~/Library/Application Support/PatchbayLauncher.
+
+Good to know
+- Mods only work when Bitwig is started from the Patchbay window with Load.
+  Bitwig opened the usual way starts without mods.
+- Mods and devices are code that runs inside Bitwig. Only add sources you trust.

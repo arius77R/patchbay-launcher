@@ -1,0 +1,29 @@
+﻿Patchbay Launcher 0.9.1 dla Windows
+===================================
+
+Instaluje, aktualizuje i uruchamia Patchbay (loader modów do Bitwig Studio),
+pobiera mody i urządzenia. Nie jest związany z Bitwig GmbH ani z autorami Patchbay.
+
+Wymagania
+- Windows 10 lub 11 (64-bit)
+- Zainstalowany Bitwig Studio (Launcher działa na jego wbudowanej Javie)
+
+Pierwsze uruchomienie
+1. Rozpakuj CAŁY plik ZIP do zwykłego folderu, np. C:\Patchbay Launcher.
+   Nie uruchamiaj programu z podglądu ZIP.
+2. Kliknij dwukrotnie "Patchbay Launcher.exe".
+3. Windows może pokazać okno "System Windows ochronił ten komputer".
+   Program nie jest podpisany certyfikatem. Kliknij "Więcej informacji",
+   a potem "Uruchom mimo to". Trzeba to zrobić tylko raz.
+4. W sekcji Patchbay wybierz wersję i kliknij "Zainstaluj".
+
+Gdzie są dane
+- Patchbay, mody i urządzenia: %LOCALAPPDATA%\PatchbayLauncher
+- Ustawienia samego Patchbay: %LOCALAPPDATA%\BML
+- Dziennik startu: %LOCALAPPDATA%\PatchbayLauncher\logs\launcher.log
+
+Ważne
+- Mody działają tylko wtedy, gdy Bitwig zostanie uruchomiony z okna Patchbay
+  przyciskiem Load. Bitwig otwarty zwyczajnie startuje bez modów.
+- Mody i urządzenia to kod uruchamiany wewnątrz Bitwiga. Dodawaj tylko źródła,
+  którym ufasz.

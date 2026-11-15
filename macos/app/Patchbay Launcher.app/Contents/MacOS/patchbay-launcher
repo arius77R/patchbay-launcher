@@ -1,0 +1,35 @@
+#!/bin/sh
+# Patchbay Launcher: starts launcher.jar on the Java inside Bitwig Studio.app (no Java to install).
+# Order: $PATCHBAY_LAUNCHER_JAVA, Bitwig's own Java (native architecture first), $JAVA_HOME, the system Java.
+CONTENTS=$(cd "$(dirname "$0")/.." && pwd)
+JAR="$CONTENTS/Resources/launcher.jar"
+LOGDIR="$HOME/Library/Application Support/PatchbayLauncher/logs"
+mkdir -p "$LOGDIR"
+LOG="$LOGDIR/launcher.log"
+
+alert() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR: $1" >>"$LOG"
+  /usr/bin/osascript -e "display alert \"Patchbay Launcher\" message \"$1\" as critical" >/dev/null 2>&1
+  exit 1
+}
+
+JAVA=""
+if [ -n "${PATCHBAY_LAUNCHER_JAVA:-}" ] && [ -x "$PATCHBAY_LAUNCHER_JAVA" ]; then JAVA=$PATCHBAY_LAUNCHER_JAVA; fi
+if [ -z "$JAVA" ]; then
+  if [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ]; then ARCHS="arm64 x64"; else ARCHS="x64 arm64"; fi
+  for APP in "/Applications/Bitwig Studio.app" "$HOME/Applications/Bitwig Studio.app"; do
+    for A in $ARCHS; do
+      J="$APP/Contents/PlugIns/JavaVM-$A.bundle/Contents/Home/bin/java"
+      if [ -z "$JAVA" ] && [ -x "$J" ]; then JAVA=$J; fi
+    done
+  done
+fi
+if [ -z "$JAVA" ] && [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then JAVA="$JAVA_HOME/bin/java"; fi
+if [ -z "$JAVA" ]; then
+  H=$(/usr/libexec/java_home 2>/dev/null) && [ -x "$H/bin/java" ] && JAVA="$H/bin/java"
+fi
+[ -n "$JAVA" ] || alert "Bitwig Studio was not found in Applications. Patchbay Launcher runs on the Java inside Bitwig Studio. Install Bitwig Studio first."
+[ -f "$JAR" ] || alert "launcher.jar is missing from the application."
+
+echo "$(date '+%Y-%m-%d %H:%M:%S') start with $JAVA" >>"$LOG"
+exec "$JAVA" -Xdock:name="Patchbay Launcher" -Xdock:icon="$CONTENTS/Resources/AppIcon.icns" -jar "$JAR" >>"$LOG" 2>&1
