@@ -22,7 +22,7 @@ import java.util.zip.ZipEntry;
  * Not affiliated with Patchbay's author or with Bitwig GmbH.
  */
 public final class PatchbayLauncher {
-    static final String VERSION = "0.9.1";
+    static final String VERSION = "0.9.2";
     /** The release list of the Patchbay source in use (the built-in one unless the user picked another). */
     static String api() { return "https://api.github.com/repos/" + Sources.patchbay().repo() + "/releases?per_page=30"; }
     static String t(String pl, String en) { return I18n.t(pl, en); }
@@ -143,19 +143,70 @@ public final class PatchbayLauncher {
         return list;
     }
 
-    /** The body of a GitHub API answer as text. */
+    /** GitHub said no because of its request limit; retrying now will not help. */
+    static final class RateLimited extends IOException {
+        RateLimited() {
+            super(t("GitHub chwilowo ogranicza zapytania z tego adresu. Spróbuj za godzinę.",
+                "GitHub is rate-limiting this address. Try again in an hour."));
+        }
+    }
+
+    /**
+     * The body of a GitHub answer as text. Each answer is kept in the cache with its ETag: the next
+     * request asks only whether it changed (a "not modified" answer does not count against GitHub's
+     * hourly limit), and when GitHub can't be reached or is rate-limiting, the last good answer is used.
+     * A failed request is tried once more before that, since a first failure often clears.
+     */
     static String httpText(String url) throws IOException {
+        Path dir = data().resolve("cache").resolve("http");
+        String key = cacheKey(url);
+        Path body = dir.resolve(key + ".txt"), tag = dir.resolve(key + ".etag");
+        IOException last = null;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            try {
+                return fetchText(url, body, tag);
+            } catch (RateLimited limited) {
+                last = limited;
+                break;
+            } catch (IOException ex) {
+                last = ex;
+                try { Thread.sleep(1500); } catch (InterruptedException stop) { Thread.currentThread().interrupt(); break; }
+            }
+        }
+        if (Files.isRegularFile(body)) return Files.readString(body);
+        throw last;
+    }
+
+    private static String cacheKey(String url) {
+        try {
+            byte[] d = java.security.MessageDigest.getInstance("SHA-256").digest(url.getBytes(StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(d, 0, 12);
+        } catch (java.security.NoSuchAlgorithmException never) {
+            return Integer.toHexString(url.hashCode());
+        }
+    }
+
+    private static String fetchText(String url, Path body, Path tag) throws IOException {
         HttpURLConnection c = open(url);
         c.setRequestProperty("Accept", "application/vnd.github+json");
+        if (Files.isRegularFile(body) && Files.isRegularFile(tag)) c.setRequestProperty("If-None-Match", Files.readString(tag).trim());
         try {
             int status = c.getResponseCode();
-            if (status == 403 || status == 429)
-                throw new IOException(t("GitHub chwilowo ogranicza zapytania z tego adresu. Spróbuj za godzinę.",
-                    "GitHub is rate-limiting this address. Try again in an hour."));
+            if (status == 304) return Files.readString(body);
+            if (status == 403 || status == 429) throw new RateLimited();
             if (status != 200) throw new IOException("GitHub: HTTP " + status + " (" + url + ")");
+            String text;
             try (InputStream in = c.getInputStream()) {
-                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             }
+            try {
+                Files.createDirectories(body.getParent());
+                Files.writeString(body, text);
+                String etag = c.getHeaderField("ETag");
+                if (etag != null) Files.writeString(tag, etag);
+                else Files.deleteIfExists(tag);
+            } catch (IOException cacheFull) { /* the answer is still good without the cache */ }
+            return text;
         } finally { c.disconnect(); }
     }
 
@@ -499,7 +550,7 @@ public final class PatchbayLauncher {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.getRootPane().setDefaultButton(startButton);
         frame.setMinimumSize(new Dimension(980, 640));
-        frame.setSize(1120, 740);
+        frame.setSize(1200, 760);
         frame.setLocationRelativeTo(null);
         refreshLocal();
         String tab = System.getProperty("launcher.tab", currentVersion() == null ? "patchbay" : "mods");
@@ -649,7 +700,7 @@ public final class PatchbayLauncher {
                     setBusy(false, t("Gotowe. Aktywna wersja: ", "Done. Active version: ") + sel);
                     refreshLocal();
                     releasesLoadedKeepStatus();
-                    modsPanel.rebuild();
+                    modsPanel.patchbayChanged();
                     offerDock();
                 });
             } catch (Exception ex) {

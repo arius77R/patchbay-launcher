@@ -157,6 +157,8 @@ final class Platform {
     // ---------- Bitwig's version ----------
 
     static String bitwigVersion() {
+        String preview = System.getProperty("launcher.bitwig"); // offline preview: pretend this Bitwig version
+        if (preview != null) return preview;
         if (WINDOWS) {
             Path exe = windowsBitwigExe();
             if (exe == null) return null;

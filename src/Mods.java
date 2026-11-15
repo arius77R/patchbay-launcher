@@ -521,7 +521,7 @@ final class Mods {
         /** Name and version of the mods on disk, frameworks included, for the "Needs" list. */
         private final Map<String, Installed> onDisk = new HashMap<>();
         private Map<String, Available> catalog = Map.of();
-        private boolean busy, notified;
+        private boolean busy, notified, reloadAgain;
         private int infoRun;
 
         private String nameOf(Row row) {
@@ -545,11 +545,11 @@ final class Mods {
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.monoCells(Theme.SOFT));
             table.getColumnModel().getColumn(4).setCellRenderer(Theme.pillCells());
             for (int c = 2; c <= 3; c++) {
-                table.getColumnModel().getColumn(c).setMinWidth(104);
-                table.getColumnModel().getColumn(c).setMaxWidth(112);
+                table.getColumnModel().getColumn(c).setMinWidth(96);
+                table.getColumnModel().getColumn(c).setMaxWidth(104);
             }
-            table.getColumnModel().getColumn(4).setMinWidth(118);
-            table.getColumnModel().getColumn(4).setMaxWidth(124);
+            table.getColumnModel().getColumn(4).setMinWidth(104);
+            table.getColumnModel().getColumn(4).setMaxWidth(112);
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setPreferredSize(new Dimension(284, 10));
@@ -718,7 +718,8 @@ final class Mods {
 
         /** Fetches the catalogue again and rebuilds the list. */
         void reload() {
-            if (busy) return;
+            if (busy) { reloadAgain = true; return; }
+            reloadAgain = false;
             if (modsDir() == null) {
                 rows.clear();
                 model.fireTableDataChanged();
@@ -729,11 +730,25 @@ final class Mods {
             new Thread(() -> {
                 try {
                     Map<String, Available> found = fetchCatalog();
-                    SwingUtilities.invokeLater(() -> { catalog = found; rebuild(); setBusy(false, ""); loadInfos(); });
+                    SwingUtilities.invokeLater(() -> { catalog = found; rebuild(); setBusy(false, ""); loadInfos(); reloadIfAsked(); });
                 } catch (IOException ex) {
-                    SwingUtilities.invokeLater(() -> { rebuild(); setBusy(false, ex.getMessage()); });
+                    SwingUtilities.invokeLater(() -> { rebuild(); setBusy(false, ex.getMessage()); reloadIfAsked(); });
                 }
             }, "mods-catalog").start();
+        }
+
+        /** A reload asked for while one was running (sources changed, say) runs once that one ends. */
+        private void reloadIfAsked() {
+            if (reloadAgain) reload();
+        }
+
+        /**
+         * Patchbay was installed or updated: the list is rebuilt against the new mods folder, and the
+         * catalogue is fetched if there is none yet (it can't be fetched before Patchbay is installed).
+         */
+        void patchbayChanged() {
+            if (catalog.isEmpty()) reload();
+            else rebuild();
         }
 
         /** Rebuilds the list from the catalogue in hand and the mods on disk (after a Patchbay update, say). */

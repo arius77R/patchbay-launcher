@@ -6,6 +6,8 @@ A small desktop app for macOS and Windows that installs, updates and starts [Pat
 
 > **Unofficial.** Patchbay Launcher is not affiliated with Bitwig GmbH or with the authors of Patchbay, the mods or the devices it downloads. Bitwig and Bitwig Studio are trademarks of Bitwig GmbH.
 
+<p align="center"><img src="docs/screenshots/mods.png" width="820" alt="The Mods section: catalogue with checkboxes, status and details"></p>
+
 ## Download
 
 Get the latest version from [Releases](../../releases):
@@ -26,6 +28,10 @@ The app is not signed (no Apple Developer ID, no Windows code-signing certificat
 - **Devices:** `.bwdevice`, `.bwmodulator` and `.bwmodule` files, picked for your Bitwig version, checked against GitHub and added to Patchbay's Device Folders.
 - **Sources:** built-in and your own GitHub repositories for Patchbay, mods and devices; switch them on and off, add, edit, remove.
 - **Languages:** English, Polski, Deutsch, Français. Other system languages use English.
+
+| Patchbay | Devices | Sources |
+|---|---|---|
+| ![Patchbay section](docs/screenshots/patchbay.png) | ![Devices section](docs/screenshots/devices.png) | ![Sources section](docs/screenshots/sources.png) |
 
 Built-in sources: [shaboogen-dev/Patchbay](https://github.com/shaboogen-dev/Patchbay), [shaboogen-dev/Mods](https://github.com/shaboogen-dev/Mods), [polarity/bitwig-mods](https://github.com/polarity/bitwig-mods), [polarity/bitwig-devices](https://github.com/polarity/bitwig-devices).
 

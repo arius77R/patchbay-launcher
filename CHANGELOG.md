@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.2
+
+- Mods: the list no longer stays empty after installing Patchbay for the first time.
+- GitHub answers are cached with their ETag: unchanged lists don't count against GitHub's hourly limit, and when GitHub can't be reached or is rate-limiting, the last list is shown instead of an empty one. A failed request is retried once.
+- A refresh asked for while the list is loading (after changing sources, say) now runs when the first one ends.
+
 ## 0.9.1
 
 - New app icon (patch panel with two cables).
