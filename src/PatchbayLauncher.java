@@ -504,11 +504,10 @@ public final class PatchbayLauncher {
         JPanel bar = new JPanel(new BorderLayout());
         bar.setBackground(Theme.TITLE);
         bar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(5, 14, 5, 14)));
-        JButton discord = Theme.button("Discord", "secondary");
+        JButton discord = Theme.button("", "secondary");
         discord.putClientProperty("small", true);
-        discord.setFont(Theme.text(12f));
-        discord.setIcon(new ChatIcon());
-        discord.setIconTextGap(7);
+        discord.setIcon(discordIcon());
+        discord.setPreferredSize(new Dimension(36, 28));
         discord.setToolTipText(t("Kanał Launchera na Discordzie Bitwiga", "The launcher's channel on the Bitwig Discord"));
         discord.getAccessibleContext().setAccessibleName(t("Otwórz kanał Launchera na Discordzie", "Open the launcher's Discord channel"));
         discord.addActionListener(e -> browse(DISCORD));
@@ -516,10 +515,12 @@ public final class PatchbayLauncher {
             t("Ciemny wygląd", "Dark appearance"), this::appearanceChosen);
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
-        left.add(discord);
-        left.add(Box.createHorizontalStrut(6));
         left.add(mode);
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        right.setOpaque(false);
+        right.add(discord);
         bar.add(left, BorderLayout.WEST);
+        bar.add(right, BorderLayout.EAST);
         return bar;
     }
 
@@ -556,12 +557,36 @@ public final class PatchbayLauncher {
     }
 
     /** A speech bubble, for the Discord link (drawn, not Discord's own logo). */
+    /**
+     * The Discord button's picture: res/discord.png when that file is in the build (an image Mario supplies),
+     * otherwise the drawn speech bubble.
+     */
+    private static Icon discordIcon() {
+        java.net.URL url = PatchbayLauncher.class.getResource("/discord.png");
+        if (url == null) return new ChatIcon();
+        Image raw = new ImageIcon(url).getImage();
+        int h = 18, w = Math.max(1, Math.round(raw.getWidth(null) * h / (float) raw.getHeight(null)));
+        return new ImageIcon(new java.awt.image.BaseMultiResolutionImage(fit(raw, w, h), fit(raw, w * 2, h * 2)));
+    }
+
+    private static java.awt.image.BufferedImage fit(Image raw, int w, int h) {
+        java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = out.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.drawImage(raw, 0, 0, w, h, null);
+        g2.dispose();
+        return out;
+    }
+
     private static final class ChatIcon implements Icon {
-        @Override public int getIconWidth() { return 16; }
-        @Override public int getIconHeight() { return 14; }
+        @Override public int getIconWidth() { return 20; }
+        @Override public int getIconHeight() { return 18; }
         @Override public void paintIcon(Component c, Graphics g, int x, int y) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.translate(x, y);
+            g2.scale(1.25, 1.25);
+            x = 0; y = 0;
             g2.setColor(Theme.ACCENT);
             g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.drawRoundRect(x + 1, y + 1, 14, 9, 5, 5);
