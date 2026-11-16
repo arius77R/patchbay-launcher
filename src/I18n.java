@@ -358,6 +358,29 @@ final class I18n {
         add("Updates: ", "Updates: ", "Mises à jour : ");
         add("Sections", "Bereiche", "Sections");
         add("Version", "Version", "Version");
+        add("No sources. Click + Add or Restore built-in.", "Keine Quellen. Klicke auf + Hinzufügen oder Integrierte wiederherstellen.", "Aucune source. Cliquez sur + Ajouter ou Restaurer les sources intégrées.");
+        add("Restore built-in", "Integrierte wiederherstellen", "Restaurer les sources intégrées");
+        add("built-in · changed", "integriert · geändert", "intégrée · modifiée");
+        add("Changed by you · ", "Von dir geändert · ", "Modifiée par vous · ");
+        add("A built-in source you changed. \"Restore default\" goes back to the launcher's settings.",
+            "Eine integrierte Quelle, die du geändert hast. „Standard wiederherstellen“ kehrt zu den Einstellungen des Launchers zurück.",
+            "Une source intégrée que vous avez modifiée. « Restaurer par défaut » revient aux réglages du lanceur.");
+        add("A source built into the launcher. You can change or remove it; \"Restore built-in\" at the top brings it back at any time.",
+            "Eine im Launcher integrierte Quelle. Du kannst sie ändern oder entfernen; „Integrierte wiederherstellen“ oben holt sie jederzeit zurück.",
+            "Une source intégrée au lanceur. Vous pouvez la modifier ou la supprimer ; « Restaurer les sources intégrées » en haut la rétablit à tout moment.");
+        add("Restore default", "Standard wiederherstellen", "Restaurer par défaut");
+        add("Patchbay needs at least one source. Add another one before you remove this one.",
+            "Patchbay braucht mindestens eine Quelle. Füge eine andere hinzu, bevor du diese entfernst.",
+            "Patchbay a besoin d'au moins une source. Ajoutez-en une autre avant de supprimer celle-ci.");
+        add("Remove the source ", "Quelle entfernen: ", "Supprimer la source ");
+        add("\n\nIt is built in: \"Restore built-in\" brings it back later.",
+            "\n\nSie ist integriert: „Integrierte wiederherstellen“ holt sie später zurück.",
+            "\n\nElle est intégrée : « Restaurer les sources intégrées » la rétablira plus tard.");
+        add("Back to the launcher's settings.", "Zurück zu den Einstellungen des Launchers.", "Retour aux réglages du lanceur.");
+        add("Bring back the built-in sources as the launcher ships them? Your changes to them are dropped; sources you added stay.",
+            "Die integrierten Quellen so wiederherstellen, wie der Launcher sie mitbringt? Deine Änderungen daran gehen verloren; selbst hinzugefügte Quellen bleiben.",
+            "Rétablir les sources intégrées telles que le lanceur les fournit ? Vos modifications seront perdues ; les sources que vous avez ajoutées restent.");
+        add("Built-in sources restored.", "Integrierte Quellen wiederhergestellt.", "Sources intégrées rétablies.");
         add("Click Edit beside a source to change its settings, or + Add to add a new one. The switch turns a source on and off.",
             "Klicke bei einer Quelle auf Bearbeiten, um ihre Einstellungen zu ändern, oder auf + Hinzufügen für eine neue. Der Schalter schaltet eine Quelle ein und aus.",
             "Cliquez sur Modifier à côté d'une source pour changer ses réglages, ou sur + Ajouter pour en ajouter une. L'interrupteur active ou désactive une source.");

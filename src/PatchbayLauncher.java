@@ -1064,8 +1064,17 @@ public final class PatchbayLauncher {
             String json = "[{\"tag_name\":\"v2\",\"assets\":[{\"name\":\"BML-2.0.0-macos.zip\",\"browser_download_url\":\"https://x/BML-2.0.0-macos.zip\"},{\"name\":\"BML-2.0.0-linux.zip\",\"browser_download_url\":\"https://x/BML-2.0.0-linux.zip\"}]}]";
             List<Release> r = parseReleases(json, Sources.glob("BML-*-macos.zip"));
             check(r.size() == 1 && r.get(0).version().equals("2.0.0"), "Patchbay releases read with the source's pattern");
+            List<Sources.Source> edited = new ArrayList<>(Sources.BUILTIN);
+            edited.set(2, new Sources.Source("mods-polarity", Sources.MODS, "me/bitwig-mods-fork", "*.zip", true, true));
+            edited.removeIf(x -> x.id().equals("devices-polarity"));
+            Sources.save(edited);
+            List<Sources.Source> got = Sources.all();
+            Sources.Source fork = got.stream().filter(x -> x.id().equals("mods-polarity")).findFirst().orElseThrow();
+            check(fork.builtin() && fork.repo().equals("me/bitwig-mods-fork") && Sources.changed(fork), "a built-in source can be changed and stays built-in");
+            check(got.stream().noneMatch(x -> x.id().equals("devices-polarity")) && Sources.removedBuiltins().equals(Set.of("devices-polarity")), "a built-in source can be removed");
+            check(Sources.enabled(Sources.DEVICES).isEmpty() && Sources.enabled(Sources.MODS).stream().anyMatch(x -> x.repo().equals("me/bitwig-mods-fork")), "sections follow the changes");
             Sources.save(Sources.BUILTIN);
-            check(Sources.all().equals(Sources.BUILTIN), "back to the built-in sources");
+            check(Sources.all().equals(Sources.BUILTIN) && Sources.removedBuiltins().isEmpty(), "back to the built-in sources");
         }
 
         static void modsTest(Path fixtures, Path mods) throws Exception {

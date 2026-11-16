@@ -36,9 +36,32 @@ final class Sources {
 
     static Path file() { return PatchbayLauncher.data().resolve("sources.json"); }
 
-    /** Built-in sources first (with the user's on/off), then the user's own, in the order added. */
+    /** The built-in source with this ID as the launcher ships it, or null. */
+    static Source original(String id) {
+        return BUILTIN.stream().filter(b -> b.id().equals(id)).findFirst().orElse(null);
+    }
+
+    /** A built-in source the user has changed (group, repository or files). */
+    static boolean changed(Source s) {
+        Source o = s.builtin() ? original(s.id()) : null;
+        return o != null && !(o.group().equals(s.group()) && o.repo().equals(s.repo()) && o.filter().equals(s.filter()));
+    }
+
+    /** IDs of the built-in sources the user removed. */
+    static Set<String> removedBuiltins() {
+        Set<String> out = new HashSet<>();
+        for (Source b : BUILTIN) out.add(b.id());
+        for (Source s : all()) out.remove(s.id());
+        return out;
+    }
+
+    /**
+     * Built-in sources first (with the user's on/off and changes; removed ones left out), then the user's own, in the order added.
+     */
     static List<Source> all() {
         Map<String, Boolean> switched = new HashMap<>();
+        Map<String, Source> changes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
         List<Source> own = new ArrayList<>();
         try {
             if (Files.isRegularFile(file())) {
@@ -48,7 +71,16 @@ final class Sources {
                     String id = Mods.Json.text(m, "id"), group = Mods.Json.text(m, "group"), repo = Mods.Json.text(m, "repo");
                     boolean on = !Boolean.FALSE.equals(m.get("enabled"));
                     if (id == null) continue;
-                    if (Boolean.TRUE.equals(m.get("builtin"))) { switched.put(id, on); continue; }
+                    if (Boolean.TRUE.equals(m.get("builtin"))) {
+                        if (Boolean.TRUE.equals(m.get("removed"))) { removed.add(id); continue; }
+                        switched.put(id, on);
+                        Source shipped = original(id);
+                        if (shipped != null && repo != null && normalizeRepo(repo) != null) {
+                            String g = group != null && GROUPS.contains(group) ? group : shipped.group(), f = Mods.Json.text(m, "filter");
+                            changes.put(id, new Source(id, g, normalizeRepo(repo), f == null ? shipped.filter() : f, true, on));
+                        }
+                        continue;
+                    }
                     if (group == null || !GROUPS.contains(group) || repo == null || normalizeRepo(repo) == null) continue;
                     String filter = Mods.Json.text(m, "filter");
                     own.add(new Source(id, group, normalizeRepo(repo), filter == null ? "" : filter, false, on));
@@ -58,23 +90,37 @@ final class Sources {
             // a broken file falls back to the built-in sources
         }
         List<Source> out = new ArrayList<>();
-        for (Source b : BUILTIN) out.add(b.withEnabled(switched.getOrDefault(b.id(), true)));
+        for (Source b : BUILTIN) {
+            if (removed.contains(b.id())) continue;
+            out.add(changes.getOrDefault(b.id(), b).withEnabled(switched.getOrDefault(b.id(), true)));
+        }
         out.addAll(own);
         return out;
     }
 
+    /** Saves the list; a built-in source missing from it is saved as removed, a changed one with its changes. */
     static void save(List<Source> sources) throws IOException {
         List<Object> list = new ArrayList<>();
+        Set<String> present = new HashSet<>();
         for (Source s : sources) {
+            present.add(s.id());
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", s.id());
             m.put("builtin", s.builtin());
             m.put("enabled", s.enabled());
-            if (!s.builtin()) {
+            if (!s.builtin() || changed(s)) {
                 m.put("group", s.group());
                 m.put("repo", s.repo());
                 m.put("filter", s.filter());
             }
+            list.add(m);
+        }
+        for (Source b : BUILTIN) {
+            if (present.contains(b.id())) continue;
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", b.id());
+            m.put("builtin", true);
+            m.put("removed", true);
             list.add(m);
         }
         Map<String, Object> root = new LinkedHashMap<>();
@@ -136,7 +182,7 @@ final class Sources {
             ? PatchbayLauncher.t("Pliki w repozytorium", "Files in the repository")
                 + (s.filter().isBlank() ? "" : " · " + s.filter())
             : PatchbayLauncher.t("Wydania", "Releases") + " · " + s.filter();
-        return (s.builtin() ? "" : PatchbayLauncher.t("Dodane przez Ciebie · ", "Added by you · ")) + where;
+        return (s.builtin() ? changed(s) ? PatchbayLauncher.t("Zmienione przez Ciebie · ", "Changed by you · ") : "" : PatchbayLauncher.t("Dodane przez Ciebie · ", "Added by you · ")) + where;
     }
 
     /** Devices and themes are files in the repository itself; Patchbay and mods come from releases. */
@@ -197,6 +243,8 @@ final class Sources {
         private final JTextField repoField = new JTextField();
         private final JTextField filterField = new JTextField();
         private final JLabel message = new JLabel();
+        /** Brings back the built-in sources as the launcher ships them; shown while one is removed or changed. */
+        private final JButton restoreButton = Theme.button(PatchbayLauncher.t("Przywróć wbudowane", "Restore built-in"), "secondary");
         private int nextId;
 
         /** changed runs after the user changes the sources, so the other sections reload. */
@@ -219,16 +267,18 @@ final class Sources {
             body.add(form, BorderLayout.EAST);
             JButton add = Theme.button(PatchbayLauncher.t("Dodaj źródło", "Add source"), "secondary");
             add.addActionListener(e -> startNew(MODS));
+            restoreButton.addActionListener(e -> restoreBuiltins());
             add(Theme.page(PatchbayLauncher.t("Źródła", "Sources"),
                 prose(Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody, urządzenia i motywy.",
                     "GitHub repositories the launcher gets Patchbay, mods, devices and themes from."), Theme.text(13f), Theme.MUTED)),
-                add, body, null, null), BorderLayout.CENTER);
+                Theme.row(8, restoreButton, add), body, null, null), BorderLayout.CENTER);
             repoField.setFont(Theme.mono(13f));
             filterField.setFont(Theme.mono(13f));
             rebuild();
         }
 
         private void rebuild() {
+            restoreButton.setVisible(!removedBuiltins().isEmpty() || sources.stream().anyMatch(Sources::changed));
             groups.removeAll();
             for (String g : GROUPS) {
                 groups.add(section(g));
@@ -264,6 +314,13 @@ final class Sources {
             list.setOpaque(false);
             list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
             for (Source s : sources) if (s.group().equals(group)) list.add(sourceRow(s));
+            if (list.getComponentCount() == 0) {
+                JLabel none = Theme.label(PatchbayLauncher.t("Brak źródeł. Kliknij + Dodaj albo Przywróć wbudowane.", "No sources. Click + Add or Restore built-in."), Theme.text(12f), Theme.MUTED);
+                none.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(10, 14, 10, 12)));
+                none.setAlignmentX(LEFT_ALIGNMENT);
+                none.setMaximumSize(new Dimension(Integer.MAX_VALUE, none.getPreferredSize().height));
+                list.add(none);
+            }
             box.add(list, BorderLayout.CENTER);
             box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
             return box;
@@ -288,7 +345,8 @@ final class Sources {
             text.setOpaque(false);
             text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
             JLabel repo = Theme.label(s.repo(), Theme.mono(13f), s.enabled() ? Theme.TEXT : Theme.MUTED);
-            JPanel top = s.builtin() ? Theme.row(8, repo, badge(PatchbayLauncher.t("wbudowane", "built-in"))) : Theme.row(0, repo);
+            JPanel top = s.builtin() ? Theme.row(8, repo, badge(changed(s) ? PatchbayLauncher.t("wbudowane · zmienione", "built-in · changed")
+                : PatchbayLauncher.t("wbudowane", "built-in"))) : Theme.row(0, repo);
             top.setAlignmentX(LEFT_ALIGNMENT);
             text.add(top);
             text.add(Box.createVerticalStrut(3));
@@ -394,24 +452,15 @@ final class Sources {
                 b.putClientProperty("small", true);
                 b.setHorizontalAlignment(SwingConstants.CENTER);
                 b.setFont(Theme.text(12f));
-                b.setEnabled(!builtin);
                 b.addActionListener(e -> { draftGroup = g; if (draft == null) filterField.setText(g.equals(PATCHBAY) ? Platform.releasePattern() : g.equals(MODS) ? "*.zip" : ""); buildForm(); });
                 picks.add(b);
             }
             add(col, picks, 14);
 
             add(col, Theme.label(PatchbayLauncher.t("Repozytorium GitHub (właściciel/nazwa)", "GitHub repository (owner/name)"), Theme.text(12f), Theme.MUTED), 6);
-            if (builtin) {
-                JLabel fixed = Theme.label(draft.repo(), Theme.mono(13f), Theme.SOFT);
-                fixed.setOpaque(true);
-                fixed.setBackground(Theme.WELL);
-                fixed.setBorder(new EmptyBorder(8, 10, 8, 10));
-                add(col, fixed, 14);
-            } else {
-                repoField.putClientProperty("JTextField.placeholderText", "polarity/bitwig-mods");
-                repoField.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Repozytorium GitHub", "GitHub repository"));
-                add(col, repoField, 14);
-            }
+            repoField.putClientProperty("JTextField.placeholderText", "polarity/bitwig-mods");
+            repoField.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Repozytorium GitHub", "GitHub repository"));
+            add(col, repoField, 14);
 
             add(col, Theme.label(PatchbayLauncher.t("Skąd brać pliki", "Where files come from"), Theme.text(12f), Theme.MUTED), 6);
             add(col, Theme.label(inRepository(draftGroup)
@@ -427,8 +476,11 @@ final class Sources {
             filterField.getAccessibleContext().setAccessibleName(filterLabel);
             add(col, filterField, 12);
 
-            if (builtin) add(col, Theme.wrapped(PatchbayLauncher.t("Wbudowanego źródła nie da się usunąć ani przenieść. Możesz je wyłączyć przełącznikiem.",
-                "A built-in source can't be removed or moved. You can switch it off."), 214, Theme.MUTED, 12f), 10);
+            if (builtin) add(col, Theme.wrapped(changed(draft)
+                ? PatchbayLauncher.t("Źródło wbudowane, zmienione przez Ciebie. „Przywróć domyślne” wraca do ustawień z Launchera.",
+                    "A built-in source you changed. \"Restore default\" goes back to the launcher's settings.")
+                : PatchbayLauncher.t("Źródło wbudowane w Launcher. Możesz je zmienić albo usunąć; „Przywróć wbudowane” na górze przywraca je w każdej chwili.",
+                    "A source built into the launcher. You can change or remove it; \"Restore built-in\" at the top brings it back at any time."), 214, Theme.MUTED, 12f), 10);
             if (draftGroup.equals(PATCHBAY) && !builtin) add(col, Theme.wrapped(PatchbayLauncher.t("Patchbay pobierany jest z jednego źródła naraz. Włączenie tego wyłączy pozostałe.",
                 "Patchbay comes from one source at a time. Switching this one on switches the others off."), 214, Theme.MUTED, 12f), 10);
             if (message.getText() != null && !message.getText().isEmpty()) {
@@ -449,7 +501,15 @@ final class Sources {
             pair.add(save);
             pair.setAlignmentX(LEFT_ALIGNMENT);
             buttons.add(pair);
-            if (!isNew && !builtin) {
+            if (builtin && changed(draft)) {
+                buttons.add(Box.createVerticalStrut(8));
+                JButton reset = Theme.button(PatchbayLauncher.t("Przywróć domyślne", "Restore default"), "secondary");
+                reset.setAlignmentX(LEFT_ALIGNMENT);
+                reset.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+                reset.addActionListener(e -> resetDraft());
+                buttons.add(reset);
+            }
+            if (!isNew) {
                 buttons.add(Box.createVerticalStrut(8));
                 JButton remove = Theme.button(PatchbayLauncher.t("Usuń źródło", "Remove source"), "danger");
                 remove.setAlignmentX(LEFT_ALIGNMENT);
@@ -472,7 +532,6 @@ final class Sources {
 
         /** The form as a source, or null with a message when the repository isn't valid. */
         private Source fromForm() {
-            if (draft != null && draft.builtin()) return draft.withEnabled(draft.enabled());
             String repo = normalizeRepo(repoField.getText());
             if (repo == null) {
                 message.setText(PatchbayLauncher.t("Wpisz repozytorium w postaci właściciel/nazwa, np. polarity/bitwig-mods.",
@@ -483,7 +542,7 @@ final class Sources {
             String filter = filterField.getText().strip();
             if (filter.isEmpty() && !inRepository(draftGroup)) filter = draftGroup.equals(PATCHBAY) ? Platform.releasePattern() : "*.zip";
             String id = draft != null ? draft.id() : "own-" + System.currentTimeMillis() + "-" + (nextId++);
-            return new Source(id, draftGroup, repo, filter, false, draft == null || draft.enabled());
+            return new Source(id, draftGroup, repo, filter, draft != null && draft.builtin(), draft == null || draft.enabled());
         }
 
         private void runCheck() {
@@ -523,15 +582,65 @@ final class Sources {
         }
 
         private void removeDraft() {
-            if (draft == null || draft.builtin()) return;
+            if (draft == null) return;
             Source gone = draft;
             List<Source> next = new ArrayList<>(sources);
             next.removeIf(x -> x.id().equals(gone.id()));
-            if (gone.group().equals(PATCHBAY) && gone.enabled())
-                next.replaceAll(x -> x.id().equals("patchbay") ? x.withEnabled(true) : x);
+            if (gone.group().equals(PATCHBAY) && next.stream().noneMatch(x -> x.group().equals(PATCHBAY))) {
+                message.setText(PatchbayLauncher.t("Patchbay potrzebuje co najmniej jednego źródła. Dodaj inne, zanim usuniesz to.",
+                    "Patchbay needs at least one source. Add another one before you remove this one."));
+                buildForm();
+                return;
+            }
+            int ok = JOptionPane.showConfirmDialog(this,
+                PatchbayLauncher.t("Usunąć źródło ", "Remove the source ") + gone.repo() + "?"
+                    + (gone.builtin() ? PatchbayLauncher.t("\n\nTo źródło wbudowane: „Przywróć wbudowane” przywróci je później.", "\n\nIt is built in: \"Restore built-in\" brings it back later.") : ""),
+                "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (ok != JOptionPane.OK_OPTION) return;
+            if (gone.group().equals(PATCHBAY) && gone.enabled() && next.stream().noneMatch(x -> x.group().equals(PATCHBAY) && x.enabled())) {
+                String first = next.stream().filter(x -> x.group().equals(PATCHBAY)).findFirst().orElseThrow().id();
+                next.replaceAll(x -> x.id().equals(first) ? x.withEnabled(true) : x);
+            }
             idle = true;
             draft = null;
             message.setText(PatchbayLauncher.t("Usunięto ", "Removed ") + gone.repo() + ".");
+            commit(next);
+        }
+
+        /** A changed built-in source back to the launcher's settings (on/off kept). */
+        private void resetDraft() {
+            Source o = draft == null ? null : original(draft.id());
+            if (o == null) return;
+            Source back = o.withEnabled(draft.enabled());
+            List<Source> next = new ArrayList<>(sources);
+            next.replaceAll(x -> x.id().equals(back.id()) ? back : x);
+            draft = back;
+            draftGroup = back.group();
+            message.setText(PatchbayLauncher.t("Przywrócono ustawienia z Launchera.", "Back to the launcher's settings."));
+            commit(next);
+        }
+
+        /** Every built-in source as shipped, removed ones back; the user's own stay. Patchbay keeps a single source on. */
+        private void restoreBuiltins() {
+            int ok = JOptionPane.showConfirmDialog(this, PatchbayLauncher.t(
+                    "Przywrócić wbudowane źródła tak, jak są w Launcherze? Twoje zmiany w nich znikną; źródła dodane przez Ciebie zostaną.",
+                    "Bring back the built-in sources as the launcher ships them? Your changes to them are dropped; sources you added stay."),
+                "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (ok != JOptionPane.OK_OPTION) return;
+            List<Source> own = sources.stream().filter(x -> !x.builtin()).toList();
+            boolean ownPatchbayOn = own.stream().anyMatch(x -> x.group().equals(PATCHBAY) && x.enabled());
+            List<Source> next = new ArrayList<>();
+            for (Source b : BUILTIN) {
+                Source now = sources.stream().filter(x -> x.id().equals(b.id())).findFirst().orElse(null);
+                boolean on = b.group().equals(PATCHBAY) ? !ownPatchbayOn && (now == null || now.enabled()) : now == null || now.enabled();
+                next.add(b.withEnabled(on));
+            }
+            next.addAll(own);
+            if (next.stream().noneMatch(x -> x.group().equals(PATCHBAY) && x.enabled()))
+                next.replaceAll(x -> x.id().equals(BUILTIN.get(0).id()) ? x.withEnabled(true) : x);
+            idle = true;
+            draft = null;
+            message.setText(PatchbayLauncher.t("Przywrócono wbudowane źródła.", "Built-in sources restored."));
             commit(next);
         }
 
