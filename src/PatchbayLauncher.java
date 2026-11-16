@@ -374,6 +374,7 @@ public final class PatchbayLauncher {
     }
 
     private void select(String key) {
+        shownTab = key;
         cards.show(content, key);
         for (Map.Entry<String, JButton> e : nav.entrySet()) {
             e.getValue().putClientProperty("current", e.getKey().equals(key));
@@ -501,6 +502,25 @@ public final class PatchbayLauncher {
         return bar;
     }
 
+    /** The tab on screen, so a rebuilt window opens on the same one. */
+    private String shownTab = "patchbay";
+    /** Where the previous window was, for a window rebuilt after a language or appearance change; null on start. */
+    private Rectangle keptBounds;
+    private int keptState = Frame.NORMAL;
+    private String keptTab;
+
+    /** Builds the window again (new language or colours) at the same place, size and tab as the old one. */
+    private void rebuild() {
+        PatchbayLauncher next = new PatchbayLauncher();
+        int state = frame.getExtendedState();
+        frame.setExtendedState(Frame.NORMAL); // the size before maximizing, so un-maximizing still works
+        next.keptBounds = frame.getBounds();
+        next.keptState = state & ~Frame.ICONIFIED;
+        next.keptTab = shownTab;
+        frame.dispose();
+        next.show();
+    }
+
     /** Dark or light: kept in the settings; the window is built again in the new colours, like after a language change. */
     private void appearanceChosen(boolean light) {
         if (busy) {
@@ -511,8 +531,7 @@ public final class PatchbayLauncher {
         I18n.remember("appearance", light ? "light" : "dark");
         Theme.palette(light);
         Theme.install();
-        frame.dispose();
-        new PatchbayLauncher().show();
+        rebuild();
     }
 
     /** A speech bubble, for the Discord link (drawn, not Discord's own logo). */
@@ -701,10 +720,15 @@ public final class PatchbayLauncher {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.getRootPane().setDefaultButton(startButton);
         frame.setMinimumSize(new Dimension(980, 640));
-        frame.setSize(1200, 760);
-        frame.setLocationRelativeTo(null);
+        if (keptBounds != null) {
+            frame.setBounds(keptBounds);
+            if (keptState != Frame.NORMAL) frame.setExtendedState(keptState);
+        } else {
+            frame.setSize(1200, 760);
+            frame.setLocationRelativeTo(null);
+        }
         refreshLocal();
-        String tab = System.getProperty("launcher.tab", currentVersion() == null ? "patchbay" : "mods");
+        String tab = keptTab != null ? keptTab : System.getProperty("launcher.tab", currentVersion() == null ? "patchbay" : "mods");
         select(nav.containsKey(tab) ? tab : "patchbay");
         frame.setVisible(true);
         // the first tab would take the keyboard focus and look selected; the page takes it instead
@@ -751,8 +775,7 @@ public final class PatchbayLauncher {
             JOptionPane.showMessageDialog(frame, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        frame.dispose();
-        new PatchbayLauncher().show();
+        rebuild();
     }
 
     private void refreshLocal() {
