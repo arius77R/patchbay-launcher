@@ -530,7 +530,7 @@ final class Mods {
                     case 1 -> (unavailable(row) ? "~" : "") + nameOf(row);
                     case 2 -> row.installed() == null ? "–" : row.installed();
                     case 3 -> row.available() == null ? "" : row.available().version();
-                    default -> unavailable(row) ? "off|" + PatchbayLauncher.t("niedostępny", "not available") : switch (row.rank()) {
+                    default -> unavailable(row) ? "off|" + PatchbayLauncher.t("niezgodny", "incompatible") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("zainstalowany", "installed");
                         default -> "new|" + PatchbayLauncher.t("nowy", "new");
@@ -598,15 +598,14 @@ final class Mods {
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
             refilterSoon.setRepeats(false);
-            for (String o : new String[] { PatchbayLauncher.t("Wszystkie mody", "All mods"),
-                    PatchbayLauncher.t("Tylko działające na moim Bitwigu", "Only those that work on my Bitwig"),
-                    PatchbayLauncher.t("Zainstalowane", "Installed"), PatchbayLauncher.t("Mają aktualizację", "With an update"),
-                    PatchbayLauncher.t("Nie działają na moim Bitwigu", "Don't work on my Bitwig") })
+            for (String o : new String[] { PatchbayLauncher.t("Wszystkie", "All"), PatchbayLauncher.t("Zgodne", "Compatible"),
+                    PatchbayLauncher.t("Zainstalowane", "Installed"), PatchbayLauncher.t("Aktualizacje", "Updates"),
+                    PatchbayLauncher.t("Niezgodne", "Incompatible") })
                 showBox.addItem(o);
             try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(1); } // first time: only the mods that can run
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
             showBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Pokaż", "Show"));
-            showBox.setPreferredSize(new Dimension(290, 32));
+            showBox.setPreferredSize(new Dimension(200, 32));
             bitwigBox.setPreferredSize(new Dimension(150, 32));
             bitwigBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Twój Bitwig", "Your Bitwig"));
             bitwigBox.addActionListener(e -> {
@@ -711,8 +710,8 @@ final class Mods {
                 boolean ok = v.state() != Compat.State.UNAVAILABLE;
                 JPanel box = new Theme.Card(new BorderLayout(0, 6), Theme.WELL);
                 box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(ok ? Theme.ACCENT : Theme.FAULT_TEXT, 1, true), new EmptyBorder(10, 10, 10, 10)));
-                JLabel head = Theme.label((ok ? "✓  " : "×  ") + (ok ? PatchbayLauncher.t("Działa na Twoim Bitwigu", "Works on your Bitwig")
-                    : PatchbayLauncher.t("Niedostępny na Twoim Bitwigu", "Not available on your Bitwig")), Theme.bold(13f), ok ? Theme.ACCENT : Theme.FAULT_TEXT);
+                JLabel head = Theme.label((ok ? "✓  " : "×  ") + (ok ? PatchbayLauncher.t("Zgodny z Twoim Bitwigiem", "Compatible with your Bitwig")
+                    : PatchbayLauncher.t("Niezgodny z Twoim Bitwigiem", "Not compatible with your Bitwig")), Theme.bold(13f), ok ? Theme.ACCENT : Theme.FAULT_TEXT);
                 box.add(head, BorderLayout.NORTH);
                 String why = v.state() == Compat.State.NATIVE ? PatchbayLauncher.t("Zbudowany dokładnie dla Twojego Bitwiga.", "Built for exactly your Bitwig.") : v.reason();
                 box.add(Theme.wrapped(why, 166, Theme.SOFT, 13f), BorderLayout.CENTER);
@@ -920,10 +919,10 @@ final class Mods {
             int updates = (int) all.stream().filter(r -> r.rank() == 0 && !unavailable(r)).count();
             long installedCount = all.stream().filter(r -> r.rank() != 2).count();
             long off = all.stream().filter(this::unavailable).count();
-            String mine = bitwig() == null ? null : bitwig() + " (" + Compat.platformName(Platform.suffix()) + ")";
+            String mine = bitwig() == null ? null : "Bitwig " + bitwig() + " (" + Compat.platformName(Platform.suffix()) + ")";
             String head = catalog.isEmpty() ? " "
-                : (mine != null ? PatchbayLauncher.t("Twój Bitwig: ", "Your Bitwig: ") + mine + " · "
-                    + PatchbayLauncher.t("działa {n} z {all} modów", "{n} of {all} mods work on it")
+                : (mine != null ? mine + " · "
+                    + PatchbayLauncher.t("zgodne: {n} z {all}", "compatible: {n} of {all}")
                         .replace("{n}", String.valueOf(all.size() - off)).replace("{all}", String.valueOf(all.size()))
                     : PatchbayLauncher.t("W katalogu: ", "In the catalogue: ") + all.size())
                 + " · " + PatchbayLauncher.t("zainstalowane: ", "installed: ") + installedCount

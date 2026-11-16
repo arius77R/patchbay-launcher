@@ -4,7 +4,7 @@
 
 - **Linux (beta):** `Patchbay-Launcher-<version>-linux.tar.gz` with a start script that finds Bitwig's Java (`/opt/bitwig-studio/lib/jre`, or the Bitwig chosen in Patchbay), Patchbay's Linux build (`BML-*-linux.zip`), settings in `~/.config/bml`, data in `~/.local/share/PatchbayLauncher`, Bitwig's version from dpkg / rpm / Flatpak, notifications with `notify-send`, and an "Add to the applications menu" entry.
 - Folders and web pages open with `xdg-open` where Java can't open them.
-- **Mods work on your Bitwig?** The launcher checks each mod's `built_against` against the map packs in the installed Patchbay, the way Patchbay does: mods that can't run are marked "not available", can't be ticked, sit at the end of the list and say why; mods built for another Bitwig say Patchbay translates them. A **Show** filter: all, work on my Bitwig, installed, updates, not available. "Install anyway" for a mod that won't run.
+- **Mods work on your Bitwig?** The launcher checks each mod's `built_against` against the map packs in the installed Patchbay, the way Patchbay does: mods that can't run are marked "incompatible", can't be ticked, sit at the end of the list and say why; mods built for another Bitwig say Patchbay translates them. A **Show** filter: All, Compatible, Installed, Updates, Incompatible. "Install anyway" for a mod that won't run.
 - The Bitwig chosen in Patchbay's settings is the one the launcher reads the version of (macOS and Windows); when the version can't be read, the Mods section asks for it.
 - "Start Patchbay" is orange.
 
