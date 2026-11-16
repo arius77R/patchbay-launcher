@@ -499,8 +499,8 @@ public final class Theme {
             g2.setColor(ACCENT);
             g2.fillOval(kx, ky, d, d);
             float scx = sunX + d / 2f, mcx = moonX + d / 2f, cy = ky + d / 2f;
-            sun(g2, scx, cy, light ? ACCENT_INK : DIM);
-            moon(g2, mcx, cy, light ? DIM : ACCENT_INK);
+            sun(g2, scx, cy, light ? Color.WHITE : DIM);
+            moon(g2, mcx, cy, light ? DIM : Color.WHITE);
             if (isFocusOwner()) {
                 g2.setColor(ACCENT);
                 g2.setStroke(new BasicStroke(1.5f));
