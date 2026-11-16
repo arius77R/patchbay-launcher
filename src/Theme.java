@@ -374,6 +374,13 @@ public final class Theme {
             g2.dispose();
         }
 
+        /** The open list shows its values in the middle of each line. */
+        @Override protected ListCellRenderer<Object> createRenderer() {
+            javax.swing.plaf.basic.BasicComboBoxRenderer.UIResource r = new javax.swing.plaf.basic.BasicComboBoxRenderer.UIResource();
+            r.setHorizontalAlignment(SwingConstants.CENTER);
+            return r;
+        }
+
         @Override protected javax.swing.plaf.basic.ComboPopup createPopup() {
             javax.swing.plaf.basic.BasicComboPopup p = new javax.swing.plaf.basic.BasicComboPopup(comboBox);
             p.setBorder(BorderFactory.createLineBorder(LINE));
