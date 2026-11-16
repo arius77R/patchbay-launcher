@@ -26,7 +26,7 @@ The app is not signed (no Apple Developer ID, no Windows code-signing certificat
 
 ## What it does
 
-- **Patchbay:** lists Patchbay releases, downloads and unpacks the one for your system, carries your mods and themes over to the new version, keeps the previous version, and starts Patchbay. It notifies you when a new version is out. Optionally hides the Patchbay window once Bitwig has started (it keeps running in the Dock or taskbar).
+- **Patchbay:** lists Patchbay releases, downloads and unpacks the one for your system, carries your mods and themes over to the new version, keeps the previous version, and starts Patchbay. It notifies you when a new version is out.
 - **Mods:** a catalogue from the mod repositories with checkboxes, "Select all", "Update all" and details. It checks each mod against your Bitwig the way Patchbay does (with the map packs in the installed Patchbay), shows which mods won't run on your Bitwig and why, and lets you show only the ones that work. Mods are installed the same way as Patchbay's own **Add Mod…**, with a SHA-256 check and their required mods.
 - **Devices:** `.bwdevice`, `.bwmodulator` and `.bwmodule` files, picked for your Bitwig version, checked against GitHub and added to Patchbay's Device Folders.
 - **Themes:** `.bte` colour themes for Patchbay's **Framework: Themes**, with a preview, installed into the active Patchbay's `components/` folder. "Use this theme" picks it in Patchbay's settings (Patchbay must be closed); restart Bitwig from Patchbay to see it.

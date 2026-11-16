@@ -189,30 +189,6 @@ final class Platform {
         }
     }
 
-    /** The process IDs of running Patchbay windows (Java running bml-control.jar). */
-    static List<Long> patchbayPids() {
-        List<Long> out = new ArrayList<>();
-        try {
-            if (MAC) {
-                Process p = new ProcessBuilder(Files.isExecutable(Path.of("/usr/bin/pgrep")) ? "/usr/bin/pgrep" : "pgrep", "-f", "bml-control.jar").redirectErrorStream(true).start();
-                for (String line : new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).split("\\s+"))
-                    if (line.matches("\\d+")) out.add(Long.parseLong(line));
-                p.waitFor();
-            } else if (LINUX) {
-                String me = System.getProperty("user.name");
-                ProcessHandle.allProcesses().filter(ph -> me.equals(ph.info().user().orElse(""))
-                    && ph.info().commandLine().orElse("").contains("bml-control.jar")).forEach(ph -> out.add(ph.pid()));
-            } else {
-                String ids = run("powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
-                    "Get-CimInstance Win32_Process -Filter \"Name='javaw.exe' OR Name='java.exe'\" | "
-                        + "Where-Object { $_.CommandLine -like '*bml-control.jar*' } | ForEach-Object { $_.ProcessId }");
-                for (String line : ids.split("\\s+")) if (line.matches("\\d+")) out.add(Long.parseLong(line));
-            }
-        } catch (IOException | InterruptedException | RuntimeException ignored) { }
-        out.remove(ProcessHandle.current().pid());
-        return out;
-    }
-
     // ---------- Bitwig's version ----------
 
     static String bitwigVersion() {

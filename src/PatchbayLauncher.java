@@ -550,40 +550,7 @@ public final class PatchbayLauncher {
         col.add(section(latestLabel, patchbayCount, v));
         col.add(Box.createVerticalStrut(12));
 
-        // 2. after Bitwig starts: hide the Patchbay window
-        JPanel h = new JPanel();
-        h.setOpaque(false);
-        h.setLayout(new BoxLayout(h, BoxLayout.Y_AXIS));
-        JCheckBox hide = new JCheckBox(Hider.title(), Hider.enabled());
-        hide.setOpaque(false);
-        hide.setFont(Theme.medium(14f));
-        hide.setForeground(Theme.TEXT);
-        hide.setIconTextGap(12);
-        hide.setFocusPainted(false);
-        hide.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        hide.addActionListener(e -> Hider.setEnabled(hide.isSelected()));
-        hide.setAlignmentX(Component.LEFT_ALIGNMENT);
-        h.add(hide);
-        JLabel how = Theme.wrapped(Hider.explanation(), 620, Theme.MUTED, 13f);
-        how.setBorder(new EmptyBorder(4, 30, 0, 0));
-        how.setAlignmentX(Component.LEFT_ALIGNMENT);
-        h.add(how);
-        String note = Hider.note();
-        if (note != null) {
-            JPanel box = new Theme.Card(new BorderLayout(), Theme.WELL);
-            box.setBorder(new EmptyBorder(9, 12, 9, 12));
-            box.add(Theme.wrapped(note, 600, Theme.SOFT, 13f), BorderLayout.CENTER);
-            JPanel indent = new JPanel(new BorderLayout());
-            indent.setOpaque(false);
-            indent.setBorder(new EmptyBorder(10, 30, 0, 0));
-            indent.add(box, BorderLayout.CENTER);
-            indent.setAlignmentX(Component.LEFT_ALIGNMENT);
-            h.add(indent);
-        }
-        col.add(section(Theme.label(t("Po uruchomieniu Bitwiga", "After Bitwig starts"), Theme.bold(13f), Theme.TEXT), null, h));
-        col.add(Box.createVerticalStrut(12));
-
-        // 3. language and folders, one line
+        // 2. language and folders, one line
         languageBox.addItem(t("Język systemu", "System language"));
         for (String name : new String[] { "Polski", "English", "Deutsch", "Français" }) languageBox.addItem(name);
         languageBox.setSelectedIndex(I18n.CODES.indexOf(I18n.choice()) + 1);
@@ -861,7 +828,6 @@ public final class PatchbayLauncher {
                 return;
             }
             startPatchbay();
-            if (Hider.enabled() && Hider.available()) Hider.startWatcher();
             setBusy(true, t("Uruchamianie Patchbay…", "Starting Patchbay…"));
             javax.swing.Timer quit = new javax.swing.Timer(2500, e -> System.exit(0));
             quit.setRepeats(false);
@@ -873,7 +839,6 @@ public final class PatchbayLauncher {
 
     public static void main(String[] args) throws Exception {
         if (args.length > 0 && args[0].equals("--selftest")) { SelfTest.run(args); return; }
-        if (args.length > 0 && args[0].equals("--hide-watch")) { Hider.watch(); return; }
         if (Platform.MAC) {
             System.setProperty("apple.awt.application.name", "Patchbay Launcher");
             System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua");
@@ -973,7 +938,6 @@ public final class PatchbayLauncher {
             if (args.length >= 4) devicesTest(Path.of(args[3]));
             if (args.length >= 4 && Files.isRegularFile(Path.of(args[3], "csabacsaba_bw6themes.tree.json"))) themesTest(Path.of(args[3]));
             sourcesTest();
-            hiderTest();
             System.out.println("SELFTEST_OK");
         }
 
@@ -1077,19 +1041,6 @@ public final class PatchbayLauncher {
             check(Themes.activeId() == null && Files.readString(settings.resolve("enabled-mods.properties")).contains("mod.bte-theme-loader=false"), "themes turned off");
             Themes.remove(Themes.target(components, neon));
             check(!Files.exists(components.resolve("Neon Glow")) && Themes.rank(components, neon) == 2, "theme removed");
-        }
-
-        static void hiderTest() {
-            check(Hider.enabled(), "hiding the Patchbay window is on by default");
-            Hider.setEnabled(false);
-            check(!Hider.enabled(), "and can be switched off");
-            Hider.setEnabled(true);
-            String cmd = String.join(" ", Hider.command(4242));
-            check(Platform.MAC ? cmd.contains("unix id is 4242") && cmd.contains("set visible")
-                : Platform.WINDOWS ? cmd.contains("Get-Process -Id 4242") && cmd.contains("ShowWindowAsync($h, 6)")
-                : cmd.equals("xdotool search --onlyvisible --class ^dev-bitwigre-bml-BmlControlApp$ windowminimize %@"), "hide command: " + cmd);
-            check(Hider.explanation().contains(Platform.MAC ? "Dock" : t("pasek zadań", "taskbar")), "explanation fits this system");
-            check(!Platform.patchbayPids().contains(ProcessHandle.current().pid()), "the launcher never counts itself as Patchbay");
         }
 
         static void sourcesTest() throws Exception {
