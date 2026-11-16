@@ -22,7 +22,7 @@ import java.util.zip.ZipEntry;
  * Not affiliated with Patchbay's author or with Bitwig GmbH.
  */
 public final class PatchbayLauncher {
-    static final String VERSION = "0.9.2";
+    static final String VERSION = "0.9.3";
     /** The release list of the Patchbay source in use (the built-in one unless the user picked another). */
     static String api() { return "https://api.github.com/repos/" + Sources.patchbay().repo() + "/releases?per_page=100"; }
     static String t(String pl, String en) { return I18n.t(pl, en); }
@@ -504,7 +504,8 @@ public final class PatchbayLauncher {
         languageBox.getAccessibleContext().setAccessibleName(t("Język", "Language"));
         JButton folder = Theme.button(t("Pokaż folder z danymi", "Show the data folder"), "secondary");
         folder.addActionListener(e -> {
-            try { Files.createDirectories(data()); Desktop.getDesktop().open(data().toFile()); } catch (Exception ignored) { }
+            try { Files.createDirectories(data()); } catch (Exception ignored) { }
+            Platform.open(data().toString());
         });
         JPanel lang = Theme.row(10, Theme.label(t("Język:", "Language:"), Theme.text(14f), Theme.MUTED), languageBox);
         lang.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -559,7 +560,7 @@ public final class PatchbayLauncher {
     }
 
     private static void browse(String url) {
-        try { Desktop.getDesktop().browse(java.net.URI.create(url)); } catch (Exception ignored) { }
+        Platform.open(url);
     }
 
     private void show() {
@@ -567,7 +568,7 @@ public final class PatchbayLauncher {
         dockButton.setVisible(false);
         new Thread(() -> {
             Platform.refreshIcon(VERSION);
-            boolean offer = (Platform.pinBlocked() == null || (!Platform.WINDOWS && Platform.appBundle() != null)) && !Platform.pinned();
+            boolean offer = (Platform.pinBlocked() == null || (Platform.MAC && Platform.appBundle() != null)) && !Platform.pinned();
             SwingUtilities.invokeLater(() -> dockButton.setVisible(offer));
         }, "dock-check").start();
         installButton.addActionListener(e -> installSelected());
@@ -779,7 +780,7 @@ public final class PatchbayLauncher {
 
     public static void main(String[] args) throws Exception {
         if (args.length > 0 && args[0].equals("--selftest")) { SelfTest.run(args); return; }
-        if (!Platform.WINDOWS) {
+        if (Platform.MAC) {
             System.setProperty("apple.awt.application.name", "Patchbay Launcher");
             System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua");
         }
@@ -820,7 +821,14 @@ public final class PatchbayLauncher {
             check(Platform.dockEntry(Path.of("/Applications/Patchbay Launcher.app")).contains("<string>/Applications/Patchbay Launcher.app</string>"), "Dock entry holds the app's path");
             check(Platform.inApplications(Path.of("/Applications/Patchbay Launcher.app")) && !Platform.inApplications(Path.of("/Volumes/External/x/Patchbay Launcher.app")), "Dock offered only from Applications");
             check("6.1.4".equals(Platform.cleanVersion("6.1.4.0")) && "6.1.7".equals(Platform.cleanVersion(" 6.1.7 (Build 123)")) && Platform.cleanVersion("n/a") == null, "Bitwig version read from Windows and macOS forms");
-            check(Platform.releasePattern().equals(Platform.WINDOWS ? "BML-*-windows.zip" : "BML-*-macos.zip"), "release file for this system: " + Platform.releasePattern());
+            check(Platform.releasePattern().equals("BML-*-" + (Platform.WINDOWS ? "windows" : Platform.LINUX ? "linux" : "macos") + ".zip"), "release file for this system: " + Platform.releasePattern());
+            if (Platform.LINUX) {
+                check(Platform.patchbaySettings().toString().endsWith("bml") && !Platform.patchbaySettings().toString().contains("Library"),
+                    "Linux: Patchbay settings in the XDG config folder: " + Platform.patchbaySettings());
+                String entry = Platform.desktopEntry(Path.of("/home/a b/x$y/patchbay-launcher"), Path.of("/i/p.png"));
+                check(entry.contains("Exec=\"/home/a b/x\\\\$y/patchbay-launcher\"") && entry.contains("StartupWMClass=PatchbayLauncher"),
+                    "Linux: menu entry quotes the script's path");
+            }
             check(I18n.CODES.size() == 4 && I18n.needs("A", "b", "1.0", null).contains("b"), "four languages, requirement note built");
             if (args.length < 3) { System.out.println("SELFTEST_OK (logic only)"); return; }
 

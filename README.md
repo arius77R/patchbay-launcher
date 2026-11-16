@@ -2,7 +2,7 @@
 
 # Patchbay Launcher
 
-A small desktop app for macOS and Windows that installs, updates and starts [Patchbay](https://github.com/shaboogen-dev/Patchbay), the mod loader for Bitwig Studio, without Terminal or a console window. It also downloads and updates mods and devices from GitHub.
+A small desktop app for macOS, Windows and Linux that installs, updates and starts [Patchbay](https://github.com/shaboogen-dev/Patchbay), the mod loader for Bitwig Studio, without Terminal or a console window. It also downloads and updates mods and devices from GitHub.
 
 > **Unofficial, made and supported by [Marius R (arius77R)](https://github.com/arius77R).** Patchbay Launcher is a separate project from Patchbay: it is not made by the authors of Patchbay, the mods or the devices it downloads, nor by Bitwig GmbH. **Questions and problems with the launcher go to this repository's [Issues](../../issues)**, not to Patchbay. Bitwig and Bitwig Studio are trademarks of Bitwig GmbH.
 >
@@ -18,6 +18,7 @@ Get the latest version from [Releases](../../releases):
 |---|---|---|
 | macOS (tested on macOS 26 Tahoe, Intel) | `Patchbay-Launcher-<version>-macos.dmg` | Drag the app to Applications. If macOS blocks it, open **System Settings → Privacy & Security** and click **Open Anyway**. |
 | Windows 10 / 11, 64-bit (tested on Windows 10) | `Patchbay-Launcher-<version>-windows.zip` | Unzip, open the `Patchbay Launcher` folder and start `Patchbay Launcher.exe`. If SmartScreen appears, click **More info → Run anyway**. |
+| Linux x64 (**beta, testers wanted**) | `Patchbay-Launcher-<version>-linux.tar.gz` | `tar -xzf` it, then run `Patchbay-Launcher/patchbay-launcher`. The launcher offers to add itself to the applications menu. Needs Bitwig from bitwig.com (`/opt/bitwig-studio`); with Bitwig from Flathub, install a Java 21 runtime (not "headless"). |
 
 The app is not signed (no Apple Developer ID, no Windows code-signing certificate), which is why the system asks once.
 
@@ -41,17 +42,17 @@ GitHub allows 60 requests an hour without signing in; the launcher caches what i
 
 ## Where it keeps things
 
-| | macOS | Windows |
-|---|---|---|
-| Patchbay versions, devices, cache, settings | `~/Library/Application Support/PatchbayLauncher/` | `%LOCALAPPDATA%\PatchbayLauncher\` |
-| Patchbay's own settings (read and updated) | `~/Library/Application Support/BML/` | `%LOCALAPPDATA%\BML\` |
+| | macOS | Windows | Linux |
+|---|---|---|---|
+| Patchbay versions, devices, cache, settings | `~/Library/Application Support/PatchbayLauncher/` | `%LOCALAPPDATA%\PatchbayLauncher\` | `~/.local/share/PatchbayLauncher/` |
+| Patchbay's own settings (read and updated) | `~/Library/Application Support/BML/` | `%LOCALAPPDATA%\BML\` | `~/.config/bml/` |
 
 ## Building
 
 Requires JDK 21. MinGW-w64 (`x86_64-w64-mingw32-gcc`) is optional, for the Windows `.exe`.
 
 ```sh
-./build.sh                    # build/launcher.jar, macOS .zip, Windows .zip
+./build.sh                    # build/launcher.jar, macOS .zip, Linux .tar.gz, Windows .zip
 macos/build-dmg.command       # on a Mac, after build.sh: build/…-macos.dmg
 ```
 
@@ -60,6 +61,7 @@ macos/build-dmg.command       # on a Mac, after build.sh: build/…-macos.dmg
 | `src/` | The app (Java Swing, only `java.base` and `java.desktop`). `Platform.java` holds everything that differs between macOS and Windows. |
 | `macos/app/` | The `.app` bundle without `launcher.jar`; its start script finds Java inside `Bitwig Studio.app`. |
 | `macos/dmg/` | Disk image background and install note. |
+| `linux/` | The Linux start script (finds Java the way Patchbay's `loader/platform.sh` does, Bitwig's own first) and its README. |
 | `windows/` | `Patchbay Launcher.exe` source (C): finds `javaw.exe` from Bitwig the way Patchbay's `find-java.cmd` does, then starts `app\launcher.jar` without a console. |
 | `icon/` | The app icon (SVG). |
 | `test/fixtures/` | Sample GitHub API responses for the offline self-test. |
@@ -71,7 +73,7 @@ java -Dlauncher.data=<empty dir> -Dlauncher.bmlsettings=<empty dir> \
      -jar build/launcher.jar --selftest <BML zip> <version> test/fixtures
 ```
 
-Add `-Dlauncher.os=windows` and a Windows ZIP to test the Windows code paths on any system.
+Add `-Dlauncher.os=mac`, `windows` or `linux` (with that system's Patchbay ZIP) to test each system's code paths on any system.
 
 ## License
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.3
+
+- **Linux (beta):** `Patchbay-Launcher-<version>-linux.tar.gz` with a start script that finds Bitwig's Java (`/opt/bitwig-studio/lib/jre`, or the Bitwig chosen in Patchbay), Patchbay's Linux build (`BML-*-linux.zip`), settings in `~/.config/bml`, data in `~/.local/share/PatchbayLauncher`, Bitwig's version from dpkg / rpm / Flatpak, notifications with `notify-send`, and an "Add to the applications menu" entry.
+- Folders and web pages open with `xdg-open` where Java can't open them.
+
 ## 0.9.2
 
 - Mods: the list no longer stays empty after installing Patchbay for the first time.

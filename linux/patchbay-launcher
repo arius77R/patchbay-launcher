@@ -1,0 +1,42 @@
+#!/bin/sh
+# Patchbay Launcher for Linux. Finds a Java 21 or later with a desktop (Bitwig Studio's own first,
+# the same order as Patchbay's loader/platform.sh) and starts the launcher on it.
+# PATCHBAY_LAUNCHER_JAVA=/path/to/java overrides the search.
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+JAR="$HERE/app/launcher.jar"
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}/PatchbayLauncher"
+mkdir -p "$DATA/logs" 2>/dev/null
+
+ok() { # true when $1 runs and is Java 21 or later
+  [ -n "$1" ] && [ -x "$1" ] && "$1" -version 2>&1 | grep -Eq 'version "(2[1-9]|[3-9][0-9]|[1-9][0-9][0-9])'
+}
+runtime() { # $1/bin/java when $1 is a Java runtime with Swing (its release file lists java.desktop)
+  [ -x "$1/bin/java" ] && grep -q 'java\.desktop' "$1/release" 2>/dev/null && printf '%s\n' "$1/bin/java"
+}
+find_java() {
+  if ok "${PATCHBAY_LAUNCHER_JAVA:-}"; then printf '%s\n' "$PATCHBAY_LAUNCHER_JAVA"; return 0; fi
+  props="${XDG_CONFIG_HOME:-$HOME/.config}/bml/bml.properties"   # the Bitwig chosen in Patchbay
+  if [ -f "$props" ]; then
+    exe=$(sed -n 's/^bitwig\.executable[ \t]*[=:][ \t]*//p' "$props" | tail -n 1 | sed 's/\\\(.\)/\1/g')
+    if [ -n "$exe" ]; then j=$(runtime "$(dirname -- "$exe")/lib/jre"); if ok "$j"; then printf '%s\n' "$j"; return 0; fi; fi
+  fi
+  j=$(runtime /opt/bitwig-studio/lib/jre); if ok "$j"; then printf '%s\n' "$j"; return 0; fi
+  if [ -n "${JAVA_HOME:-}" ] && ok "$JAVA_HOME/bin/java"; then printf '%s\n' "$JAVA_HOME/bin/java"; return 0; fi
+  j=$(command -v java 2>/dev/null); if ok "$j"; then printf '%s\n' "$j"; return 0; fi
+  return 1
+}
+
+say() { # an error the person sees even when started from the applications menu
+  echo "Patchbay Launcher: $1" >&2
+  if command -v zenity >/dev/null 2>&1; then zenity --error --title="Patchbay Launcher" --text="$1" 2>/dev/null
+  elif command -v kdialog >/dev/null 2>&1; then kdialog --title "Patchbay Launcher" --error "$1" 2>/dev/null
+  elif command -v notify-send >/dev/null 2>&1; then notify-send "Patchbay Launcher" "$1"
+  fi
+}
+
+if [ ! -f "$JAR" ]; then say "app/launcher.jar is missing next to this script ($HERE)."; exit 2; fi
+JAVA=$(find_java) || {
+  say "No Java 21 was found. Install Bitwig Studio from bitwig.com (.deb, in /opt/bitwig-studio), or a Java 21 runtime with desktop support (not \"headless\"), or set PATCHBAY_LAUNCHER_JAVA."
+  exit 3
+}
+exec "$JAVA" -Dlauncher.exe="$HERE/patchbay-launcher" -jar "$JAR" "$@" >>"$DATA/logs/launcher.log" 2>&1

@@ -352,7 +352,8 @@ final class Devices {
             installButton.addActionListener(e -> installChecked());
             refreshButton.addActionListener(e -> reload());
             folderButton.addActionListener(e -> {
-                try { Files.createDirectories(root()); Desktop.getDesktop().open(root().toFile()); } catch (Exception ignored) { }
+                try { Files.createDirectories(root()); } catch (Exception ignored) { }
+                Platform.open(root().toString());
             });
             showSelected();
             refreshButtons();
@@ -503,7 +504,7 @@ final class Devices {
             details.add(col, BorderLayout.NORTH);
             JButton page = Theme.button(PatchbayLauncher.t("Strona projektu", "Project page"), "secondary");
             page.addActionListener(e -> {
-                try { Desktop.getDesktop().browse(java.net.URI.create("https://github.com/" + item.repo())); } catch (Exception ignored) { }
+                Platform.open("https://github.com/" + item.repo());
             });
             details.add(page, BorderLayout.SOUTH);
             details.revalidate();

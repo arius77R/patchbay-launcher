@@ -9,18 +9,22 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * Everything that differs between macOS and Windows: where files live, how Patchbay starts, how
- * to tell whether Bitwig runs, notifications, and pinning the launcher (Dock or Start menu).
- * Anything that isn't Windows is treated as macOS (the offline tests run on Linux that way).
+ * Everything that differs between macOS, Windows and Linux: where files live, how Patchbay starts,
+ * how to tell whether Bitwig runs, notifications, and pinning the launcher (Dock, Start menu or the
+ * applications menu). -Dlauncher.os=mac|windows|linux overrides the system's own name (the offline
+ * tests run every system's code paths that way).
  */
 final class Platform {
     private Platform() { }
 
-    static final boolean WINDOWS = System.getProperty("launcher.os", System.getProperty("os.name", ""))
-        .toLowerCase(Locale.ROOT).startsWith("windows");
+    private static final String OS = System.getProperty("launcher.os", System.getProperty("os.name", "")).toLowerCase(Locale.ROOT);
+    static final boolean WINDOWS = OS.startsWith("windows");
+    static final boolean MAC = OS.startsWith("mac") || OS.startsWith("darwin");
+    /** Linux and other Unix-likes, which Patchbay's Linux build serves. */
+    static final boolean LINUX = !WINDOWS && !MAC;
 
     /** The word in Patchbay's release and folder names: BML-<version>-<suffix>. */
-    static String suffix() { return WINDOWS ? "windows" : "macos"; }
+    static String suffix() { return WINDOWS ? "windows" : LINUX ? "linux" : "macos"; }
     static String releasePattern() { return "BML-*-" + suffix() + ".zip"; }
     /** The file that marks a complete Patchbay folder. */
     static String startScript() { return WINDOWS ? "bml-ui.cmd" : "bml-ui.sh"; }
@@ -30,24 +34,36 @@ final class Platform {
         return v != null && !v.isBlank() ? Path.of(v) : Path.of(System.getProperty("user.home"), "AppData", "Local");
     }
 
-    /** The launcher's own folder. */
-    static Path data() {
-        return WINDOWS ? localAppData().resolve("PatchbayLauncher")
-            : Path.of(System.getProperty("user.home"), "Library", "Application Support", "PatchbayLauncher");
+    /** An XDG base folder ($XDG_DATA_HOME, $XDG_CONFIG_HOME), else its default under the home folder. */
+    private static Path xdg(String variable, String fallback) {
+        String v = System.getenv(variable);
+        return v != null && v.startsWith("/") ? Path.of(v) : Path.of(System.getProperty("user.home"), fallback);
     }
 
-    /** Patchbay's per-user settings folder (its BmlPaths). */
+    /** The launcher's own folder. */
+    static Path data() {
+        if (WINDOWS) return localAppData().resolve("PatchbayLauncher");
+        if (LINUX) return xdg("XDG_DATA_HOME", ".local/share").resolve("PatchbayLauncher");
+        return Path.of(System.getProperty("user.home"), "Library", "Application Support", "PatchbayLauncher");
+    }
+
+    /** Patchbay's per-user settings folder (its BmlPaths; on Linux $XDG_CONFIG_HOME/bml, as in its platform.sh). */
     static Path patchbaySettings() {
-        return WINDOWS ? localAppData().resolve("BML")
-            : Path.of(System.getProperty("user.home"), "Library", "Application Support", "BML");
+        if (WINDOWS) return localAppData().resolve("BML");
+        if (LINUX) return xdg("XDG_CONFIG_HOME", ".config").resolve("bml");
+        return Path.of(System.getProperty("user.home"), "Library", "Application Support", "BML");
     }
 
     // ---------- unpacking ----------
 
-    /** Unpacks a ZIP into an empty folder: the system's unzip on macOS (keeps the scripts runnable), Java on Windows. */
+    /**
+     * Unpacks a ZIP into an empty folder: the system's unzip on macOS and Linux (keeps the scripts
+     * runnable), Java elsewhere (on macOS and Linux it then marks the .sh scripts runnable itself).
+     */
     static void unzip(Path zip, Path into) throws IOException, InterruptedException {
-        if (!WINDOWS && Files.isExecutable(Path.of("/usr/bin/unzip"))) {
-            int code = new ProcessBuilder("/usr/bin/unzip", "-q", "-o", zip.toString(), "-d", into.toString())
+        Path unzip = Files.isExecutable(Path.of("/usr/bin/unzip")) ? Path.of("/usr/bin/unzip") : Path.of("/bin/unzip");
+        if (!WINDOWS && Files.isExecutable(unzip)) {
+            int code = new ProcessBuilder(unzip.toString(), "-q", "-o", zip.toString(), "-d", into.toString())
                 .redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start().waitFor();
             if (code != 0) throw new IOException(PatchbayLauncher.t("Archiwum jest uszkodzone (unzip: ", "The archive is damaged (unzip: ") + code + ")");
             return;
@@ -64,6 +80,7 @@ final class Platform {
                 try (InputStream in = z.getInputStream(e); var o = Files.newOutputStream(out)) {
                     for (int n; (n = in.read(buf)) != -1; ) o.write(buf, 0, n);
                 }
+                if (!WINDOWS && out.getFileName().toString().endsWith(".sh")) out.toFile().setExecutable(true, false);
             }
         } catch (java.util.zip.ZipException bad) {
             throw new IOException(PatchbayLauncher.t("Archiwum jest uszkodzone (unzip: ", "The archive is damaged (unzip: ") + bad.getMessage() + ")");
@@ -126,7 +143,7 @@ final class Platform {
 
     private static boolean pgrep(String... args) {
         try {
-            List<String> cmd = new ArrayList<>(List.of("/usr/bin/pgrep"));
+            List<String> cmd = new ArrayList<>(List.of(Files.isExecutable(Path.of("/usr/bin/pgrep")) ? "/usr/bin/pgrep" : "pgrep"));
             cmd.addAll(List.of(args));
             return new ProcessBuilder(cmd).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start().waitFor() == 0;
         } catch (IOException | InterruptedException e) { return false; }
@@ -134,7 +151,13 @@ final class Platform {
 
     /** Windows: the processes Patchbay itself looks for (BitwigStudioApp.exe, Bitwig Studio.exe). */
     static boolean bitwigRunning() {
-        if (!WINDOWS) return pgrep("-x", "BitwigStudio");
+        if (MAC) return pgrep("-x", "BitwigStudio");
+        if (LINUX) {
+            // as Patchbay's platform.sh: this user's JVM whose command line names Bitwig's main class
+            String me = System.getProperty("user.name");
+            return ProcessHandle.allProcesses().anyMatch(ph -> me.equals(ph.info().user().orElse(""))
+                && ph.info().commandLine().orElse("").contains("com.bitwig.flt.app.BitwigStudioMain"));
+        }
         return ProcessHandle.allProcesses().anyMatch(ph -> {
             String cmd = ph.info().command().orElse("").replace('\\', '/').toLowerCase(Locale.ROOT);
             return cmd.endsWith("/bitwigstudioapp.exe") || cmd.endsWith("/bitwig studio.exe");
@@ -143,7 +166,12 @@ final class Platform {
 
     /** Windows hides other processes' arguments from Java, so the Java processes are asked through PowerShell. */
     static boolean patchbayRunning() {
-        if (!WINDOWS) return pgrep("-f", "bml-control.jar");
+        if (MAC) return pgrep("-f", "bml-control.jar");
+        if (LINUX) {
+            String me = System.getProperty("user.name");
+            return ProcessHandle.allProcesses().anyMatch(ph -> me.equals(ph.info().user().orElse(""))
+                && ph.info().commandLine().orElse("").contains("bml-control.jar"));
+        }
         try {
             String out = run("powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
                 "@(Get-CimInstance Win32_Process -Filter \"Name='javaw.exe' OR Name='java.exe'\" | "
@@ -173,6 +201,7 @@ final class Platform {
                 return null;
             }
         }
+        if (LINUX) return linuxBitwigVersion();
         for (String app : new String[] { "/Applications/Bitwig Studio.app", System.getProperty("user.home") + "/Applications/Bitwig Studio.app" }) {
             Path plist = Path.of(app, "Contents", "Info.plist");
             if (!Files.isRegularFile(plist)) continue;
@@ -180,6 +209,27 @@ final class Platform {
                 String v = cleanVersion(run("/usr/bin/plutil", "-extract", "CFBundleShortVersionString", "raw", plist.toString()));
                 if (v != null) return v;
             } catch (IOException | InterruptedException ignored) { }
+        }
+        return null;
+    }
+
+    /** Linux: what the package manager installed (.deb, .rpm, or the Flathub app); null when none says. */
+    private static String linuxBitwigVersion() {
+        String[][] asks = {
+            { "dpkg-query", "-W", "-f=${Version}", "bitwig-studio" },
+            { "rpm", "-q", "--qf", "%{VERSION}", "bitwig-studio" },
+            { "flatpak", "info", "com.bitwig.BitwigStudio" },
+        };
+        for (String[] ask : asks) {
+            try {
+                String out = run(ask);
+                if (ask[0].equals("flatpak")) {
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?m)^\\s*Version:\\s*(\\S+)").matcher(out);
+                    out = m.find() ? m.group(1) : "";
+                }
+                String v = cleanVersion(out);
+                if (v != null) return v;
+            } catch (IOException | InterruptedException ignored) { } // that package manager isn't there, or has no Bitwig
         }
         return null;
     }
@@ -215,6 +265,13 @@ final class Platform {
             } catch (Exception ignored) { }
             return;
         }
+        if (LINUX) {
+            try {
+                new ProcessBuilder("notify-send", "--app-name=Patchbay Launcher", "Patchbay Launcher", text)
+                    .redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
+            } catch (IOException ignored) { } // no notification daemon tool installed
+            return;
+        }
         try {
             String safe = text.replace("\\", "").replace("\"", "'");
             new ProcessBuilder("/usr/bin/osascript", "-e",
@@ -223,7 +280,25 @@ final class Platform {
         } catch (IOException ignored) { }
     }
 
-    // ---------- pinning: Dock on macOS, Start menu and desktop on Windows ----------
+    // ---------- opening folders and web pages ----------
+
+    /** Opens a folder or a web address in the system's own app; on Linux xdg-open when Java's Desktop can't. */
+    static void open(String target) {
+        try {
+            java.net.URI uri = target.startsWith("http") ? java.net.URI.create(target) : null;
+            if (Desktop.isDesktopSupported()) {
+                Desktop d = Desktop.getDesktop();
+                if (uri != null && d.isSupported(Desktop.Action.BROWSE)) { d.browse(uri); return; }
+                if (uri == null && d.isSupported(Desktop.Action.OPEN)) { d.open(Path.of(target).toFile()); return; }
+            }
+        } catch (Exception tryTheSystem) { /* below */ }
+        if (LINUX) {
+            try { new ProcessBuilder("xdg-open", target).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start(); }
+            catch (IOException ignored) { }
+        }
+    }
+
+    // ---------- pinning: Dock on macOS, Start menu and desktop on Windows, applications menu on Linux ----------
 
     /** The .app this jar runs from (…/Patchbay Launcher.app/Contents/Resources/launcher.jar), or null. */
     static Path appBundle() {
@@ -236,7 +311,7 @@ final class Platform {
         }
     }
 
-    /** Windows: Patchbay Launcher.exe, which passes its own path when it starts the launcher. */
+    /** Windows: Patchbay Launcher.exe; Linux: the patchbay-launcher script. Each passes its own path when it starts the launcher. */
     static Path launcherExe() {
         String p = System.getProperty("launcher.exe");
         return p != null && Files.isRegularFile(Path.of(p)) ? Path.of(p) : null;
@@ -251,21 +326,25 @@ final class Platform {
     }
 
     static String pinLabel() {
+        if (LINUX) return PatchbayLauncher.t("Dodaj do menu aplikacji", "Add to the applications menu");
         return WINDOWS ? PatchbayLauncher.t("Dodaj skrót do menu Start", "Add to the Start menu") : PatchbayLauncher.t("Dodaj do Docka", "Add to Dock");
     }
 
     static String pinQuestion() {
+        if (LINUX) return PatchbayLauncher.t("Dodać Patchbay Launcher do menu aplikacji?", "Add Patchbay Launcher to the applications menu?");
         return WINDOWS
             ? PatchbayLauncher.t("Dodać skrót do Patchbay Launcher w menu Start i na pulpicie?", "Add Patchbay Launcher to the Start menu and the desktop?")
             : PatchbayLauncher.t("Dodać Patchbay Launcher do Docka, żeby był pod jednym kliknięciem?", "Add Patchbay Launcher to the Dock, so it's one click away?");
     }
 
     static String pinnedMessage() {
+        if (LINUX) return PatchbayLauncher.t("Patchbay Launcher jest teraz w menu aplikacji.", "Patchbay Launcher is in the applications menu now.");
         return WINDOWS ? PatchbayLauncher.t("Skrót jest w menu Start i na pulpicie.", "The shortcut is in the Start menu and on the desktop.")
             : PatchbayLauncher.t("Patchbay Launcher jest teraz w Docku.", "Patchbay Launcher is in the Dock now.");
     }
 
     static String pinFailedMessage() {
+        if (LINUX) return PatchbayLauncher.t("Nie udało się dodać do menu aplikacji.", "Couldn't add it to the applications menu.");
         return WINDOWS ? PatchbayLauncher.t("Nie udało się utworzyć skrótu. Kliknij Patchbay Launcher.exe prawym przyciskiem i wybierz „Przypnij do menu Start”.",
                 "Couldn't create the shortcut. Right-click Patchbay Launcher.exe and choose \"Pin to Start\".")
             : PatchbayLauncher.t("Nie udało się dodać do Docka. Przeciągnij Patchbay Launcher z Aplikacji na Dock.",
@@ -274,7 +353,7 @@ final class Platform {
 
     /** null when pinning can go ahead, else why not (macOS: the app must be in Applications). */
     static String pinBlocked() {
-        if (WINDOWS) return launcherExe() == null ? "" : null;
+        if (!MAC) return launcherExe() == null ? "" : null;
         Path app = appBundle();
         if (app == null) return "";
         return inApplications(app) ? null : PatchbayLauncher.t("Najpierw przenieś Patchbay Launcher do folderu Aplikacje, a potem dodaj go do Docka.",
@@ -287,8 +366,23 @@ final class Platform {
         return base.resolve("Microsoft").resolve("Windows").resolve("Start Menu").resolve("Programs").resolve("Patchbay Launcher.lnk");
     }
 
+    /** Linux: the launcher's entry in the applications menu (XDG desktop entry) and its icon. */
+    static Path desktopFile() { return xdg("XDG_DATA_HOME", ".local/share").resolve("applications").resolve("patchbay-launcher.desktop"); }
+    static Path desktopIcon() { return xdg("XDG_DATA_HOME", ".local/share").resolve("icons/hicolor/256x256/apps/patchbay-launcher.png"); }
+
+    /** The desktop entry for the script at script; the path is quoted as the Desktop Entry spec asks. */
+    static String desktopEntry(Path script, Path icon) {
+        String quoted = "\"" + script.toAbsolutePath().normalize().toString().replace("%", "%%")
+            .replace("\\", "\\\\").replace("\"", "\\\"").replace("`", "\\`").replace("$", "\\$") + "\"";
+        return "[Desktop Entry]\nType=Application\nName=Patchbay Launcher\n"
+            + "Comment=Install, update and start Patchbay for Bitwig Studio\n"
+            + "Exec=" + quoted.replace("\\", "\\\\") + "\nIcon=" + icon.toAbsolutePath() + "\nTerminal=false\n"
+            + "Categories=AudioVideo;Audio;\nStartupWMClass=PatchbayLauncher\n";
+    }
+
     static boolean pinned() {
         if (WINDOWS) return Files.isRegularFile(startMenuShortcut());
+        if (LINUX) return Files.isRegularFile(desktopFile());
         Path app = appBundle();
         if (app == null) return false;
         try {
@@ -327,6 +421,20 @@ final class Platform {
             if (p.waitFor() != 0 || !Files.isRegularFile(startMenuShortcut())) throw new IOException(out.strip());
             return;
         }
+        if (LINUX) {
+            Path script = launcherExe();
+            if (script == null) throw new IOException("patchbay-launcher");
+            Files.createDirectories(desktopIcon().getParent());
+            try (InputStream in = Platform.class.getResourceAsStream("/icon-256.png")) {
+                if (in != null) Files.copy(in, desktopIcon(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            Files.createDirectories(desktopFile().getParent());
+            Files.writeString(desktopFile(), desktopEntry(script, desktopIcon()));
+            desktopFile().toFile().setExecutable(true, false);
+            try { run("update-desktop-database", desktopFile().getParent().toString()); }
+            catch (IOException | InterruptedException ignored) { } // most menus notice the new file on their own
+            return;
+        }
         Path app = appBundle();
         run("/usr/bin/defaults", "write", "com.apple.dock", "persistent-apps", "-array-add", dockEntry(app));
         run("/usr/bin/killall", "Dock");
@@ -334,7 +442,7 @@ final class Platform {
 
     /** macOS, once per launcher version: tells Finder to read the app's icon again (it keeps old icons of a replaced app). */
     static void refreshIcon(String version) {
-        if (WINDOWS) return;
+        if (!MAC) return;
         Path app = appBundle();
         if (app == null || version.equals(I18n.setting("iconRefreshed"))) return;
         try {

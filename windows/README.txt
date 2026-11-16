@@ -1,4 +1,4 @@
-﻿Patchbay Launcher 0.9.2 for Windows
+﻿Patchbay Launcher 0.9.3 for Windows
 ===================================
 
 Installs, updates and starts Patchbay (the mod loader for Bitwig Studio) and

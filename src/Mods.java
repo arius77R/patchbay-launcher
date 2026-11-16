@@ -702,7 +702,7 @@ final class Mods {
                 JButton page = Theme.button(PatchbayLauncher.t("Strona wydania", "Release page"), "secondary");
                 String url = row.available().page();
                 page.addActionListener(e -> {
-                    try { Desktop.getDesktop().browse(java.net.URI.create(url)); } catch (Exception ignored) { }
+                    Platform.open(url);
                 });
                 JPanel south = new JPanel(new BorderLayout());
                 south.setOpaque(false);

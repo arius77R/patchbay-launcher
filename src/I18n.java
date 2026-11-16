@@ -185,6 +185,10 @@ final class I18n {
         add("Show the data folder", "Datenordner zeigen", "Afficher le dossier des données");
         add("About", "Über", "À propos");
         add("Report a problem", "Problem melden", "Signaler un problème");
+        add("Add to the applications menu", "Zum Anwendungsmenü hinzufügen", "Ajouter au menu des applications");
+        add("Add Patchbay Launcher to the applications menu?", "Patchbay Launcher zum Anwendungsmenü hinzufügen?", "Ajouter Patchbay Launcher au menu des applications ?");
+        add("Patchbay Launcher is in the applications menu now.", "Patchbay Launcher ist jetzt im Anwendungsmenü.", "Patchbay Launcher est maintenant dans le menu des applications.");
+        add("Couldn't add it to the applications menu.", "Konnte nicht zum Anwendungsmenü hinzugefügt werden.", "Impossible de l'ajouter au menu des applications.");
         add("Patchbay Launcher is an unofficial project made and supported by Marius R. It is not part of Patchbay: please report problems with the launcher on its GitHub page, not to the authors of Patchbay.",
             "Patchbay Launcher ist ein inoffizielles Projekt, das Marius R entwickelt und betreut. Es ist kein Teil von Patchbay: Probleme mit dem Launcher bitte auf seiner GitHub-Seite melden, nicht bei den Autoren von Patchbay.",
             "Patchbay Launcher est un projet non officiel créé et maintenu par Marius R. Il ne fait pas partie de Patchbay : signalez les problèmes du lanceur sur sa page GitHub, pas aux auteurs de Patchbay.");
