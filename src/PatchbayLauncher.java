@@ -504,10 +504,11 @@ public final class PatchbayLauncher {
         JPanel bar = new JPanel(new BorderLayout());
         bar.setBackground(Theme.TITLE);
         bar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(5, 14, 5, 14)));
-        JButton discord = Theme.button("", "secondary");
+        JButton discord = Theme.button("Discord", "secondary");
         discord.putClientProperty("small", true);
+        discord.setFont(Theme.text(12f));
         discord.setIcon(discordIcon());
-        discord.setPreferredSize(new Dimension(36, 28));
+        discord.setIconTextGap(6);
         discord.setToolTipText(t("Kanał Launchera na Discordzie Bitwiga", "The launcher's channel on the Bitwig Discord"));
         discord.getAccessibleContext().setAccessibleName(t("Otwórz kanał Launchera na Discordzie", "Open the launcher's Discord channel"));
         discord.addActionListener(e -> browse(DISCORD));
