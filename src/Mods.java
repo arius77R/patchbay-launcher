@@ -630,18 +630,14 @@ final class Mods {
             });
             bitwigLabel.setVisible(false);
             bitwigBox.setVisible(false);
-            JPanel filters = Theme.row(8, Theme.label(PatchbayLauncher.t("Pokaż", "Show"), Theme.text(13f), Theme.MUTED), showBox,
-                Box.createHorizontalStrut(10), Theme.label(PatchbayLauncher.t("Sortuj", "Sort"), Theme.text(13f), Theme.MUTED), sortBox,
-                Box.createHorizontalStrut(10), bitwigLabel, bitwigBox);
-            JPanel center = new JPanel(new BorderLayout(0, 12));
+            JPanel toolbar = Theme.row(8, Theme.label(PatchbayLauncher.t("Pokaż", "Show"), Theme.text(13f), Theme.MUTED), showBox,
+                Box.createHorizontalStrut(6), Theme.label(PatchbayLauncher.t("Sortuj", "Sort"), Theme.text(13f), Theme.MUTED), sortBox,
+                Box.createHorizontalStrut(6), bitwigLabel, bitwigBox, checkAllButton);
+            JPanel center = new JPanel(new BorderLayout(0, 10));
             center.setOpaque(false);
-            JPanel above = new JPanel(new BorderLayout(0, 10));
-            above.setOpaque(false);
-            above.add(updateBar, BorderLayout.NORTH);
-            above.add(filters, BorderLayout.SOUTH);
-            center.add(above, BorderLayout.NORTH);
+            center.add(updateBar, BorderLayout.NORTH);
             center.add(body, BorderLayout.CENTER);
-            add(Theme.page(PatchbayLauncher.t("Mody", "Mods"), subtitle, Theme.row(8, checkAllButton, refreshButton), center,
+            add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, toolbar, refreshButton, center,
                 left, Theme.row(8, updateAllButton, installButton)), BorderLayout.CENTER);
 
             installButton.addActionListener(e -> installRows(checkedRows()));

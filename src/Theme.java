@@ -903,6 +903,37 @@ public final class Theme {
      * A section page: a title and a line under it, actions on the right, the body, and a footer
      * with a status line on the left and actions on the right. Any part may be null.
      */
+    /**
+     * A section with a list, the same on every such tab: the title with the counts at the right of its line,
+     * under it one row of controls (what to show, how to sort, the buttons; Refresh at the right edge), the list, and the foot.
+     */
+    static JPanel listPage(String title, JLabel stats, JComponent toolbar, JComponent atEdge, JComponent body, JComponent footLeft, JComponent footRight) {
+        stats.setFont(mono(12f));
+        stats.setHorizontalAlignment(SwingConstants.RIGHT);
+        JPanel titleLine = new JPanel(new BorderLayout(16, 0));
+        titleLine.setOpaque(false);
+        titleLine.add(label(title, bold(20f), TEXT), BorderLayout.WEST);
+        titleLine.add(stats, BorderLayout.CENTER);
+        JPanel tools = new JPanel(new BorderLayout());
+        tools.setOpaque(false);
+        tools.add(toolbar, BorderLayout.WEST);
+        tools.add(atEdge, BorderLayout.EAST); // Refresh, at the right edge on every list
+        JPanel top = new JPanel(new BorderLayout(0, 10));
+        top.setOpaque(false);
+        top.add(titleLine, BorderLayout.NORTH);
+        top.add(tools, BorderLayout.SOUTH);
+        JPanel all = new JPanel(new BorderLayout(0, 12));
+        all.setOpaque(false);
+        all.add(top, BorderLayout.NORTH);
+        all.add(body, BorderLayout.CENTER);
+        JPanel p = page(title, null, null, all, footLeft, footRight);
+        // page() adds its own title line: this layout has the title in its first row instead
+        p.remove(((BorderLayout) p.getLayout()).getLayoutComponent(BorderLayout.NORTH));
+        ((JComponent) ((BorderLayout) p.getLayout()).getLayoutComponent(BorderLayout.CENTER)).setBorder(
+            new EmptyBorder(16, 18, footLeft == null && footRight == null ? 18 : 0, 18));
+        return p;
+    }
+
     static JPanel page(String title, JComponent subtitle, JComponent actions, JComponent body, JComponent footLeft, JComponent footRight) {
         JPanel p = new JPanel(new BorderLayout(0, 0));
         p.setBackground(WELL);

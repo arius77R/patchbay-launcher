@@ -151,7 +151,6 @@ final class I18n {
         add("Device", "Gerät", "Périphérique");
         add("Type", "Typ", "Type");
         add("downloaded", "geladen", "téléchargé");
-        add("Build:", "Dateiversion:", "Version des fichiers :");
         add("Show folder", "Ordner zeigen", "Afficher le dossier");
         add("Project page", "Projektseite", "Page du projet");
         add("Loading the device list…", "Geräteliste wird geladen…", "Chargement de la liste des périphériques…");

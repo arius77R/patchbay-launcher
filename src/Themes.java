@@ -463,7 +463,7 @@ final class Themes {
             left.setOpaque(false);
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
-            add(Theme.page(PatchbayLauncher.t("Motywy", "Themes"), subtitle, Theme.row(8, addFileButton, checkAllButton, refreshButton), body,
+            add(Theme.listPage(PatchbayLauncher.t("Motywy", "Themes"), subtitle, Theme.row(8, addFileButton, checkAllButton), refreshButton, body,
                 left, Theme.row(8, folderButton, installButton)), BorderLayout.CENTER);
 
             checkAllButton.addActionListener(e -> checkAll());
