@@ -518,6 +518,7 @@ public final class PatchbayLauncher {
         left.add(mode);
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
+        for (JComponent b : aboutButtons()) right.add(b);
         right.add(discord);
         bar.add(left, BorderLayout.WEST);
         bar.add(right, BorderLayout.EAST);
@@ -562,8 +563,13 @@ public final class PatchbayLauncher {
      * otherwise the drawn speech bubble.
      */
     private static Icon discordIcon() {
-        java.net.URL url = PatchbayLauncher.class.getResource("/discord.png");
-        if (url == null) return new ChatIcon();
+        return suppliedIcon("discord.png", new ChatIcon());
+    }
+
+    /** An image from the build's resources (res/<name>, supplied by Mario) at 18 px high; the drawn icon when it isn't there. */
+    private static Icon suppliedIcon(String name, Icon drawn) {
+        java.net.URL url = PatchbayLauncher.class.getResource("/" + name);
+        if (url == null) return drawn;
         Image raw = new ImageIcon(url).getImage();
         int h = 18, w = Math.max(1, Math.round(raw.getWidth(null) * h / (float) raw.getHeight(null)));
         return new ImageIcon(new java.awt.image.BaseMultiResolutionImage(fit(raw, w, h), fit(raw, w * 2, h * 2)));
@@ -576,6 +582,58 @@ public final class PatchbayLauncher {
         g2.drawImage(raw, 0, 0, w, h, null);
         g2.dispose();
         return out;
+    }
+
+    /** "</>" for the project's page (drawn; res/github.png replaces it when supplied). */
+    private static final class CodeIcon implements Icon {
+        @Override public int getIconWidth() { return 16; }
+        @Override public int getIconHeight() { return 16; }
+        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            g2.translate(x, y);
+            g2.setColor(Theme.ACCENT);
+            g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            java.awt.geom.Path2D left = new java.awt.geom.Path2D.Float(), right = new java.awt.geom.Path2D.Float();
+            left.moveTo(5, 4.5); left.lineTo(1.5, 8); left.lineTo(5, 11.5);
+            right.moveTo(11, 4.5); right.lineTo(14.5, 8); right.lineTo(11, 11.5);
+            g2.draw(left);
+            g2.draw(right);
+            g2.draw(new java.awt.geom.Line2D.Float(9.2f, 3.5f, 6.8f, 12.5f));
+            g2.dispose();
+        }
+    }
+
+    /** A small beetle, for "Report a problem" (drawn). */
+    private static final class BugIcon implements Icon {
+        @Override public int getIconWidth() { return 16; }
+        @Override public int getIconHeight() { return 16; }
+        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            g2.translate(x, y);
+            g2.setColor(Theme.ACCENT);
+            g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            // legs: three on each side
+            for (float ly : new float[] { 7.5f, 10f, 12.5f }) {
+                float reach = ly == 10f ? 3.6f : 3f, tilt = ly == 7.5f ? -1.2f : ly == 12.5f ? 1.2f : 0f;
+                g2.draw(new java.awt.geom.Line2D.Float(5f, ly, 5f - reach, ly + tilt));
+                g2.draw(new java.awt.geom.Line2D.Float(11f, ly, 11f + reach, ly + tilt));
+            }
+            // antennae
+            g2.draw(new java.awt.geom.Line2D.Float(6.6f, 3.6f, 5f, 1.2f));
+            g2.draw(new java.awt.geom.Line2D.Float(9.4f, 3.6f, 11f, 1.2f));
+            // head and body
+            g2.fill(new java.awt.geom.Ellipse2D.Float(5.6f, 2.8f, 4.8f, 3.6f));
+            g2.fill(new java.awt.geom.Ellipse2D.Float(4.4f, 5.4f, 7.2f, 9.2f));
+            // the line down the back
+            g2.setColor(Theme.TITLE);
+            g2.setStroke(new BasicStroke(1f));
+            g2.draw(new java.awt.geom.Line2D.Float(8f, 7f, 8f, 13.6f));
+            g2.dispose();
+        }
     }
 
     private static final class ChatIcon implements Icon {
@@ -656,8 +714,17 @@ public final class PatchbayLauncher {
         versionBox.setPreferredSize(new Dimension(240, 32));
         versionBox.setFont(Theme.mono(12f));
         versionBox.getAccessibleContext().setAccessibleName(t("Wersja Patchbay", "Patchbay version"));
-        JPanel pick = Theme.row(10, Theme.label(t("Wersja", "Version"), Theme.text(13f), Theme.MUTED), versionBox, installButton, carryLabel);
+        JButton folder = Theme.button(t("Pokaż folder z danymi", "Show the data folder"), "secondary");
+        folder.addActionListener(e -> {
+            try { Files.createDirectories(data()); } catch (Exception ignored) { }
+            Platform.open(data().toString());
+        });
+        JPanel pick = new JPanel(new BorderLayout(12, 0));
+        pick.setOpaque(false);
+        pick.add(Theme.row(10, Theme.label(t("Wersja", "Version"), Theme.text(13f), Theme.MUTED), versionBox, installButton, carryLabel), BorderLayout.WEST);
+        pick.add(Theme.row(8, folder), BorderLayout.EAST);
         pick.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pick.setMaximumSize(new Dimension(Integer.MAX_VALUE, pick.getPreferredSize().height));
         v.add(pick);
         bar.setPreferredSize(new Dimension(10, 4));
         bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 4));
@@ -683,15 +750,10 @@ public final class PatchbayLauncher {
         languageBox.addActionListener(e -> languageChosen()); // only after the list is filled: filling it fires events
         languageBox.setPreferredSize(new Dimension(190, 32));
         languageBox.getAccessibleContext().setAccessibleName(t("Język", "Language"));
-        JButton folder = Theme.button(t("Pokaż folder z danymi", "Show the data folder"), "secondary");
-        folder.addActionListener(e -> {
-            try { Files.createDirectories(data()); } catch (Exception ignored) { }
-            Platform.open(data().toString());
-        });
         JPanel settings = new JPanel(new BorderLayout(12, 0));
         settings.setOpaque(false);
         settings.add(Theme.row(10, Theme.label(t("Język", "Language"), Theme.text(13f), Theme.MUTED), languageBox), BorderLayout.WEST);
-        settings.add(Theme.row(8, dockButton, folder), BorderLayout.EAST);
+        settings.add(Theme.row(8, dockButton), BorderLayout.EAST);
         col.add(section(null, null, settings));
 
         // the page follows the window's width, so the buttons on the right never fall off a narrow window
@@ -703,12 +765,7 @@ public final class PatchbayLauncher {
         scroll.getViewport().setOpaque(false);
         scroll.setOpaque(false);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
-        // who makes the launcher: kept at the very bottom of the page, under whatever fits above
-        JPanel body = new JPanel(new BorderLayout(0, 12));
-        body.setOpaque(false);
-        body.add(scroll, BorderLayout.CENTER);
-        body.add(aboutCard(), BorderLayout.SOUTH);
-        return Theme.page("Patchbay", installedLabel, null, body, null, null);
+        return Theme.page("Patchbay", installedLabel, null, scroll, null, null);
     }
 
     /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */
@@ -717,23 +774,30 @@ public final class PatchbayLauncher {
     static final String DISCORD = "https://discord.com/channels/121395249003233280/1571878415781466153";
 
     /** Who makes the launcher and where to report problems with it, so they don't go to Patchbay's authors. */
-    private JPanel aboutCard() {
-        JPanel a = new JPanel(new BorderLayout(16, 0));
-        a.setOpaque(false);
-        JLabel who = Theme.wrapped(t(
-            "Patchbay Launcher to nieoficjalny projekt, który tworzy i wspiera Marius R. Nie jest częścią Patchbay: problemy z Launcherem zgłaszaj na jego stronie na GitHubie, a nie autorom Patchbay.",
-            "Patchbay Launcher is an unofficial project made and supported by Marius R. It is not part of Patchbay: please report problems with the launcher on its GitHub page, not to the authors of Patchbay."),
-            470, Theme.MUTED, 13f);
-        a.add(who, BorderLayout.CENTER);
+    /** Who makes the launcher and where to report its problems: shown on hovering the two buttons in the bottom bar. */
+    static String aboutText() {
+        return t("Patchbay Launcher to nieoficjalny projekt, który tworzy i wspiera Marius R. Nie jest częścią Patchbay: problemy z Launcherem zgłaszaj na jego stronie na GitHubie, a nie autorom Patchbay.",
+            "Patchbay Launcher is an unofficial project made and supported by Marius R. It is not part of Patchbay: please report problems with the launcher on its GitHub page, not to the authors of Patchbay.");
+    }
+
+    /** "Report a problem" and "Project page", small, for the bottom bar; hovering either explains whose project this is. */
+    private JComponent[] aboutButtons() {
+        String tip = "<html><div style='width:300px'>" + aboutText() + "</div></html>";
         JButton report = Theme.button(t("Zgłoś problem", "Report a problem"), "secondary");
         report.addActionListener(e -> browse(PROJECT + "/issues"));
         JButton page = Theme.button(t("Strona projektu", "Project page"), "secondary");
         page.addActionListener(e -> browse(PROJECT));
-        JPanel links = new JPanel(new GridBagLayout());
-        links.setOpaque(false);
-        links.add(Theme.row(8, report, page));
-        a.add(links, BorderLayout.EAST);
-        return section(null, null, a);
+        for (JButton b : new JButton[] { report, page }) {
+            b.putClientProperty("small", true);
+            b.setFont(Theme.text(12f));
+            b.setToolTipText(tip);
+        }
+        report.setIcon(new BugIcon());
+        report.setIconTextGap(6);
+        page.setIcon(suppliedIcon("github.png", new CodeIcon()));
+        page.setIconTextGap(6);
+        report.getAccessibleContext().setAccessibleDescription(aboutText());
+        return new JComponent[] { report, page };
     }
 
     private static void browse(String url) {

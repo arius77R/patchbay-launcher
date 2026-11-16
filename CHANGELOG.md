@@ -9,7 +9,7 @@
 - Changing the look or the language keeps the window where it was, at the same size and on the same tab.
 - **Copy and paste on macOS:** ⌘V, ⌘C, ⌘X and ⌘A work in every text field (pasting a repository link into Sources didn't); a right-click menu with Cut, Copy, Paste and Select all in every text field.
 - Themes: a theme source that can't be read (GitHub limiting requests, a moved or private repository) is named under the list instead of being left out silently. A repository typed as `github.com/owner/name` without `https://` is accepted too.
-- A bigger app icon in the top bar, with the version under the name; the note about who makes the launcher sits at the bottom of the Patchbay page.
+- A bigger app icon in the top bar, with the version under the name. "Report a problem" (with a bug icon) and "Project page" moved to the bottom bar; hovering them says whose project this is. "Show the data folder" sits in the version line.
 - Theme and device details scroll when they are taller than the window, so the buttons stay in view.
 
 ## 0.9.3
