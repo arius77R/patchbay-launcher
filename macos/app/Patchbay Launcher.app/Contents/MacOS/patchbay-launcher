@@ -1,6 +1,7 @@
 #!/bin/sh
 # Patchbay Launcher: starts launcher.jar on the Java inside Bitwig Studio.app (no Java to install).
-# Order: $PATCHBAY_LAUNCHER_JAVA, Bitwig's own Java (native architecture first), $JAVA_HOME, the system Java.
+# Order: $PATCHBAY_LAUNCHER_JAVA, Bitwig's own Java (native architecture first; any name or folder), $JAVA_HOME,
+# the system Java. Only a Java 21 or later is used.
 CONTENTS=$(cd "$(dirname "$0")/.." && pwd)
 JAR="$CONTENTS/Resources/launcher.jar"
 LOGDIR="$HOME/Library/Application Support/PatchbayLauncher/logs"
@@ -13,22 +14,52 @@ alert() {
   exit 1
 }
 
+ok() { # true when $1 runs and is Java 21 or later (an older one can't run the launcher and would close without a word)
+  [ -n "$1" ] && [ -x "$1" ] && "$1" -version 2>&1 | grep -Eq 'version "(2[1-9]|[3-9][0-9]|[1-9][0-9][0-9])'
+}
+
+# Every Bitwig Studio on this Mac, one per line: the usual places and names first, then wherever macOS knows
+# an app with Bitwig's identifier (a renamed copy, another folder or disk).
+bitwigs() {
+  for APP in "/Applications/Bitwig Studio.app" "$HOME/Applications/Bitwig Studio.app" \
+             /Applications/Bitwig\ Studio*.app "$HOME"/Applications/Bitwig\ Studio*.app; do
+    [ -d "$APP" ] && printf '%s\n' "$APP"
+  done
+  /usr/bin/mdfind "kMDItemCFBundleIdentifier == 'com.bitwig.studio'" 2>/dev/null
+}
+
 JAVA=""
-if [ -n "${PATCHBAY_LAUNCHER_JAVA:-}" ] && [ -x "$PATCHBAY_LAUNCHER_JAVA" ]; then JAVA=$PATCHBAY_LAUNCHER_JAVA; fi
+FOUND_BITWIG=""
+if ok "${PATCHBAY_LAUNCHER_JAVA:-}"; then JAVA=$PATCHBAY_LAUNCHER_JAVA; fi
 if [ -z "$JAVA" ]; then
   if [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ]; then ARCHS="arm64 x64"; else ARCHS="x64 arm64"; fi
-  for APP in "/Applications/Bitwig Studio.app" "$HOME/Applications/Bitwig Studio.app"; do
+  LIST=$(bitwigs)
+  OLDIFS=$IFS
+  IFS='
+'
+  for APP in $LIST; do
+    IFS=$OLDIFS   # the list is split by now; inside the loop words split on spaces again
+    [ -d "$APP/Contents/PlugIns" ] || continue
+    FOUND_BITWIG=$APP
     for A in $ARCHS; do
       J="$APP/Contents/PlugIns/JavaVM-$A.bundle/Contents/Home/bin/java"
-      if [ -z "$JAVA" ] && [ -x "$J" ]; then JAVA=$J; fi
+      if [ -z "$JAVA" ] && ok "$J"; then JAVA=$J; fi
     done
+    [ -n "$JAVA" ] && break
   done
+  IFS=$OLDIFS
 fi
-if [ -z "$JAVA" ] && [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then JAVA="$JAVA_HOME/bin/java"; fi
+if [ -z "$JAVA" ] && [ -n "${JAVA_HOME:-}" ] && ok "$JAVA_HOME/bin/java"; then JAVA="$JAVA_HOME/bin/java"; fi
 if [ -z "$JAVA" ]; then
-  H=$(/usr/libexec/java_home 2>/dev/null) && [ -x "$H/bin/java" ] && JAVA="$H/bin/java"
+  H=$(/usr/libexec/java_home -v 21+ 2>/dev/null) && ok "$H/bin/java" && JAVA="$H/bin/java"
 fi
-[ -n "$JAVA" ] || alert "Bitwig Studio was not found in Applications. Patchbay Launcher runs on the Java inside Bitwig Studio. Install Bitwig Studio first."
+if [ -z "$JAVA" ]; then
+  if [ -n "$FOUND_BITWIG" ]; then
+    alert "The Bitwig Studio at $FOUND_BITWIG is too old for Patchbay Launcher, which runs on the Java inside Bitwig Studio and needs Java 21. Install Bitwig Studio 6."
+  else
+    alert "Bitwig Studio was not found on this Mac. Patchbay Launcher runs on the Java inside Bitwig Studio. Install Bitwig Studio 6 (in Applications), then open Patchbay Launcher again."
+  fi
+fi
 [ -f "$JAR" ] || alert "launcher.jar is missing from the application."
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') start with $JAVA" >>"$LOG"
