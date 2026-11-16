@@ -370,14 +370,6 @@ public final class Theme {
             g2.setColor(comboBox.isEnabled() ? TEXT : DIM);
             FontMetrics fm = g2.getFontMetrics();
             int x = bounds.x, y = bounds.y + (bounds.height + fm.getAscent() - fm.getDescent()) / 2;
-            // "Sort: Status": what the choice is for, in a quieter colour, when it has no label beside it
-            if (comboBox.getClientProperty("prefix") instanceof String what) {
-                Color value = g2.getColor();
-                g2.setColor(comboBox.isEnabled() ? MUTED : DIM);
-                g2.drawString(what + ": ", x, y);
-                x += fm.stringWidth(what + ": ");
-                g2.setColor(value);
-            }
             g2.drawString(v.toString(), x, y);
             g2.dispose();
         }
@@ -937,15 +929,6 @@ public final class Theme {
         ((JComponent) ((BorderLayout) p.getLayout()).getLayoutComponent(BorderLayout.CENTER)).setBorder(
             new EmptyBorder(16, 18, footLeft == null && footRight == null ? 18 : 0, 18));
         return p;
-    }
-
-    /**
-     * A choice that says what it is for without a label beside it: closed, it reads "Sort: Status";
-     * the open list has the plain values.
-     */
-    static void prefixed(JComboBox<String> box, String what) {
-        box.putClientProperty("prefix", what);
-        box.getAccessibleContext().setAccessibleName(what);
     }
 
     /**

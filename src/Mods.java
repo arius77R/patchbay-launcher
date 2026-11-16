@@ -612,12 +612,12 @@ final class Mods {
                 showBox.addItem(o);
             try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(1); } // first time: only the mods that can run
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
-            showBox.setPreferredSize(new Dimension(200, 32));
+            showBox.setPreferredSize(new Dimension(160, 32));
             for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Kategoria", "Category"), PatchbayLauncher.t("Najnowsze", "Newest") })
                 sortBox.addItem(o);
             try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
             sortBox.addActionListener(e -> { I18n.remember("modsSort", String.valueOf(sortBox.getSelectedIndex())); refilter(); });
-            sortBox.setPreferredSize(new Dimension(180, 32));
+            sortBox.setPreferredSize(new Dimension(140, 32));
             bitwigBox.setPreferredSize(new Dimension(120, 32));
             bitwigBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Twój Bitwig", "Your Bitwig"));
             bitwigBox.addActionListener(e -> {
@@ -627,8 +627,10 @@ final class Mods {
             });
             bitwigLabel.setVisible(false);
             bitwigBox.setVisible(false);
-            Theme.prefixed(showBox, PatchbayLauncher.t("Pokaż", "Show"));
-            Theme.prefixed(sortBox, PatchbayLauncher.t("Sortuj", "Sort"));
+            showBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Pokaż", "Show"));
+            showBox.setToolTipText(PatchbayLauncher.t("Pokaż", "Show"));
+            sortBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Sortuj", "Sort"));
+            sortBox.setToolTipText(PatchbayLauncher.t("Sortuj", "Sort"));
             JPanel tools = Theme.row(8, showBox, sortBox);
             JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), Theme.row(8, bitwigLabel, bitwigBox), refreshButton, details);
             add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, updateBar, body,
