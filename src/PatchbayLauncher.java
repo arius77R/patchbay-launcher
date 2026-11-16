@@ -24,7 +24,7 @@ import java.util.zip.ZipEntry;
 public final class PatchbayLauncher {
     static final String VERSION = "0.9.2";
     /** The release list of the Patchbay source in use (the built-in one unless the user picked another). */
-    static String api() { return "https://api.github.com/repos/" + Sources.patchbay().repo() + "/releases?per_page=30"; }
+    static String api() { return "https://api.github.com/repos/" + Sources.patchbay().repo() + "/releases?per_page=100"; }
     static String t(String pl, String en) { return I18n.t(pl, en); }
 
     record Release(String tag, String version, String url) { }
@@ -905,6 +905,8 @@ public final class PatchbayLauncher {
             check("Track: Hibernate Tracks".equals(Mods.NAMES.get("hibernate-tracks")) && Mods.NAMES.size() >= 50, "display names read from the release notes: " + Mods.NAMES.size());
             Mods.Info info = Mods.infoOf(Mods.readManifest(mods.resolve("piano-roll-framework/mod.json")));
             check(info != null && info.name().startsWith("Framework") && !info.description().isEmpty(), "manifest details read: " + info.name());
+            Mods.Info built = Mods.infoOf(Mods.Json.object(Mods.Json.parse("{\"mod\":{\"id\":\"x\",\"name\":\"X\"},\"built_against\":{\"bitwig_version\":\"6.1.3\",\"platform\":\"windows\"}}")));
+            check(built != null && "6.1.3".equals(built.builtFor()), "built_against read: Bitwig " + (built == null ? null : built.builtFor()));
             check(a.get("show-chord-name").sha256() != null && a.get("show-chord-name").sha256().length() == 64, "catalogue carries SHA-256");
             Map<String, Mods.Available> catalog = new TreeMap<>(a);
             catalog.putAll(b);

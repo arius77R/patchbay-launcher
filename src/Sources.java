@@ -143,14 +143,14 @@ final class Sources {
             switch (s.group()) {
                 case PATCHBAY -> {
                     List<PatchbayLauncher.Release> found = PatchbayLauncher.parseReleases(
-                        PatchbayLauncher.httpText("https://api.github.com/repos/" + s.repo() + "/releases?per_page=30"), glob(s.filter()));
+                        PatchbayLauncher.httpText("https://api.github.com/repos/" + s.repo() + "/releases?per_page=100"), glob(s.filter()));
                     return found.isEmpty()
                         ? PatchbayLauncher.t("Repozytorium istnieje, ale w jego wydaniach nie ma plików pasujących do wzoru.", "The repository exists, but its releases have no files matching the pattern.")
                         : PatchbayLauncher.t("Znaleziono wersje Patchbay: ", "Patchbay versions found: ") + found.size()
                             + PatchbayLauncher.t(". Najnowsza: ", ". Latest: ") + found.get(0).version();
                 }
                 case MODS -> {
-                    int n = Mods.parseCatalog(PatchbayLauncher.httpText("https://api.github.com/repos/" + s.repo() + "/releases?per_page=30"),
+                    int n = Mods.parseCatalog(PatchbayLauncher.httpText("https://api.github.com/repos/" + s.repo() + "/releases?per_page=100"),
                         s.repo(), glob(s.filter())).size();
                     return n == 0
                         ? PatchbayLauncher.t("Repozytorium istnieje, ale w jego wydaniach nie ma ZIP-ów modów (nazwa-wersja.zip).", "The repository exists, but its releases have no mod ZIPs (name-version.zip).")

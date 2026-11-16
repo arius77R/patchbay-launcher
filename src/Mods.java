@@ -32,7 +32,7 @@ final class Mods {
 
     record Available(String id, String version, String url, String sha256, String repo, String page) { }
     /** What a mod's manifest says about it. */
-    record Info(String name, String author, String description, List<Requirement> requires) { }
+    record Info(String name, String author, String description, List<Requirement> requires, String builtFor) { }
 
     /** Mod ID to its display name, from the table in a release's notes ("| Name | `file.zip` | notes |"). */
     static final Map<String, String> NAMES = new java.util.concurrent.ConcurrentHashMap<>();
@@ -52,7 +52,8 @@ final class Mods {
         if (manifest == null || !(manifest.get("mod") instanceof Map)) return null;
         Map<String, Object> mod = Json.object(manifest.get("mod"));
         String name = Json.text(mod, "name"), author = Json.text(mod, "author"), description = Json.text(mod, "description");
-        return new Info(name, author == null ? "" : author, description == null ? "" : description, requirements(manifest));
+        String builtFor = manifest.get("built_against") instanceof Map ? Json.text(Json.object(manifest.get("built_against")), "bitwig_version") : null;
+        return new Info(name, author == null ? "" : author, description == null ? "" : description, requirements(manifest), builtFor);
     }
 
     /**
@@ -268,6 +269,27 @@ final class Mods {
         if (have == null || PatchbayLauncher.compareVersions(a.version(), have.version()) > 0) into.put(a.id(), a);
     }
 
+    /** Releases fetched per page, and how many pages at most (older mods stay in the catalogue). */
+    static final int PAGE = 100, MAX_PAGES = 5;
+
+    /** A repository's releases, page by page, until a page comes back less than full. */
+    static List<String> releasePages(String repo, String offline) throws IOException {
+        if (offline != null) return List.of(Files.readString(Path.of(offline, repo.replace('/', '_') + ".json")));
+        List<String> pages = new ArrayList<>();
+        for (int page = 1; page <= MAX_PAGES; page++) {
+            String json;
+            try {
+                json = PatchbayLauncher.httpText("https://api.github.com/repos/" + repo + "/releases?per_page=" + PAGE + "&page=" + page);
+            } catch (IOException later) {
+                if (page == 1) throw later;
+                break; // the newest releases are in hand; the older pages can wait for the next refresh
+            }
+            pages.add(json);
+            if (!(Json.parse(json) instanceof List<?> list) || list.size() < PAGE) break;
+        }
+        return pages;
+    }
+
     static Map<String, Available> fetchCatalog() throws IOException {
         Map<String, Available> all = new TreeMap<>();
         IOException failure = null;
@@ -275,10 +297,8 @@ final class Mods {
         for (Sources.Source src : Sources.enabled(Sources.MODS)) {
             String repo = src.repo();
             try {
-                String json = offline != null
-                    ? Files.readString(Path.of(offline, repo.replace('/', '_') + ".json"))
-                    : PatchbayLauncher.httpText("https://api.github.com/repos/" + repo + "/releases?per_page=30");
-                for (Available a : parseCatalog(json, repo, Sources.glob(src.filter())).values()) merge(all, a);
+                for (String json : releasePages(repo, offline))
+                    for (Available a : parseCatalog(json, repo, Sources.glob(src.filter())).values()) merge(all, a);
             } catch (IOException | RuntimeException ex) {
                 failure = ex instanceof IOException io ? io : new IOException(repo + ": " + ex.getMessage());
             }
@@ -634,6 +654,8 @@ final class Mods {
             }
             List<String[]> facts = new ArrayList<>();
             if (info != null && !info.author().isEmpty()) facts.add(new String[] { PatchbayLauncher.t("Autor", "Author"), info.author() });
+            if (info != null && info.builtFor() != null && !info.builtFor().isBlank())
+                facts.add(new String[] { PatchbayLauncher.t("Zbudowany dla", "Built for"), "Bitwig " + info.builtFor() });
             if (row.installed() != null) facts.add(new String[] { PatchbayLauncher.t("Zainstalowana", "Installed"), row.installed(), "mono" });
             if (row.available() != null) {
                 facts.add(new String[] { PatchbayLauncher.t("Dostępna", "Available"), row.available().version(), "mono" });

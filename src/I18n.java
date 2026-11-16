@@ -185,6 +185,7 @@ final class I18n {
         add("Show the data folder", "Datenordner zeigen", "Afficher le dossier des données");
         add("Click a mod in the list to see what it does and needs.", "Klicke auf einen Mod in der Liste, um zu sehen, was er macht und braucht.", "Cliquez sur un mod de la liste pour voir ce qu'il fait et ce qu'il nécessite.");
         add("Author", "Autor", "Auteur");
+        add("Built for", "Gebaut für", "Compilé pour");
         add("Needs", "Benötigt", "Nécessite");
         add("will be added", "wird mitgeladen", "sera ajouté");
         add("missing", "fehlt", "manquant");
