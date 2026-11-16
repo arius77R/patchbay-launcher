@@ -487,17 +487,13 @@ public final class PatchbayLauncher {
         discord.setToolTipText(t("Kanał Launchera na Discordzie Bitwiga", "The launcher's channel on the Bitwig Discord"));
         discord.getAccessibleContext().setAccessibleName(t("Otwórz kanał Launchera na Discordzie", "Open the launcher's Discord channel"));
         discord.addActionListener(e -> browse(DISCORD));
-        boolean light = Theme.light();
-        Theme.Switch mode = new Theme.Switch(light, t("Jasny wygląd", "Light appearance"), this::appearanceChosen);
-        JLabel dark = Theme.label(t("Ciemny", "Dark"), Theme.text(12f), light ? Theme.MUTED : Theme.TEXT);
-        JLabel bright = Theme.label(t("Jasny", "Light"), Theme.text(12f), light ? Theme.TEXT : Theme.MUTED);
+        Theme.ModeSwitch mode = new Theme.ModeSwitch(Theme.light(), t("Jasny wygląd", "Light appearance"),
+            t("Ciemny wygląd", "Dark appearance"), this::appearanceChosen);
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
         left.add(discord);
-        left.add(Box.createHorizontalStrut(10));
-        left.add(dark);
+        left.add(Box.createHorizontalStrut(6));
         left.add(mode);
-        left.add(bright);
         bar.add(left, BorderLayout.WEST);
         return bar;
     }

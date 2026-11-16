@@ -457,6 +457,78 @@ public final class Theme {
     }
 
     /**
+     * Dark or light, as a sun and a moon in one track: the round knob sits on the one in use
+     * (sun on the left for light, moon on the right for dark). Clicking anywhere switches.
+     */
+    static final class ModeSwitch extends JToggleButton {
+        private final String lightName, darkName;
+
+        ModeSwitch(boolean light, String lightName, String darkName, Consumer<Boolean> changed) {
+            super("", light);
+            this.lightName = lightName;
+            this.darkName = darkName;
+            putClientProperty("kind", "switch");
+            setPreferredSize(new Dimension(60, 28));
+            setMinimumSize(new Dimension(60, 28));
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setBorder(new EmptyBorder(0, 0, 0, 0));
+            setRolloverEnabled(true);
+            describe();
+            addActionListener(e -> { describe(); repaint(); changed.accept(isSelected()); });
+        }
+
+        private void describe() {
+            String now = isSelected() ? lightName : darkName;
+            setToolTipText(now);
+            getAccessibleContext().setAccessibleName(now);
+        }
+
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            boolean light = isSelected();
+            int w = 56, h = 26, x = (getWidth() - w) / 2, y = (getHeight() - h) / 2;
+            g2.setColor(getModel().isRollover() ? CONTROL_HOVER : CONTROL);
+            g2.fillRoundRect(x, y, w, h, h, h);
+            g2.setColor(EDGE);
+            g2.drawRoundRect(x, y, w - 1, h - 1, h, h);
+            int d = h - 6;
+            int sunX = x + 3, moonX = x + w - 3 - d, ky = y + 3;
+            int kx = light ? sunX : moonX;
+            g2.setColor(ACCENT);
+            g2.fillOval(kx, ky, d, d);
+            float scx = sunX + d / 2f, mcx = moonX + d / 2f, cy = ky + d / 2f;
+            sun(g2, scx, cy, light ? ACCENT_INK : DIM);
+            moon(g2, mcx, cy, light ? DIM : ACCENT_INK);
+            if (isFocusOwner()) {
+                g2.setColor(ACCENT);
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(x - 2, y - 2, w + 3, h + 3, h + 4, h + 4);
+            }
+            g2.dispose();
+        }
+
+        private static void sun(Graphics2D g2, float cx, float cy, Color c) {
+            g2.setColor(c);
+            g2.fill(new java.awt.geom.Ellipse2D.Float(cx - 3.2f, cy - 3.2f, 6.4f, 6.4f));
+            g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            for (int i = 0; i < 8; i++) {
+                double a = Math.PI / 4 * i;
+                float c1 = (float) Math.cos(a), s1 = (float) Math.sin(a);
+                g2.draw(new java.awt.geom.Line2D.Float(cx + c1 * 5.4f, cy + s1 * 5.4f, cx + c1 * 7.2f, cy + s1 * 7.2f));
+            }
+        }
+
+        private static void moon(Graphics2D g2, float cx, float cy, Color c) {
+            java.awt.geom.Area moon = new java.awt.geom.Area(new java.awt.geom.Ellipse2D.Float(cx - 5.5f, cy - 5.5f, 11f, 11f));
+            moon.subtract(new java.awt.geom.Area(new java.awt.geom.Ellipse2D.Float(cx - 2.2f, cy - 7.6f, 11f, 11f)));
+            g2.setColor(c);
+            g2.fill(moon);
+        }
+    }
+
+    /**
      * "Update available" across a section, as macOS shows it: the text and what is new on the left,
      * a red count and a chevron on the right. Hidden while there is nothing to update; clicking it runs onClick.
      */
