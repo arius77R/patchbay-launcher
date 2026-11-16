@@ -22,7 +22,7 @@ import java.util.zip.ZipEntry;
  * Not affiliated with Patchbay's author or with Bitwig GmbH.
  */
 public final class PatchbayLauncher {
-    static final String VERSION = "0.9.3";
+    static final String VERSION = "0.9.4";
     /** The release list of the Patchbay source in use (the built-in one unless the user picked another). */
     static String api() { return "https://api.github.com/repos/" + Sources.patchbay().repo() + "/releases?per_page=100"; }
     static String t(String pl, String en) { return I18n.t(pl, en); }
@@ -1104,6 +1104,18 @@ public final class PatchbayLauncher {
             check(Themes.parseTree(Files.readString(fixtures.resolve("test_lone-themes.tree.json")), "test/lone-themes", "pair").size() == 2, "folder filter");
             check(Themes.derivedId("Neon Glow").equals("neon-glow") && Themes.derivedId("Café  Noir!").equals("cafe-noir")
                 && Themes.derivedId("2024 dark").equals("c-2024-dark") && Themes.derivedId("--live12--").equals("live12"), "theme IDs as Patchbay makes them");
+
+            String editorJson = "{\"advanced\":{\"Timeline Playhead\":\"#2e3440\"},\"window\":{\"Inherited\":\"#a9a9fe\",\"Piano Roll White Key\":\"#ffffff1a\""
+                + java.util.stream.IntStream.range(0, 12).mapToObj(n -> ",\"Colour " + n + "\":\"#10203" + (n % 10) + "\"").collect(java.util.stream.Collectors.joining()) + "},\"arranger\":{\"Colour 1\":\"#ffffff\"}}";
+            String bte = Themes.jsonToBte(editorJson, "x/y.json");
+            check(bte != null && bte.contains("Timeline Playhead: #2e3440") && bte.contains("Piano Roll White Key: #b3b3b3") && !bte.contains("Inherited")
+                && bte.split("Colour 1:", -1).length == 2, "Theme Editor .json becomes a .bte (defunct keys out, first colour wins)");
+            check(Themes.jsonToBte("{\"colors\":{\"a\":\"#000000\"}}", "") == null && Themes.jsonToBte("{\"name\":\"x\"}", "") == null && Themes.jsonToBte("[1]", "") == null, "other .json files are not themes");
+            String tree = "{\"tree\":[{\"path\":\"nord.json\",\"type\":\"blob\",\"sha\":\"a\",\"size\":1},{\"path\":\"package.json\",\"type\":\"blob\",\"sha\":\"b\",\"size\":1},"
+                + "{\"path\":\"Frost.bte\",\"type\":\"blob\",\"sha\":\"c\",\"size\":1},{\"path\":\"frost.json\",\"type\":\"blob\",\"sha\":\"d\",\"size\":1},{\"path\":\".vscode/x.json\",\"type\":\"blob\",\"sha\":\"e\",\"size\":1}]}";
+            check(Themes.parseTree(tree, "o/r", "").stream().map(Themes.Item::name).toList().equals(List.of("Frost", "nord")), "a .json with a .bte of the same name, and other .json files, are left out");
+            check(Themes.linkedRepos("[a](https://github.com/lenninst/Macchiato_BitwigTheme.git) [b](https://github.com/o/r) https://github.com/Berikai/awesome-bitwig-themes https://github.com/o/r", "Berikai/awesome-bitwig-themes")
+                .equals(List.of("lenninst/Macchiato_BitwigTheme", "o/r")), "a list repository's links: each once, without itself");
 
             if (System.getProperty("launcher.bmlsettings") == null) System.setProperty("launcher.bmlsettings", data().resolve("bml-settings").toString());
             Path components = Themes.components();

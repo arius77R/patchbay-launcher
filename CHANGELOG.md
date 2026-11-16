@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.4
+
+- **Themes in the older `.json` format** from the Bitwig Theme Editor (most of the "awesome-bitwig-themes" list: Nord, GruvBit, Dracula, Macchiato, Cubitwig, Ghosty…) are listed too and turned into `.bte` when installed. A `.json` beside a `.bte` of the same name is left out (it's the same theme, older); other `.json` files (palettes, catalogues) are not listed.
+- **List repositories:** a theme source whose repository has no themes but links to theme repositories in its README (like `Berikai/awesome-bitwig-themes`) brings in the themes of every repository it links to.
+- Theme details show the format.
+
 ## 0.9.3
 
 - **New look:** the sections are tabs in a bar across the top (more room for the lists), Bitwig's orange for what you can do, a teal "Start Patchbay", Inter and JetBrains Mono (bundled, SIL Open Font License), thin frames, status as coloured text with a mark.

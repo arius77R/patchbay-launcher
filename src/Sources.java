@@ -210,7 +210,7 @@ final class Sources {
                 case THEMES -> {
                     int n = Themes.fetchRepo(s.repo(), s.filter()).size();
                     return n == 0
-                        ? PatchbayLauncher.t("Repozytorium istnieje, ale nie ma w nim plików motywów .bte.", "The repository exists, but it holds no .bte theme files.")
+                        ? PatchbayLauncher.t("Repozytorium istnieje, ale nie ma w nim motywów (.bte ani .json z Theme Editora).", "The repository exists, but it holds no themes (.bte, or .json from the Theme Editor).")
                         : PatchbayLauncher.t("Znaleziono motywy: ", "Themes found: ") + n;
                 }
                 default -> {
@@ -300,7 +300,7 @@ final class Sources {
             String hint = switch (group) {
                 case PATCHBAY -> PatchbayLauncher.t("jedno aktywne źródło", "one active source");
                 case MODS -> PatchbayLauncher.t("ZIP-y modów z wydań", "mod ZIPs from releases");
-                case THEMES -> PatchbayLauncher.t("pliki motywów .bte", ".bte theme files");
+                case THEMES -> PatchbayLauncher.t("motywy .bte i .json", ".bte and .json themes");
                 default -> PatchbayLauncher.t("pliki .bwdevice i .bwmodulator", ".bwdevice and .bwmodulator files");
             };
             head.add(Theme.row(10, Theme.label(groupName(group), Theme.bold(15f), Theme.TEXT), Theme.label(hint, Theme.text(12f), Theme.MUTED)), BorderLayout.WEST);
