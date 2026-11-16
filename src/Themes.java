@@ -292,7 +292,7 @@ final class Themes {
         private final JButton refreshButton = Theme.button(PatchbayLauncher.t("Odśwież", "Refresh"), "secondary");
         private final JLabel status = Theme.label(" ", Theme.text(14f), Theme.MUTED);
         private final JProgressBar bar = new JProgressBar();
-        private final Map<String, ImageIcon> previews = new HashMap<>();
+        private final Map<String, BufferedImage> previews = new HashMap<>();
         private List<Item> items = List.of();
         private boolean busy, loaded;
         private String shownPreview;
@@ -312,12 +312,8 @@ final class Themes {
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.pillCells());
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
-            details.setPreferredSize(new Dimension(320, 10));
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
-            JPanel body = new JPanel(new BorderLayout(16, 0));
-            body.setOpaque(false);
-            body.add(Theme.framed(table), BorderLayout.CENTER);
-            body.add(details, BorderLayout.EAST);
+            JComponent body = Theme.split(Theme.framed(table), details);
 
             bar.setPreferredSize(new Dimension(10, 4));
             bar.setVisible(false);
@@ -450,7 +446,7 @@ final class Themes {
             }
             Row row = rows.get(r);
             Item item = row.item();
-            JLabel preview = new JLabel();
+            Theme.Picture preview = new Theme.Picture(282, 360);
             preview.setAlignmentX(LEFT_ALIGNMENT);
             preview.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Podgląd motywu: ", "Theme preview: ") + item.name());
             col.add(preview);
@@ -508,18 +504,18 @@ final class Themes {
             if (item.preview() == null) return;
             String k = item.repo() + "/" + item.preview();
             shownPreview = k;
-            ImageIcon have = previews.get(k);
-            if (have != null) { preview.setIcon(have); return; }
+            BufferedImage have = previews.get(k);
+            if (have != null) { preview.setImage(have); return; }
             new Thread(() -> {
-                ImageIcon icon = loadPreview(item);
+                BufferedImage icon = loadPreview(item);
                 SwingUtilities.invokeLater(() -> {
                     if (icon != null) previews.put(k, icon);
-                    if (k.equals(shownPreview)) { preview.setIcon(icon); details.revalidate(); }
+                    if (k.equals(shownPreview)) { preview.setImage(icon); details.revalidate(); }
                 });
             }, "themes-preview").start();
         }
 
-        private ImageIcon loadPreview(Item item) {
+        private BufferedImage loadPreview(Item item) {
             try {
                 BufferedImage img;
                 if (fixtures() != null) {
@@ -536,9 +532,7 @@ final class Themes {
                     }
                 }
                 if (img == null) return null;
-                double scale = Math.min(1.0, Math.min(282.0 / img.getWidth(), 200.0 / img.getHeight()));
-                int w = Math.max(1, (int) (img.getWidth() * scale)), h = Math.max(1, (int) (img.getHeight() * scale));
-                return new ImageIcon(img.getScaledInstance(w, h, Image.SCALE_SMOOTH));
+                return Theme.shrink(img, 640);
             } catch (IOException | RuntimeException e) {
                 return null;
             }

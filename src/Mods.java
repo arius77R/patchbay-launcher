@@ -586,12 +586,8 @@ final class Mods {
             table.getColumnModel().getColumn(4).setMaxWidth(150);
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
-            details.setPreferredSize(new Dimension(284, 10));
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
-            JPanel body = new JPanel(new BorderLayout(16, 0));
-            body.setOpaque(false);
-            body.add(Theme.framed(table), BorderLayout.CENTER);
-            body.add(details, BorderLayout.EAST);
+            JComponent body = Theme.split(Theme.framed(table), details);
 
             bar.setPreferredSize(new Dimension(10, 4));
             bar.setVisible(false);

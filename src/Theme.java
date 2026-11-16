@@ -512,13 +512,194 @@ public final class Theme {
         return l;
     }
 
-    /** Text that wraps at the given width. */
+    /** Text that wraps to the width it is given; width is what it asks for when nothing gives it more. */
     static JLabel wrapped(String text, int width, Color color, float size) {
         String safe = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-        JLabel l = new JLabel("<html><body style='width:" + width + "px'>" + safe + "</body></html>");
+        JLabel l = new Wrap("<html>" + safe + "</html>", width);
         l.setFont(text(size));
         l.setForeground(color);
         return l;
+    }
+
+    /**
+     * An HTML label that wraps at its current width, so text in a panel the user can widen fills it.
+     * It asks for the given width; a layout that gives it more (a column, the centre of a border layout) gets taller-to-shorter text.
+     */
+    static final class Wrap extends JLabel {
+        private final int hint;
+        private int measured = -1;
+
+        Wrap(String html, int hint) {
+            super(html);
+            this.hint = hint;
+            setVerticalAlignment(SwingConstants.TOP);
+            addComponentListener(new java.awt.event.ComponentAdapter() {
+                @Override public void componentResized(java.awt.event.ComponentEvent e) {
+                    if (getWidth() != measured) { measured = getWidth(); revalidate(); }
+                }
+            });
+        }
+
+        private int heightAt(int width) {
+            Object v = getClientProperty(javax.swing.plaf.basic.BasicHTML.propertyKey);
+            Insets in = getInsets();
+            if (!(v instanceof javax.swing.text.View view)) return super.getPreferredSize().height;
+            int w = Math.max(20, width - in.left - in.right);
+            view.setSize(w, 0);
+            return (int) Math.ceil(view.getPreferredSpan(javax.swing.text.View.Y_AXIS)) + in.top + in.bottom;
+        }
+
+        @Override public Dimension getPreferredSize() {
+            if (isPreferredSizeSet()) return super.getPreferredSize();
+            return new Dimension(hint, heightAt(getWidth() > 0 ? getWidth() : hint));
+        }
+        @Override public Dimension getMinimumSize() { return new Dimension(Math.min(hint, 60), getPreferredSize().height); }
+        @Override public Dimension getMaximumSize() { return new Dimension(Integer.MAX_VALUE, getPreferredSize().height); }
+    }
+
+    /** A picture that takes the width it is given (up to its own) and keeps its proportions; at most maxHeight tall. */
+    static final class Picture extends JComponent {
+        private java.awt.image.BufferedImage image;
+        private final int hint, maxHeight;
+        private int measured = -1;
+
+        Picture(int hint, int maxHeight) {
+            this.hint = hint;
+            this.maxHeight = maxHeight;
+            addComponentListener(new java.awt.event.ComponentAdapter() {
+                @Override public void componentResized(java.awt.event.ComponentEvent e) {
+                    if (getWidth() != measured) { measured = getWidth(); revalidate(); repaint(); }
+                }
+            });
+        }
+
+        void setImage(java.awt.image.BufferedImage img) { image = img; revalidate(); repaint(); }
+
+        @Override public javax.accessibility.AccessibleContext getAccessibleContext() {
+            if (accessibleContext == null) accessibleContext = new AccessibleJComponent() {
+                @Override public javax.accessibility.AccessibleRole getAccessibleRole() { return javax.accessibility.AccessibleRole.ICON; }
+            };
+            return accessibleContext;
+        }
+
+        private Dimension fit(int width) {
+            if (image == null) return new Dimension(0, 0);
+            double scale = Math.min(1.0, Math.min((double) width / image.getWidth(), (double) maxHeight / image.getHeight()));
+            return new Dimension(Math.max(1, (int) (image.getWidth() * scale)), Math.max(1, (int) (image.getHeight() * scale)));
+        }
+
+        @Override public Dimension getPreferredSize() {
+            if (image == null) return new Dimension(0, 0);
+            return new Dimension(Math.min(hint, image.getWidth()), fit(getWidth() > 0 ? getWidth() : hint).height);
+        }
+        @Override public Dimension getMaximumSize() { return new Dimension(Integer.MAX_VALUE, getPreferredSize().height); }
+
+        @Override protected void paintComponent(Graphics g) {
+            if (image == null) return;
+            Dimension d = fit(getWidth());
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2.drawImage(image, 0, 0, d.width, d.height, null);
+            g2.dispose();
+        }
+    }
+
+    /** A copy no wider than maxWidth, scaled once with care, for pictures shown many times. */
+    static java.awt.image.BufferedImage shrink(java.awt.image.BufferedImage img, int maxWidth) {
+        if (img.getWidth() <= maxWidth) return img;
+        int w = maxWidth, h = Math.max(1, (int) Math.round(img.getHeight() * (double) maxWidth / img.getWidth()));
+        java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = out.createGraphics();
+        g.drawImage(img.getScaledInstance(w, h, Image.SCALE_SMOOTH), 0, 0, null);
+        g.dispose();
+        return out;
+    }
+
+    // ---------- the list and its details, side by side ----------
+
+    /** The details' share of the width, the same in every section; dragging the divider changes it, a double-click resets it. */
+    static final double DETAILS_SHARE = 0.36;
+    private static final java.util.List<JSplitPane> SPLITS = new java.util.ArrayList<>();
+
+    static double detailsShare() {
+        try {
+            double v = Double.parseDouble(String.valueOf(I18n.setting("detailsShare")));
+            return Math.max(0.2, Math.min(0.5, v));
+        } catch (RuntimeException none) {
+            return DETAILS_SHARE;
+        }
+    }
+
+    /** A list on the left and its details on the right with a divider between them that the user can drag. */
+    static JSplitPane split(JComponent list, JComponent details) {
+        JSplitPane sp = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, list, details);
+        sp.setUI(new SplitUI());
+        sp.setBorder(null);
+        sp.setOpaque(false);
+        sp.setDividerSize(16);
+        list.setMinimumSize(new Dimension(520, 100));
+        details.setMinimumSize(new Dimension(280, 100));
+        sp.setResizeWeight(1 - detailsShare());
+        sp.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Podział między listą a szczegółami", "Divider between the list and the details"));
+        SPLITS.add(sp);
+        sp.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override public void componentResized(java.awt.event.ComponentEvent e) { place(sp, detailsShare()); }
+        });
+        return sp;
+    }
+
+    /** Puts the divider where the details get this share of the width, keeping both sides above their minimum. */
+    private static void place(JSplitPane sp, double share) {
+        int room = sp.getWidth() - sp.getDividerSize();
+        if (room <= 0) return;
+        int details = (int) Math.round(room * share);
+        details = Math.max(sp.getRightComponent().getMinimumSize().width, Math.min(details, room - sp.getLeftComponent().getMinimumSize().width));
+        sp.setResizeWeight(1 - share);
+        sp.setDividerLocation(room - details);
+    }
+
+    private static void remember(double share) {
+        I18n.remember("detailsShare", String.format(Locale.ROOT, "%.3f", share));
+        for (JSplitPane other : SPLITS) place(other, share);
+    }
+
+    /** The divider: a short bar in the middle that turns orange under the pointer; dragging it or double-clicking resets. */
+    static final class SplitUI extends javax.swing.plaf.basic.BasicSplitPaneUI {
+        @Override public javax.swing.plaf.basic.BasicSplitPaneDivider createDefaultDivider() {
+            javax.swing.plaf.basic.BasicSplitPaneDivider d = new javax.swing.plaf.basic.BasicSplitPaneDivider(this) {
+                private boolean over;
+                {
+                    setBorder(null);
+                    setCursor(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR));
+                    addMouseListener(new java.awt.event.MouseAdapter() {
+                        @Override public void mouseEntered(java.awt.event.MouseEvent e) { over = true; repaint(); }
+                        @Override public void mouseExited(java.awt.event.MouseEvent e) { over = false; repaint(); }
+                        @Override public void mouseReleased(java.awt.event.MouseEvent e) {
+                            JSplitPane sp = splitPane;
+                            int room = sp.getWidth() - sp.getDividerSize();
+                            if (room > 0) remember((double) (room - sp.getDividerLocation()) / room);
+                        }
+                        @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                            if (e.getClickCount() == 2) remember(DETAILS_SHARE);
+                        }
+                    });
+                }
+                @Override public void paint(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(over ? ACCENT : DIM);
+                    int w = 4, h = 44;
+                    g2.fillRoundRect((getWidth() - w) / 2, (getHeight() - h) / 2, w, h, 4, 4);
+                    g2.dispose();
+                }
+            };
+            return d;
+        }
+        @Override public void installUI(JComponent c) {
+            super.installUI(c);
+            c.setBorder(null);
+        }
     }
 
     /** "Track: Hibernate Tracks" as a grey prefix and a light name. */
@@ -767,7 +948,9 @@ public final class Theme {
             JLabel value = monoValue ? label(rows[i][1], mono(12f), TEXT)
                 : wrapped(rows[i][1].replace("/", "/\u200B"), 104, TEXT, 13f);
             value.setToolTipText(rows[i][1]);
+            g.fill = GridBagConstraints.HORIZONTAL;
             p.add(value, g);
+            g.fill = GridBagConstraints.NONE;
         }
         return p;
     }

@@ -307,7 +307,7 @@ final class Devices {
         private final JButton refreshButton = Theme.button(PatchbayLauncher.t("Odśwież", "Refresh"), "secondary");
         private final JLabel status = Theme.label(" ", Theme.text(14f), Theme.MUTED);
         private final JProgressBar bar = new JProgressBar();
-        private final Map<String, ImageIcon> previews = new HashMap<>();
+        private final Map<String, BufferedImage> previews = new HashMap<>();
         private List<Item> items = List.of();
         private String bitwig;
         private boolean busy, loaded, filling;
@@ -328,12 +328,8 @@ final class Devices {
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.pillCells());
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
-            details.setPreferredSize(new Dimension(320, 10));
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
-            JPanel body = new JPanel(new BorderLayout(16, 0));
-            body.setOpaque(false);
-            body.add(Theme.framed(table), BorderLayout.CENTER);
-            body.add(details, BorderLayout.EAST);
+            JComponent body = Theme.split(Theme.framed(table), details);
 
             buildBox.setPreferredSize(new Dimension(170, 34));
             buildBox.setFont(Theme.mono(13f));
@@ -475,7 +471,7 @@ final class Devices {
                 return;
             }
             Item item = rows.get(r).item();
-            JLabel preview = new JLabel();
+            Theme.Picture preview = new Theme.Picture(282, 360);
             preview.setAlignmentX(LEFT_ALIGNMENT);
             preview.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Podgląd panelu: ", "Panel preview: ") + item.name());
             col.add(preview);
@@ -512,18 +508,18 @@ final class Devices {
 
             String key = item.repo() + "/" + item.previewPath();
             shownPreview = key;
-            ImageIcon have = previews.get(key);
-            if (have != null) { preview.setIcon(have); return; }
+            BufferedImage have = previews.get(key);
+            if (have != null) { preview.setImage(have); return; }
             new Thread(() -> {
-                ImageIcon icon = loadPreview(item);
+                BufferedImage icon = loadPreview(item);
                 SwingUtilities.invokeLater(() -> {
                     if (icon != null) previews.put(key, icon);
-                    if (key.equals(shownPreview)) { preview.setIcon(icon); details.revalidate(); }
+                    if (key.equals(shownPreview)) { preview.setImage(icon); details.revalidate(); }
                 });
             }, "devices-preview").start();
         }
 
-        private ImageIcon loadPreview(Item item) {
+        private BufferedImage loadPreview(Item item) {
             try {
                 BufferedImage img;
                 if (fixtures() != null) {
@@ -540,9 +536,7 @@ final class Devices {
                     }
                 }
                 if (img == null) return null;
-                double scale = Math.min(1.0, Math.min(282.0 / img.getWidth(), 280.0 / img.getHeight()));
-                int w = Math.max(1, (int) (img.getWidth() * scale)), h = Math.max(1, (int) (img.getHeight() * scale));
-                return new ImageIcon(img.getScaledInstance(w, h, Image.SCALE_SMOOTH));
+                return Theme.shrink(img, 640);
             } catch (IOException | RuntimeException e) {
                 return null;
             }
