@@ -547,6 +547,7 @@ public final class PatchbayLauncher {
         statusLabel.addPropertyChangeListener("text", e -> statusLabel.setVisible(!statusLabel.getText().isBlank()));
         v.add(statusLabel);
         latestLabel.setFont(Theme.text(13f));
+        col.add(launcherSection());
         col.add(section(latestLabel, patchbayCount, v));
         col.add(Box.createVerticalStrut(12));
 
@@ -647,6 +648,7 @@ public final class PatchbayLauncher {
         content.setFocusable(true);
         content.requestFocusInWindow();
         checkReleases();
+        checkLauncher();
         modsPanel.reload();
     }
 
@@ -811,13 +813,107 @@ public final class PatchbayLauncher {
         else latestLabel.setText(t("Masz najnowszą wersję.", "You have the latest version."));
         patchbayCount.set(update ? 1 : 0);
         carryLabel.setText(update ? t("Mody i motywy przejdą do nowej wersji.", "Mods and themes move to the new version.") : " ");
-        JButton tab = nav.get("patchbay");
-        if (tab != null) {
-            tab.putClientProperty("badge", update ? 1 : 0);
-            tab.revalidate();
-            tab.repaint();
-        }
+        patchbayUpdate = update;
+        patchbayTabBadge();
         return update;
+    }
+
+    private boolean patchbayUpdate;
+
+    /** The red count on the Patchbay tab: a new Patchbay and a new launcher each count one. */
+    private void patchbayTabBadge() {
+        JButton tab = nav.get("patchbay");
+        if (tab == null) return;
+        tab.putClientProperty("badge", (patchbayUpdate ? 1 : 0) + (launcherUpdate != null ? 1 : 0));
+        tab.revalidate();
+        tab.repaint();
+    }
+
+    // ---------- the launcher's own updates ----------
+
+    private SelfUpdate.Release launcherUpdate;
+    private final JLabel launcherHead = Theme.label(" ", Theme.text(13f), Theme.TEXT);
+    private final Count launcherCount = new Count();
+    private final JLabel launcherStatus = Theme.label(" ", Theme.text(13f), Theme.MUTED);
+    private final JButton launcherButton = Theme.button(t("Zaktualizuj Launcher", "Update the launcher"), "primary");
+    private JPanel launcherSection;
+
+    /** "A new launcher version": shown on the Patchbay page only while one is out. */
+    private JPanel launcherSection() {
+        JPanel body = new JPanel(new BorderLayout(12, 0));
+        body.setOpaque(false);
+        JButton notes = Theme.button(t("Co nowego", "What's new"), "secondary");
+        notes.addActionListener(e -> browse(launcherUpdate != null && launcherUpdate.page() != null ? launcherUpdate.page() : PROJECT + "/releases"));
+        launcherButton.addActionListener(e -> updateLauncher());
+        body.add(Theme.row(10, launcherButton, notes), BorderLayout.WEST);
+        body.add(launcherStatus, BorderLayout.CENTER);
+        launcherSection = new JPanel(new BorderLayout());
+        launcherSection.setOpaque(false);
+        launcherSection.add(section(launcherHead, launcherCount, body), BorderLayout.CENTER);
+        launcherSection.add(Box.createVerticalStrut(12), BorderLayout.SOUTH);
+        launcherSection.setAlignmentX(Component.LEFT_ALIGNMENT);
+        launcherSection.setVisible(false);
+        return launcherSection;
+    }
+
+    private void checkLauncher() {
+        new Thread(() -> {
+            try {
+                SelfUpdate.Release r = SelfUpdate.latest();
+                if (!SelfUpdate.newer(r)) return;
+                SwingUtilities.invokeLater(() -> launcherFound(r));
+            } catch (IOException | RuntimeException ignored) {
+                // no network or GitHub busy: no launcher update shown, nothing else changes
+            }
+        }, "launcher-update").start();
+    }
+
+    private void launcherFound(SelfUpdate.Release r) {
+        launcherUpdate = r;
+        launcherHead.setText("<html>" + t("Nowa wersja Launchera", "New launcher version") + " <font color='#9C9FA5'>· " + VERSION + " → " + r.version() + "</font></html>");
+        launcherCount.set(1);
+        if (SelfUpdate.installRoot() == null) {
+            launcherButton.setText(t("Pobierz ze strony", "Download from the page"));
+            launcherStatus.setText(t("Ta kopia nie może się zaktualizować sama.", "This copy can't update itself."));
+        }
+        launcherSection.setVisible(true);
+        launcherSection.getParent().revalidate();
+        patchbayTabBadge();
+        if (!r.version().equals(I18n.setting("launcherNotified"))) {
+            I18n.remember("launcherNotified", r.version());
+            notifyUser(t("Dostępna jest nowa wersja Patchbay Launcher: ", "A new Patchbay Launcher version is available: ") + r.version());
+        }
+    }
+
+    /** Downloads the new launcher, then quits; a script swaps it in and starts it again. */
+    private void updateLauncher() {
+        SelfUpdate.Release r = launcherUpdate;
+        if (r == null) return;
+        Path root = SelfUpdate.installRoot();
+        if (root == null) { browse(r.page() != null ? r.page() : PROJECT + "/releases"); return; }
+        int ok = JOptionPane.showConfirmDialog(frame, t("Pobrać Patchbay Launcher ", "Download Patchbay Launcher ") + r.version()
+                + t("? Launcher zamknie się na chwilę i uruchomi ponownie. Patchbay, mody i ustawienia zostają bez zmian.",
+                    "? The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are."),
+            "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (ok != JOptionPane.OK_OPTION) return;
+        launcherButton.setEnabled(false);
+        new Thread(() -> {
+            try {
+                SelfUpdate.prepare(r, root, text -> SwingUtilities.invokeLater(() -> launcherStatus.setText(text)));
+                SwingUtilities.invokeLater(() -> {
+                    launcherStatus.setText(t("Uruchamianie nowej wersji…", "Starting the new version…"));
+                    javax.swing.Timer quit = new javax.swing.Timer(600, e -> System.exit(0));
+                    quit.setRepeats(false);
+                    quit.start();
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    launcherButton.setEnabled(true);
+                    launcherStatus.setText(" ");
+                    JOptionPane.showMessageDialog(frame, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }, "launcher-self-update").start();
     }
 
     private void start() {
@@ -938,6 +1034,7 @@ public final class PatchbayLauncher {
             if (args.length >= 4) devicesTest(Path.of(args[3]));
             if (args.length >= 4 && Files.isRegularFile(Path.of(args[3], "csabacsaba_bw6themes.tree.json"))) themesTest(Path.of(args[3]));
             sourcesTest();
+            selfUpdateTest();
             System.out.println("SELFTEST_OK");
         }
 
@@ -1041,6 +1138,38 @@ public final class PatchbayLauncher {
             check(Themes.activeId() == null && Files.readString(settings.resolve("enabled-mods.properties")).contains("mod.bte-theme-loader=false"), "themes turned off");
             Themes.remove(Themes.target(components, neon));
             check(!Files.exists(components.resolve("Neon Glow")) && Themes.rank(components, neon) == 2, "theme removed");
+        }
+
+        static void selfUpdateTest() throws Exception {
+            String json = "{\"tag_name\":\"v9.9.9\",\"html_url\":\"https://github.com/arius77R/patchbay-launcher/releases/tag/v9.9.9\",\"assets\":["
+                + "{\"name\":\"Patchbay-Launcher-9.9.9-macos.dmg\",\"browser_download_url\":\"https://x/Patchbay-Launcher-9.9.9-macos.dmg\"},"
+                + "{\"name\":\"Patchbay-Launcher-9.9.9-macos.zip\",\"browser_download_url\":\"https://x/Patchbay-Launcher-9.9.9-macos.zip\",\"digest\":\"sha256:AB12\"},"
+                + "{\"name\":\"Patchbay-Launcher-9.9.9-windows.zip\",\"browser_download_url\":\"https://x/Patchbay-Launcher-9.9.9-windows.zip\"},"
+                + "{\"name\":\"Patchbay-Launcher-9.9.9-linux.tar.gz\",\"browser_download_url\":\"https://x/Patchbay-Launcher-9.9.9-linux.tar.gz\"},"
+                + "{\"name\":\"SHA256SUMS.txt\",\"browser_download_url\":\"https://x/SHA256SUMS.txt\"}]}";
+            SelfUpdate.Release r = SelfUpdate.parse(json);
+            check(r != null && r.version().equals("9.9.9") && r.url().endsWith(SelfUpdate.assetSuffix()), "launcher release: this system's package " + (r == null ? null : r.url()));
+            check(!Platform.MAC || "ab12".equals(r.sha256()), "launcher release: SHA-256 from GitHub's digest");
+            check(SelfUpdate.newer(r) && !SelfUpdate.newer(new SelfUpdate.Release(VERSION, null, "x", null)), "a newer launcher is offered, the same one is not");
+            Path tmp = Files.createTempDirectory("su");
+            Path root;
+            if (Platform.MAC) {
+                root = tmp.resolve("Patchbay Launcher.app");
+                Files.createDirectories(root.resolve("Contents/Resources"));
+            } else {
+                root = tmp.resolve(SelfUpdate.packageRoot());
+                Files.createDirectories(root.resolve("app"));
+                Files.writeString(root.resolve(Platform.WINDOWS ? "Patchbay Launcher.exe" : "patchbay-launcher"), "");
+            }
+            Path jar = SelfUpdate.jarIn(root);
+            Files.writeString(jar, "");
+            check(root.equals(SelfUpdate.rootFor(jar)), "install found from launcher.jar: " + SelfUpdate.rootFor(jar));
+            check(SelfUpdate.rootFor(tmp.resolve("build").resolve("launcher.jar")) == null, "a jar outside an install can't update itself");
+            String unix = SelfUpdate.unixScript(4242, root, tmp.resolve("new"), tmp.resolve("stage"));
+            String win = SelfUpdate.windowsScript(4242, root, tmp.resolve("new"), tmp.resolve("stage"));
+            check(unix.contains("kill -0 4242") && unix.contains(".old-update") && unix.contains(Platform.MAC ? "/usr/bin/open" : "nohup"), "swap script for macOS and Linux");
+            check(win.contains("Wait-Process -Id 4242") && win.contains("Start-Process") && win.contains("Rename-Item"), "swap script for Windows");
+            check(SelfUpdate.unixScript(1, Path.of("/tmp/it's/X.app"), Path.of("/n"), Path.of("/s")).contains("'/tmp/it'\\''s/X.app'"), "quotes in folder names are escaped");
         }
 
         static void sourcesTest() throws Exception {

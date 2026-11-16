@@ -358,6 +358,23 @@ final class I18n {
         add("Updates: ", "Updates: ", "Mises à jour : ");
         add("Sections", "Bereiche", "Sections");
         add("Version", "Version", "Version");
+        add("Update the launcher", "Launcher aktualisieren", "Mettre à jour le lanceur");
+        add("What's new", "Was ist neu", "Nouveautés");
+        add("New launcher version", "Neue Launcher-Version", "Nouvelle version du lanceur");
+        add("Download from the page", "Von der Seite laden", "Télécharger depuis la page");
+        add("This copy can't update itself.", "Diese Kopie kann sich nicht selbst aktualisieren.", "Cette copie ne peut pas se mettre à jour elle-même.");
+        add("A new Patchbay Launcher version is available: ", "Eine neue Version von Patchbay Launcher ist verfügbar: ", "Une nouvelle version de Patchbay Launcher est disponible : ");
+        add("Download Patchbay Launcher ", "Patchbay Launcher ", "Télécharger Patchbay Launcher ");
+        add("? The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are.",
+            " herunterladen? Der Launcher schließt sich kurz und startet neu. Patchbay, Mods und Einstellungen bleiben, wie sie sind.",
+            " ? Le lanceur se ferme un instant puis redémarre. Patchbay, les mods et les réglages restent tels quels.");
+        add("Starting the new version…", "Neue Version wird gestartet…", "Démarrage de la nouvelle version…");
+        add("No permission to write in the folder ", "Keine Schreibrechte im Ordner ", "Pas le droit d'écrire dans le dossier ");
+        add(". Download the new version from the project page.", ". Lade die neue Version von der Projektseite.", ". Téléchargez la nouvelle version depuis la page du projet.");
+        add("Downloading the launcher ", "Launcher wird geladen: ", "Téléchargement du lanceur ");
+        add("Unpacking…", "Entpacken…", "Décompression…");
+        add("The downloaded file differs from the release on GitHub. Try again.", "Die geladene Datei weicht vom Release auf GitHub ab. Versuche es erneut.", "Le fichier téléchargé diffère de la version sur GitHub. Réessayez.");
+        add("The downloaded file holds no launcher.", "Die geladene Datei enthält keinen Launcher.", "Le fichier téléchargé ne contient pas de lanceur.");
         add("No sources. Click + Add or Restore built-in.", "Keine Quellen. Klicke auf + Hinzufügen oder Integrierte wiederherstellen.", "Aucune source. Cliquez sur + Ajouter ou Restaurer les sources intégrées.");
         add("Restore built-in", "Integrierte wiederherstellen", "Restaurer les sources intégrées");
         add("built-in · changed", "integriert · geändert", "intégrée · modifiée");

@@ -31,6 +31,7 @@ The app is not signed (no Apple Developer ID, no Windows code-signing certificat
 - **Devices:** `.bwdevice`, `.bwmodulator` and `.bwmodule` files, picked for your Bitwig version, checked against GitHub and added to Patchbay's Device Folders.
 - **Themes:** `.bte` colour themes for Patchbay's **Framework: Themes**, with a preview, installed into the active Patchbay's `components/` folder. "Use this theme" picks it in Patchbay's settings (Patchbay must be closed); restart Bitwig from Patchbay to see it.
 - **Sources:** built-in and your own GitHub repositories for Patchbay, mods, devices and themes; switch them on and off, add, edit, remove.
+- **Updates itself:** shows when a new Patchbay Launcher release is out and installs it with one click (from 0.9.3 on).
 - **Languages:** English, Polski, Deutsch, Français. Other system languages use English.
 
 | Patchbay | Devices |
