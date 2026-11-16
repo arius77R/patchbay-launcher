@@ -274,7 +274,9 @@ final class I18n {
         add("Remove source", "Quelle entfernen", "Supprimer la source");
         add("Type the repository as owner/name, for example polarity/bitwig-mods.", "Gib das Repository als Besitzer/Name ein, zum Beispiel polarity/bitwig-mods.", "Saisissez le dépôt sous la forme propriétaire/nom, par exemple polarity/bitwig-mods.");
         add("Checking…", "Wird geprüft…", "Vérification…");
-        add("Mods and devices are code that runs inside Bitwig. Only add repositories you trust.\n\nAdd ", "Mods und Geräte sind Code, der in Bitwig läuft. Füge nur Repositories hinzu, denen du vertraust.\n\nHinzufügen: ", "Les mods et les périphériques sont du code exécuté dans Bitwig. N'ajoutez que des dépôts de confiance.\n\nAjouter ");
+        add("Mods and devices are code that runs inside Bitwig, and themes change how it looks. Only add repositories you trust.\n\nAdd ",
+            "Mods und Geräte sind Code, der in Bitwig läuft, und Themes ändern sein Aussehen. Füge nur Repositories hinzu, denen du vertraust.\n\nHinzufügen: ",
+            "Les mods et les périphériques sont du code exécuté dans Bitwig, et les thèmes changent son apparence. N'ajoutez que des dépôts de confiance.\n\nAjouter ");
         add("Added.", "Hinzugefügt.", "Ajoutée.");
         add("Saved.", "Gespeichert.", "Enregistrée.");
         add("Removed ", "Entfernt: ", "Supprimée : ");
@@ -356,6 +358,9 @@ final class I18n {
         add("Updates: ", "Updates: ", "Mises à jour : ");
         add("Sections", "Bereiche", "Sections");
         add("Version", "Version", "Version");
+        add("Click Edit beside a source to change its settings, or + Add to add a new one. The switch turns a source on and off.",
+            "Klicke bei einer Quelle auf Bearbeiten, um ihre Einstellungen zu ändern, oder auf + Hinzufügen für eine neue. Der Schalter schaltet eine Quelle ein und aus.",
+            "Cliquez sur Modifier à côté d'une source pour changer ses réglages, ou sur + Ajouter pour en ajouter une. L'interrupteur active ou désactive une source.");
         add("Mods and themes move to the new version.", "Mods und Themes werden in die neue Version übernommen.", "Les mods et les thèmes passent à la nouvelle version.");
     }
 

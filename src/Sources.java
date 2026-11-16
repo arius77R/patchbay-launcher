@@ -192,6 +192,8 @@ final class Sources {
         /** The source being edited, or a new one (id null). */
         private Source draft;
         private String draftGroup = MODS;
+        /** Nothing picked yet: the form only says what to do; no row is marked. */
+        private boolean idle = true;
         private final JTextField repoField = new JTextField();
         private final JTextField filterField = new JTextField();
         private final JLabel message = new JLabel();
@@ -223,8 +225,6 @@ final class Sources {
                 add, body, null, null), BorderLayout.CENTER);
             repoField.setFont(Theme.mono(13f));
             filterField.setFont(Theme.mono(13f));
-            draft = sources.stream().filter(s -> s.id().equals("mods-shaboogen")).findFirst().orElse(sources.get(0));
-            draftGroup = draft.group();
             rebuild();
         }
 
@@ -270,10 +270,13 @@ final class Sources {
         }
 
         private JComponent sourceRow(Source s) {
-            boolean selected = draft != null && s.id().equals(draft.id());
+            boolean selected = !idle && draft != null && s.id().equals(draft.id());
             JPanel row = new JPanel(new BorderLayout(12, 0));
             row.setBackground(selected ? Theme.ACCENT_SEL : Theme.WELL);
-            row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(8, 14, 8, 12)));
+            // the row being edited is marked like a selected list row: a darker fill and an orange edge on the left
+            row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR),
+                selected ? BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 3, 0, 0, Theme.ACCENT), new EmptyBorder(8, 11, 8, 12))
+                    : new EmptyBorder(8, 14, 8, 12)));
             Theme.Switch sw = new Theme.Switch(s.enabled(),
                 (s.enabled() ? PatchbayLauncher.t("Wyłącz ", "Turn off ") : PatchbayLauncher.t("Włącz ", "Turn on ")) + s.repo(),
                 on -> toggle(s, on));
@@ -293,17 +296,27 @@ final class Sources {
             meta.setAlignmentX(LEFT_ALIGNMENT);
             text.add(meta);
             row.add(text, BorderLayout.CENTER);
-            JButton edit = Theme.button(PatchbayLauncher.t("Edytuj", "Edit"), selected ? "primary" : "secondary");
+            JButton edit = Theme.button(PatchbayLauncher.t("Edytuj", "Edit"), "secondary");
             edit.putClientProperty("small", true);
             edit.setFont(Theme.text(12f));
             edit.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Edytuj ", "Edit ") + s.repo());
-            edit.addActionListener(e -> { draft = s; draftGroup = s.group(); message.setText(""); rebuild(); });
+            edit.addActionListener(e -> { idle = false; draft = s; draftGroup = s.group(); message.setText(""); rebuild(); });
             JPanel right = new JPanel(new GridBagLayout());
             right.setOpaque(false);
             right.add(edit);
             row.add(right, BorderLayout.EAST);
             row.setMaximumSize(new Dimension(Integer.MAX_VALUE, row.getPreferredSize().height));
             return row;
+        }
+
+        /** A short result line ("Saved.", what Check found) in a framed box. */
+        private static JComponent note(String text) {
+            JLabel m = Theme.wrapped(text, 204, Theme.TEXT, 12f);
+            m.setOpaque(true);
+            m.setBackground(Theme.WELL);
+            m.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Theme.LINE), new EmptyBorder(8, 10, 8, 10)));
+            m.getAccessibleContext().setAccessibleDescription(text);
+            return m;
         }
 
         /** A subtitle that is a sentence keeps the text face (numbers and versions get the mono one). */
@@ -333,6 +346,7 @@ final class Sources {
         }
 
         private void startNew(String group) {
+            idle = false;
             draft = null;
             draftGroup = group;
             repoField.setText("");
@@ -343,6 +357,21 @@ final class Sources {
         }
 
         private void buildForm() {
+            if (idle) {
+                form.removeAll();
+                JPanel col = new JPanel();
+                col.setOpaque(false);
+                col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
+                add(col, Theme.label(PatchbayLauncher.t("Źródło", "Source"), Theme.bold(18f), Theme.TEXT), 10);
+                add(col, Theme.wrapped(PatchbayLauncher.t(
+                    "Kliknij Edytuj przy źródle, żeby zmienić jego ustawienia, albo + Dodaj, żeby dodać nowe. Przełącznikiem włączasz i wyłączasz źródło.",
+                    "Click Edit beside a source to change its settings, or + Add to add a new one. The switch turns a source on and off."), 230, Theme.MUTED, 13f), 12);
+                if (message.getText() != null && !message.getText().isEmpty()) add(col, note(message.getText()), 10);
+                form.add(col, BorderLayout.NORTH);
+                form.revalidate();
+                form.repaint();
+                return;
+            }
             form.removeAll();
             boolean isNew = draft == null;
             boolean builtin = !isNew && draft.builtin();
@@ -403,12 +432,7 @@ final class Sources {
             if (draftGroup.equals(PATCHBAY) && !builtin) add(col, Theme.wrapped(PatchbayLauncher.t("Patchbay pobierany jest z jednego źródła naraz. Włączenie tego wyłączy pozostałe.",
                 "Patchbay comes from one source at a time. Switching this one on switches the others off."), 214, Theme.MUTED, 12f), 10);
             if (message.getText() != null && !message.getText().isEmpty()) {
-                JLabel m = Theme.wrapped(message.getText(), 204, new Color(0xBFEFEA), 12f);
-                m.setOpaque(true);
-                m.setBackground(Theme.ACCENT_SEL);
-                m.setBorder(new EmptyBorder(8, 10, 8, 10));
-                m.getAccessibleContext().setAccessibleDescription(message.getText());
-                add(col, m, 10);
+                add(col, note(message.getText()), 10);
             }
             form.add(col, BorderLayout.NORTH);
 
@@ -479,8 +503,8 @@ final class Sources {
             boolean isNew = draft == null;
             if (isNew) {
                 int ok = JOptionPane.showConfirmDialog(this,
-                    PatchbayLauncher.t("Mody i urządzenia to kod uruchamiany wewnątrz Bitwiga. Dodawaj tylko repozytoria, którym ufasz.\n\nDodać ",
-                        "Mods and devices are code that runs inside Bitwig. Only add repositories you trust.\n\nAdd ") + s.repo() + "?",
+                    PatchbayLauncher.t("Mody i urządzenia to kod uruchamiany wewnątrz Bitwiga, a motywy zmieniają jego wygląd. Dodawaj tylko repozytoria, którym ufasz.\n\nDodać ",
+                        "Mods and devices are code that runs inside Bitwig, and themes change how it looks. Only add repositories you trust.\n\nAdd ") + s.repo() + "?",
                     "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
                 if (ok != JOptionPane.OK_OPTION) return;
             }
@@ -505,8 +529,8 @@ final class Sources {
             next.removeIf(x -> x.id().equals(gone.id()));
             if (gone.group().equals(PATCHBAY) && gone.enabled())
                 next.replaceAll(x -> x.id().equals("patchbay") ? x.withEnabled(true) : x);
-            draft = next.get(0);
-            draftGroup = draft.group();
+            idle = true;
+            draft = null;
             message.setText(PatchbayLauncher.t("Usunięto ", "Removed ") + gone.repo() + ".");
             commit(next);
         }
