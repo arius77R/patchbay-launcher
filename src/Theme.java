@@ -647,7 +647,7 @@ public final class Theme {
         p.setOpaque(false);
         p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, LINE), new EmptyBorder(10, 0, 10, 0)));
         GridBagConstraints g = new GridBagConstraints();
-        g.anchor = GridBagConstraints.WEST;
+        g.anchor = GridBagConstraints.NORTHWEST;
         g.insets = new Insets(3, 0, 3, 12);
         for (int i = 0; i < rows.length; i++) {
             g.gridy = i;
@@ -655,7 +655,11 @@ public final class Theme {
             p.add(label(rows[i][0], text(13f), MUTED), g);
             g.gridx = 1; g.weightx = 1;
             boolean monoValue = rows[i].length > 2;
-            p.add(label(rows[i][1], monoValue ? mono(12f) : text(13f), TEXT), g);
+            // long values ("Bitwig 6.1.7 · Windows", "owner/repository") wrap instead of ending in "…"
+            JLabel value = monoValue ? label(rows[i][1], mono(12f), TEXT)
+                : wrapped(rows[i][1].replace("/", "/\u200B"), 104, TEXT, 13f);
+            value.setToolTipText(rows[i][1]);
+            p.add(value, g);
         }
         return p;
     }
