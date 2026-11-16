@@ -32,7 +32,7 @@ final class Mods {
 
     record Available(String id, String version, String url, String sha256, String repo, String page) { }
     /** What a mod's manifest says about it. */
-    record Info(String name, String author, String description, List<Requirement> requires, String builtFor) { }
+    record Info(String name, String author, String description, List<Requirement> requires, String builtFor, String builtPlatform, String builtArch) { }
 
     /** Mod ID to its display name, from the table in a release's notes ("| Name | `file.zip` | notes |"). */
     static final Map<String, String> NAMES = new java.util.concurrent.ConcurrentHashMap<>();
@@ -52,8 +52,9 @@ final class Mods {
         if (manifest == null || !(manifest.get("mod") instanceof Map)) return null;
         Map<String, Object> mod = Json.object(manifest.get("mod"));
         String name = Json.text(mod, "name"), author = Json.text(mod, "author"), description = Json.text(mod, "description");
-        String builtFor = manifest.get("built_against") instanceof Map ? Json.text(Json.object(manifest.get("built_against")), "bitwig_version") : null;
-        return new Info(name, author == null ? "" : author, description == null ? "" : description, requirements(manifest), builtFor);
+        Map<String, Object> built = manifest.get("built_against") instanceof Map ? Json.object(manifest.get("built_against")) : Map.of();
+        return new Info(name, author == null ? "" : author, description == null ? "" : description, requirements(manifest),
+            Json.text(built, "bitwig_version"), Json.text(built, "platform"), Json.text(built, "architecture"));
     }
 
     /**
@@ -493,7 +494,18 @@ final class Mods {
     static final class Panel extends JPanel {
         private record Row(String id, String name, String installed, Available available, int rank) { }
 
+        /** Every catalogue row; rows holds the ones the Show filter lets through, in display order. */
+        private final List<Row> all = new ArrayList<>();
         private final List<Row> rows = new ArrayList<>();
+        /** Show: 0 all, 1 works on my Bitwig, 2 installed, 3 updates, 4 not available. */
+        private final JComboBox<String> showBox = new JComboBox<>();
+        /** The Bitwig version when it can't be read from the system: chosen from the versions Patchbay has maps for. */
+        private final JComboBox<String> bitwigBox = new JComboBox<>();
+        private final JLabel bitwigLabel = Theme.label(PatchbayLauncher.t("Twój Bitwig:", "Your Bitwig:"), Theme.text(13f), Theme.MUTED);
+        private String detectedBitwig;
+        private boolean detecting = true, filling;
+        private Compat.Target target;
+        private final javax.swing.Timer refilterSoon = new javax.swing.Timer(250, e -> refilter());
         /** IDs of the ticked rows; only rows that can be installed or updated can be ticked. */
         private final Set<String> checked = new HashSet<>();
         private final AbstractTableModel model = new AbstractTableModel() {
@@ -504,7 +516,7 @@ final class Mods {
             @Override public int getColumnCount() { return columns.length; }
             @Override public String getColumnName(int c) { return columns[c]; }
             @Override public Class<?> getColumnClass(int c) { return c == 0 ? Boolean.class : String.class; }
-            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy && rows.get(r).rank() != 1; }
+            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy && rows.get(r).rank() != 1 && !unavailable(rows.get(r)); }
             @Override public void setValueAt(Object v, int r, int c) {
                 if (c != 0) return;
                 if (Boolean.TRUE.equals(v)) checked.add(rows.get(r).id()); else checked.remove(rows.get(r).id());
@@ -515,10 +527,10 @@ final class Mods {
                 Row row = rows.get(r);
                 return switch (c) {
                     case 0 -> checked.contains(row.id());
-                    case 1 -> nameOf(row);
+                    case 1 -> (unavailable(row) ? "~" : "") + nameOf(row);
                     case 2 -> row.installed() == null ? "–" : row.installed();
                     case 3 -> row.available() == null ? "" : row.available().version();
-                    default -> switch (row.rank()) {
+                    default -> unavailable(row) ? "off|" + PatchbayLauncher.t("niedostępny", "not available") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("zainstalowany", "installed");
                         default -> "new|" + PatchbayLauncher.t("nowy", "new");
@@ -585,12 +597,35 @@ final class Mods {
             left.setOpaque(false);
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
-            add(Theme.page(PatchbayLauncher.t("Mody", "Mods"), subtitle, Theme.row(8, checkAllButton, refreshButton), body,
+            refilterSoon.setRepeats(false);
+            for (String o : new String[] { PatchbayLauncher.t("Wszystkie", "All"), PatchbayLauncher.t("Pasujące do mojego Bitwiga", "Work on my Bitwig"),
+                    PatchbayLauncher.t("Zainstalowane", "Installed"), PatchbayLauncher.t("Do aktualizacji", "Updates"), PatchbayLauncher.t("Niedostępne", "Not available") })
+                showBox.addItem(o);
+            try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(0); }
+            showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
+            showBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Pokaż", "Show"));
+            showBox.setPreferredSize(new Dimension(230, 32));
+            bitwigBox.setPreferredSize(new Dimension(150, 32));
+            bitwigBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Twój Bitwig", "Your Bitwig"));
+            bitwigBox.addActionListener(e -> {
+                if (filling || bitwigBox.getSelectedIndex() < 0) return;
+                I18n.remember("modsBitwig", bitwigBox.getSelectedIndex() == 0 ? "" : String.valueOf(bitwigBox.getSelectedItem()));
+                rebuild();
+            });
+            bitwigLabel.setVisible(false);
+            bitwigBox.setVisible(false);
+            JPanel filters = Theme.row(8, Theme.label(PatchbayLauncher.t("Pokaż", "Show"), Theme.text(13f), Theme.MUTED), showBox,
+                Box.createHorizontalStrut(10), bitwigLabel, bitwigBox);
+            JPanel center = new JPanel(new BorderLayout(0, 12));
+            center.setOpaque(false);
+            center.add(filters, BorderLayout.NORTH);
+            center.add(body, BorderLayout.CENTER);
+            add(Theme.page(PatchbayLauncher.t("Mody", "Mods"), subtitle, Theme.row(8, checkAllButton, refreshButton), center,
                 left, Theme.row(8, updateAllButton, installButton)), BorderLayout.CENTER);
 
             installButton.addActionListener(e -> installRows(checkedRows()));
             checkAllButton.addActionListener(e -> checkAll());
-            updateAllButton.addActionListener(e -> installRows(rows.stream().filter(r -> r.rank() == 0).toList()));
+            updateAllButton.addActionListener(e -> installRows(all.stream().filter(r -> r.rank() == 0 && !unavailable(r)).toList()));
             refreshButton.addActionListener(e -> reload());
             showSelected();
             refreshButtons();
@@ -606,15 +641,36 @@ final class Mods {
         }
 
         private List<Row> checkable() {
-            return rows.stream().filter(r -> r.rank() != 1).toList();
+            return rows.stream().filter(r -> r.rank() != 1 && !unavailable(r)).toList();
+        }
+
+        // ---------- compatibility with the user's Bitwig ----------
+
+        /** The Bitwig the list is checked against: read from the system, else the one chosen in the list. */
+        private String bitwig() {
+            if (detectedBitwig != null) return detectedBitwig;
+            Object chosen = I18n.setting("modsBitwig");
+            return chosen == null || String.valueOf(chosen).isBlank() ? null : String.valueOf(chosen);
+        }
+
+        private Compat.Verdict verdict(Row row) {
+            Info info = infos.get(row.id());
+            String version = bitwig();
+            if (version != null && target == null) return Compat.check(null, version, Platform.suffix(), null, null, null);
+            if (info == null) return new Compat.Verdict(Compat.State.UNKNOWN, "");
+            return Compat.check(target, version, Platform.suffix(), info.builtFor(), info.builtPlatform(), info.builtArch());
+        }
+
+        private boolean unavailable(Row row) {
+            return verdict(row).state() == Compat.State.UNAVAILABLE;
         }
 
         /** Ticks every row that can be installed or updated; unticks them all when they are all ticked. */
         private void checkAll() {
-            List<Row> all = checkable();
-            boolean allTicked = !all.isEmpty() && all.stream().allMatch(r -> checked.contains(r.id()));
+            List<Row> tickable = checkable();
+            boolean allTicked = !tickable.isEmpty() && tickable.stream().allMatch(r -> checked.contains(r.id()));
             checked.clear();
-            if (!allTicked) for (Row r : all) checked.add(r.id());
+            if (!allTicked) for (Row r : tickable) checked.add(r.id());
             model.fireTableDataChanged();
             refreshButtons();
         }
@@ -648,14 +704,31 @@ final class Mods {
             col.add(left(Theme.wrapped(name, 190, Theme.TEXT, 20f)));
             ((JLabel) col.getComponent(col.getComponentCount() - 1)).setFont(Theme.bold(20f));
             col.add(Box.createVerticalStrut(12));
+            Compat.Verdict v = verdict(row);
+            if (v.state() != Compat.State.UNKNOWN) {
+                boolean ok = v.state() != Compat.State.UNAVAILABLE;
+                JPanel box = new Theme.Card(new BorderLayout(0, 6), Theme.WELL);
+                box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(ok ? Theme.ACCENT : Theme.FAULT_TEXT, 1, true), new EmptyBorder(10, 10, 10, 10)));
+                JLabel head = Theme.label((ok ? "✓  " : "×  ") + (ok ? PatchbayLauncher.t("Działa na Twoim Bitwigu", "Works on your Bitwig")
+                    : PatchbayLauncher.t("Niedostępny na Twoim Bitwigu", "Not available on your Bitwig")), Theme.bold(13f), ok ? Theme.ACCENT : Theme.FAULT_TEXT);
+                box.add(head, BorderLayout.NORTH);
+                String why = v.state() == Compat.State.NATIVE ? PatchbayLauncher.t("Zbudowany dokładnie dla Twojego Bitwiga.", "Built for exactly your Bitwig.") : v.reason();
+                box.add(Theme.wrapped(why, 166, Theme.SOFT, 13f), BorderLayout.CENTER);
+                box.setAlignmentX(LEFT_ALIGNMENT);
+                box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
+                col.add(box);
+                col.add(Box.createVerticalStrut(12));
+            }
             if (info != null && !info.description().isEmpty()) {
-                col.add(left(Theme.wrapped(info.description(), 190, Theme.SOFT, 14f)));
+                col.add(left(Theme.wrapped(info.description(), 180, Theme.SOFT, 14f)));
                 col.add(Box.createVerticalStrut(12));
             }
             List<String[]> facts = new ArrayList<>();
             if (info != null && !info.author().isEmpty()) facts.add(new String[] { PatchbayLauncher.t("Autor", "Author"), info.author() });
             if (info != null && info.builtFor() != null && !info.builtFor().isBlank())
-                facts.add(new String[] { PatchbayLauncher.t("Zbudowany dla", "Built for"), "Bitwig " + info.builtFor() });
+                facts.add(new String[] { PatchbayLauncher.t("Zbudowany dla", "Built for"), "Bitwig " + info.builtFor()
+                    + (info.builtPlatform() == null ? "" : " · " + Compat.platformName(info.builtPlatform())) });
+            if (bitwig() != null) facts.add(new String[] { PatchbayLauncher.t("Twój Bitwig", "Your Bitwig"), bitwig() + " · " + Compat.platformName(Platform.suffix()) });
             if (row.installed() != null) facts.add(new String[] { PatchbayLauncher.t("Zainstalowana", "Installed"), row.installed(), "mono" });
             if (row.available() != null) {
                 facts.add(new String[] { PatchbayLauncher.t("Dostępna", "Available"), row.available().version(), "mono" });
@@ -698,18 +771,28 @@ final class Mods {
             scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
             scroll.setViewportView(col);
             details.add(scroll, BorderLayout.CENTER);
+            JPanel south = new JPanel(new GridLayout(0, 1, 0, 8));
+            south.setOpaque(false);
+            south.setBorder(new EmptyBorder(12, 0, 0, 0));
+            if (v.state() == Compat.State.UNAVAILABLE && row.rank() != 1 && row.available() != null) {
+                JButton anyway = Theme.button(PatchbayLauncher.t("Zainstaluj mimo to", "Install anyway"), "secondary");
+                anyway.setEnabled(!busy && modsDir() != null);
+                anyway.addActionListener(e -> {
+                    int answer = JOptionPane.showConfirmDialog(this, PatchbayLauncher.t(
+                            "Ten mod nie uruchomi się na Twoim Bitwigu, a Patchbay pokaże go jako niedostępny. Zainstalować mimo to?",
+                            "This mod won't run on your Bitwig, and Patchbay will show it as not available. Install it anyway?"),
+                        "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+                    if (answer == JOptionPane.OK_OPTION) installRows(List.of(row));
+                });
+                south.add(anyway);
+            }
             if (row.available() != null && row.available().page() != null) {
                 JButton page = Theme.button(PatchbayLauncher.t("Strona wydania", "Release page"), "secondary");
                 String url = row.available().page();
-                page.addActionListener(e -> {
-                    Platform.open(url);
-                });
-                JPanel south = new JPanel(new BorderLayout());
-                south.setOpaque(false);
-                south.setBorder(new EmptyBorder(12, 0, 0, 0));
-                south.add(page, BorderLayout.CENTER);
-                details.add(south, BorderLayout.SOUTH);
+                page.addActionListener(e -> Platform.open(url));
+                south.add(page);
             }
+            if (south.getComponentCount() > 0) details.add(south, BorderLayout.SOUTH);
             details.revalidate();
             details.repaint();
         }
@@ -733,6 +816,7 @@ final class Mods {
                             model.fireTableRowsUpdated(r, r);
                             if (table.getSelectedRow() == r) showSelected();
                         }
+                        refilterSoon.restart();
                     });
                 }
             }, "mods-info").start();
@@ -751,8 +835,9 @@ final class Mods {
             setBusy(true, PatchbayLauncher.t("Pobieranie listy modów…", "Loading the mod list…"));
             new Thread(() -> {
                 try {
+                    String version = Compat.norm(Platform.bitwigVersion());
                     Map<String, Available> found = fetchCatalog();
-                    SwingUtilities.invokeLater(() -> { catalog = found; rebuild(); setBusy(false, ""); loadInfos(); reloadIfAsked(); });
+                    SwingUtilities.invokeLater(() -> { detectedBitwig = version; detecting = false; catalog = found; rebuild(); setBusy(false, ""); loadInfos(); reloadIfAsked(); });
                 } catch (IOException ex) {
                     SwingUtilities.invokeLater(() -> { rebuild(); setBusy(false, ex.getMessage()); reloadIfAsked(); });
                 }
@@ -778,23 +863,72 @@ final class Mods {
             Map<String, Installed> have = installed(modsDir());
             onDisk.clear();
             onDisk.putAll(have);
-            String keep = table.getSelectedRow() >= 0 && table.getSelectedRow() < rows.size() ? rows.get(table.getSelectedRow()).id() : null;
-            rows.clear();
+            all.clear();
             for (Available a : catalog.values()) {
                 Installed i = have.get(a.id());
                 int rank = i == null ? 2 : PatchbayLauncher.compareVersions(a.version(), i.version()) > 0 ? 0 : 1;
-                rows.add(new Row(a.id(), i == null ? a.id() : i.name(), i == null ? null : i.version(), a, rank));
+                all.add(new Row(a.id(), i == null ? a.id() : i.name(), i == null ? null : i.version(), a, rank));
             }
-            rows.sort(Comparator.comparingInt(Row::rank).thenComparing(Row::id));
+            String v = PatchbayLauncher.currentVersion();
+            Path root = v == null ? null : PatchbayLauncher.folderOf(v);
+            target = Compat.target(root, bitwig(), Platform.suffix());
+            fillBitwigBox(root);
+            refilter();
+        }
+
+        /** Shown only when the system doesn't say which Bitwig is installed: the versions Patchbay has maps for. */
+        private void fillBitwigBox(Path root) {
+            boolean ask = !detecting && detectedBitwig == null && root != null;
+            filling = true;
+            bitwigBox.removeAllItems();
+            if (ask) {
+                bitwigBox.addItem(PatchbayLauncher.t("nie wiem", "don't know"));
+                for (String version : Compat.versions(root, Platform.suffix())) bitwigBox.addItem(version);
+                String chosen = bitwig();
+                bitwigBox.setSelectedIndex(0);
+                for (int i = 1; chosen != null && i < bitwigBox.getItemCount(); i++) if (chosen.equals(bitwigBox.getItemAt(i))) bitwigBox.setSelectedIndex(i);
+            }
+            filling = false;
+            bitwigLabel.setVisible(ask);
+            bitwigBox.setVisible(ask);
+        }
+
+        /** The rows the Show filter lets through, mods that can run first, then updates, installed, new; and the counts. */
+        private void refilter() {
+            String keep = table.getSelectedRow() >= 0 && table.getSelectedRow() < rows.size() ? rows.get(table.getSelectedRow()).id() : null;
+            int show = showBox.getSelectedIndex();
+            rows.clear();
+            for (Row r : all) {
+                boolean off = unavailable(r);
+                boolean pass = switch (show) {
+                    case 1 -> !off;
+                    case 2 -> r.rank() != 2;
+                    case 3 -> r.rank() == 0;
+                    case 4 -> off;
+                    default -> true;
+                };
+                if (pass) rows.add(r);
+            }
+            rows.sort(Comparator.comparing(this::unavailable).thenComparingInt(Row::rank).thenComparing(Row::id));
             Set<String> canTick = new HashSet<>();
             for (Row r : checkable()) canTick.add(r.id());
             checked.retainAll(canTick);
             model.fireTableDataChanged();
-            int updates = (int) rows.stream().filter(r -> r.rank() == 0).count();
-            long installedCount = rows.stream().filter(r -> r.rank() != 2).count();
-            subtitle.setText(catalog.isEmpty() ? " " : PatchbayLauncher.t("W katalogu: ", "In the catalogue: ") + catalog.size()
+
+            int updates = (int) all.stream().filter(r -> r.rank() == 0 && !unavailable(r)).count();
+            long installedCount = all.stream().filter(r -> r.rank() != 2).count();
+            long off = all.stream().filter(this::unavailable).count();
+            String mine = bitwig() == null ? null : bitwig() + " · " + Compat.platformName(Platform.suffix());
+            String head = catalog.isEmpty() ? " "
+                : (mine != null ? PatchbayLauncher.t("Twój Bitwig: ", "Your Bitwig: ") + mine + " · "
+                    + PatchbayLauncher.t("pasuje ", "works: ") + (all.size() - off) + PatchbayLauncher.t(" z ", " of ") + all.size()
+                    : PatchbayLauncher.t("W katalogu: ", "In the catalogue: ") + all.size())
                 + " · " + PatchbayLauncher.t("zainstalowane: ", "installed: ") + installedCount
-                + " · " + PatchbayLauncher.t("aktualizacje: ", "updates: ") + updates);
+                + " · " + PatchbayLauncher.t("aktualizacje: ", "updates: ") + updates;
+            subtitle.setText(head);
+            if (!busy && bitwig() != null && target == null && !catalog.isEmpty())
+                status.setText(Compat.check(null, bitwig(), Platform.suffix(), null, null, null).reason());
+
             String select = System.getProperty("launcher.select"); // offline test: show this mod's details
             if (select == null) select = keep;
             int pick = rows.isEmpty() ? -1 : 0;
@@ -812,14 +946,14 @@ final class Mods {
 
         private void refreshButtons() {
             boolean ready = !busy && modsDir() != null;
-            List<Row> all = checkable();
+            List<Row> tickable = checkable();
             int ticked = checkedRows().size();
-            boolean allTicked = !all.isEmpty() && ticked == all.size();
+            boolean allTicked = !tickable.isEmpty() && ticked == tickable.size();
             checkAllButton.setText(allTicked ? PatchbayLauncher.t("Odznacz wszystkie", "Untick all") : PatchbayLauncher.t("Zaznacz wszystkie", "Tick all"));
-            checkAllButton.setEnabled(ready && !all.isEmpty());
+            checkAllButton.setEnabled(ready && !tickable.isEmpty());
             installButton.setText(PatchbayLauncher.t("Zainstaluj zaznaczone (", "Install ticked (") + ticked + ")");
             installButton.setEnabled(ready && ticked > 0);
-            updateAllButton.setEnabled(ready && rows.stream().anyMatch(r -> r.rank() == 0));
+            updateAllButton.setEnabled(ready && all.stream().anyMatch(r -> r.rank() == 0 && !unavailable(r)));
             refreshButton.setEnabled(!busy);
         }
 

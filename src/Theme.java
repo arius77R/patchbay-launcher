@@ -31,6 +31,8 @@ public final class Theme {
     static final Color WELL = new Color(0x1C1D20), LINE = new Color(0x3B3D42), HAIR = new Color(0x25262A);
     static final Color TEXT = new Color(0xE4E5E7), SOFT = new Color(0xC9CBCF), MUTED = new Color(0x9C9FA5), DIM = new Color(0x63666C);
     static final Color FAULT = new Color(0xF0524A), FAULT_TEXT = new Color(0xF48A84);
+    /** Bitwig's orange, for the button that starts Patchbay (and with it Bitwig). */
+    static final Color BITWIG = new Color(0xFF6A1A), BITWIG_INK = new Color(0x17181A);
     static final Color ACCENT = new Color(0x2EC4B6), ACCENT_INK = new Color(0x06201D), ACCENT_SEL = new Color(0x1E3836), ACCENT_SOFT = new Color(0x7FDCD2);
     static final Color CONTROL = new Color(0x2E3034), CONTROL_HOVER = new Color(0x36383D);
 
@@ -131,7 +133,7 @@ public final class Theme {
             b.setFocusPainted(false);
             b.setRolloverEnabled(true);
             b.setBorder(new EmptyBorder(0, k.equals("nav") ? 12 : 14, 0, k.equals("nav") ? 12 : 14));
-            b.setFont(k.equals("primary") ? bold(14f) : k.equals("nav") ? text(14f) : text(13f));
+            b.setFont(k.equals("primary") || k.equals("bitwig") ? bold(14f) : k.equals("nav") ? text(14f) : text(13f));
             b.setHorizontalAlignment(k.equals("nav") ? SwingConstants.LEFT : SwingConstants.CENTER);
             b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         }
@@ -139,7 +141,7 @@ public final class Theme {
         @Override public Dimension getPreferredSize(JComponent c) {
             Dimension d = super.getPreferredSize(c);
             String k = kind((AbstractButton) c);
-            int h = k.equals("primary") || k.equals("nav") ? 38 : 34;
+            int h = k.equals("primary") || k.equals("bitwig") || k.equals("nav") ? 38 : 34;
             if (Boolean.TRUE.equals(c.getClientProperty("small"))) h = 28;
             int w = d.width + (c.getClientProperty("badge") instanceof Integer n && n > 0 ? 34 : 0);
             return new Dimension(w, h);
@@ -153,6 +155,7 @@ public final class Theme {
             boolean on = Boolean.TRUE.equals(b.getClientProperty("current"));
             Color bg = switch (k) {
                 case "primary" -> !b.isEnabled() ? CONTROL : m.isPressed() ? ACCENT.darker() : m.isRollover() ? ACCENT.brighter() : ACCENT;
+                case "bitwig" -> !b.isEnabled() ? CONTROL : m.isPressed() ? new Color(0xE05A10) : m.isRollover() ? new Color(0xFF8340) : BITWIG;
                 case "nav" -> on ? ACCENT_SEL : m.isRollover() ? FRAME : null;
                 case "danger" -> m.isRollover() ? new Color(0x2E1A19) : null;
                 default -> !b.isEnabled() ? new Color(0x26282B) : m.isPressed() ? LINE : m.isRollover() ? CONTROL_HOVER : CONTROL;
@@ -191,6 +194,7 @@ public final class Theme {
             boolean on = Boolean.TRUE.equals(b.getClientProperty("current"));
             Color fg = !b.isEnabled() ? DIM : switch (k) {
                 case "primary" -> ACCENT_INK;
+                case "bitwig" -> BITWIG_INK;
                 case "nav" -> on ? Color.WHITE : SOFT;
                 case "danger" -> FAULT_TEXT;
                 default -> TEXT;
@@ -567,21 +571,24 @@ public final class Theme {
         };
     }
 
-    /** Names with a grey "Group:" prefix. */
+    /** Names with a grey "Group:" prefix; a name starting with "~" is dimmed (a mod that can't run here). */
     static DefaultTableCellRenderer nameCells() {
         return new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
-                JLabel l = (JLabel) super.getTableCellRendererComponent(t, v == null ? "" : twoTone(v.toString()), s, false, r, c);
-                l.setToolTipText(v == null ? null : v.toString());
+                String name = v == null ? "" : v.toString();
+                boolean dim = name.startsWith("~");
+                if (dim) name = name.substring(1);
+                JLabel l = (JLabel) super.getTableCellRendererComponent(t, dim ? "<html><nobr>" + name.replace("&", "&amp;").replace("<", "&lt;") + "</nobr></html>" : twoTone(name), s, false, r, c);
+                l.setToolTipText(name.isEmpty() ? null : name);
                 l.setBorder(new EmptyBorder(0, 10, 0, 6));
                 l.setFont(text(14f));
-                l.setForeground(TEXT);
+                l.setForeground(dim ? MUTED : TEXT);
                 return l;
             }
         };
     }
 
-    /** Status as a pill; the value is "kind|label" with kind update, installed or new. */
+    /** Status as a pill; the value is "kind|label" with kind update, installed, new or off (outlined: can't run here). */
     static TableCellRenderer pillCells() {
         return new TableCellRenderer() {
             private final Pill pill = new Pill();
@@ -610,6 +617,14 @@ public final class Theme {
             Color bg = switch (kind) { case "update" -> ACCENT; case "installed" -> ACCENT_SEL; default -> CONTROL; };
             Color fg = switch (kind) { case "update" -> ACCENT_INK; case "installed" -> ACCENT_SOFT; default -> SOFT; };
             if (kind.equals("installed") && getBackground().equals(ACCENT_SEL)) bg = WELL;
+            if (kind.equals("off")) {
+                g2.setColor(MUTED);
+                g2.drawRoundRect(x, y, w - 1, h - 1, h, h);
+                g2.setColor(MUTED);
+                g2.drawString(text, x + 9, y + (h + fm.getAscent() - fm.getDescent()) / 2);
+                g2.dispose();
+                return;
+            }
             g2.setColor(bg);
             g2.fillRoundRect(x, y, w, h, h, h);
             g2.setColor(fg);

@@ -342,7 +342,7 @@ public final class PatchbayLauncher {
     private final JLabel activeLabel = Theme.label("–", Theme.mono(13f), Theme.TEXT);
     private final JComboBox<String> versionBox = new JComboBox<>();
     private final JButton installButton = Theme.button(" ", "primary");
-    private final JButton startButton = Theme.button(t("Uruchom Patchbay", "Start Patchbay"), "primary");
+    private final JButton startButton = Theme.button(t("Uruchom Patchbay", "Start Patchbay"), "bitwig");
     private final JProgressBar bar = new JProgressBar(0, 1000);
     private final JLabel statusLabel = Theme.label(" ", Theme.text(13f), Theme.MUTED);
     private final JComboBox<String> languageBox = new JComboBox<>();
@@ -839,6 +839,21 @@ public final class PatchbayLauncher {
             installZip(zip, version, s -> { });
             check(version.equals(currentVersion()), "installed version is current");
             Path ui = folderOf(version).resolve(Platform.startScript());
+            // compatibility with the user's Bitwig, from the map packs this Patchbay ships
+            Path installed = folderOf(version);
+            String sys = Platform.suffix();
+            Compat.Target t614 = Compat.target(installed, "6.1.4", sys);
+            check(t614 != null && t614.build().version().equals("6.1.4"), "map pack for Bitwig 6.1.4 on " + sys + ": " + (t614 == null ? null : t614.packId()));
+            check(Compat.versions(installed, sys).contains("6.1.4"), "Bitwig versions with a map: " + Compat.versions(installed, sys));
+            String other = sys.equals("windows") ? "macos" : "windows";
+            check(Compat.check(t614, "6.1.4", sys, "6.1.3", other, other.equals("macos") ? "universal" : "x64").state() == Compat.State.TRANSLATED,
+                "mod built on " + other + " 6.1.3: translated");
+            check(Compat.check(t614, "6.1.4", sys, "6.1.4", sys, t614 == null ? null : t614.build().arch()).state() == Compat.State.NATIVE, "mod built on this Bitwig: native");
+            check(Compat.check(t614, "6.1.4", sys, "5.3.13", "windows", "x64").state() == Compat.State.UNAVAILABLE, "mod built on a Bitwig the map doesn't know: not available");
+            check(Compat.target(installed, "6.1.5", sys) == null
+                && Compat.check(null, "6.1.5", sys, "6.1.3", "windows", "x64").state() == Compat.State.UNAVAILABLE, "no map for Bitwig 6.1.5: nothing loads");
+            check(Compat.check(t614, null, sys, "6.1.3", "windows", "x64").state() == Compat.State.UNKNOWN, "Bitwig unknown: no verdict");
+            check("6.1".equals(Compat.norm("6.1.0")) && "6.1.4".equals(Compat.norm("6.1.4")), "6.1.0 counts as 6.1");
             check(Files.isRegularFile(ui) && (Platform.WINDOWS || Files.isExecutable(ui)), Platform.startScript() + " in place" + (Platform.WINDOWS ? "" : " and runnable"));
             check(Files.isRegularFile(folderOf(version).resolve("loader/app/bml-control.jar")), "control jar present");
 

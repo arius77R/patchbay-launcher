@@ -116,17 +116,24 @@ final class Platform {
         return null;
     }
 
+    /** The Bitwig executable chosen in Patchbay's settings (bitwig.executable in bml.properties), or null. */
+    static Path chosenBitwig() {
+        Path props = patchbaySettings().resolve("bml.properties");
+        if (!Files.isRegularFile(props)) return null;
+        Properties p = new Properties();
+        try (InputStream in = Files.newInputStream(props)) {
+            p.load(in);
+            String chosen = p.getProperty("bitwig.executable");
+            return chosen != null && Files.exists(Path.of(chosen)) ? Path.of(chosen) : null;
+        } catch (IOException | RuntimeException e) {
+            return null;
+        }
+    }
+
     /** Bitwig Studio.exe: the one chosen in Patchbay's settings, else the default install place. */
     static Path windowsBitwigExe() {
-        Path props = patchbaySettings().resolve("bml.properties");
-        if (Files.isRegularFile(props)) {
-            Properties p = new Properties();
-            try (InputStream in = Files.newInputStream(props)) {
-                p.load(in);
-                String chosen = p.getProperty("bitwig.executable");
-                if (chosen != null && Files.isRegularFile(Path.of(chosen))) return Path.of(chosen);
-            } catch (IOException | RuntimeException ignored) { }
-        }
+        Path chosen = chosenBitwig();
+        if (chosen != null && Files.isRegularFile(chosen)) return chosen;
         String pf = System.getenv("ProgramFiles");
         Path def = Path.of(pf != null ? pf : "C:\\Program Files", "Bitwig Studio", "Bitwig Studio.exe");
         return Files.isRegularFile(def) ? def : null;
@@ -202,7 +209,14 @@ final class Platform {
             }
         }
         if (LINUX) return linuxBitwigVersion();
-        for (String app : new String[] { "/Applications/Bitwig Studio.app", System.getProperty("user.home") + "/Applications/Bitwig Studio.app" }) {
+        // macOS: the Bitwig chosen in Patchbay first (…/Bitwig Studio.app/Contents/MacOS/BitwigStudio), so both look at the same one
+        List<String> apps = new ArrayList<>();
+        for (Path p = chosenBitwig(); p != null; p = p.getParent()) {
+            if (p.getFileName() != null && p.getFileName().toString().endsWith(".app")) { apps.add(p.toString()); break; }
+        }
+        apps.add("/Applications/Bitwig Studio.app");
+        apps.add(System.getProperty("user.home") + "/Applications/Bitwig Studio.app");
+        for (String app : apps) {
             Path plist = Path.of(app, "Contents", "Info.plist");
             if (!Files.isRegularFile(plist)) continue;
             try {
