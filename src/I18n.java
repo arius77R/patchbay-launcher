@@ -108,7 +108,6 @@ final class I18n {
         add("Patchbay isn't installed.", "Patchbay ist nicht installiert.", "Patchbay n'est pas installé.");
         add("Installed version: ", "Installierte Version: ", "Version installée : ");
         add("Latest version: ", "Neueste Version: ", "Dernière version : ");
-        add("Update available: ", "Update verfügbar: ", "Mise à jour disponible : ");
         add("You have the latest version.", "Du hast die neueste Version.", "Vous avez la dernière version.");
         add("Install", "Installieren", "Installer");
         add("Installed", "Installiert", "Installée");
@@ -126,7 +125,6 @@ final class I18n {
         add("Done. Active version: ", "Fertig. Aktive Version: ", "Terminé. Version active : ");
         add("Patchbay is already running.", "Patchbay läuft bereits.", "Patchbay est déjà en cours d'exécution.");
         add("Starting Patchbay…", "Patchbay wird gestartet…", "Lancement de Patchbay…");
-        add("Language:", "Sprache:", "Langue :");
         add("System language", "Systemsprache", "Langue du système");
         add("Add to Dock", "Zum Dock hinzufügen", "Ajouter au Dock");
         add("Add Patchbay Launcher to the Dock, so it's one click away?",
@@ -147,20 +145,16 @@ final class I18n {
         add("Download failed: HTTP ", "Download fehlgeschlagen: HTTP ", "Échec du téléchargement : HTTP ");
         add("The download is incomplete.", "Der Download ist unvollständig.", "Le téléchargement est incomplet.");
         add("The archive is damaged (unzip: ", "Das Archiv ist beschädigt (unzip: ", "L'archive est endommagée (unzip : ");
-        add("No Patchbay in the archive (bml-ui.sh missing).", "Im Archiv ist kein Patchbay (bml-ui.sh fehlt).", "Pas de Patchbay dans l'archive (bml-ui.sh manquant).");
         add("the SHA-256 doesn't match, the file was refused.", "die SHA-256-Prüfsumme stimmt nicht, die Datei wurde abgelehnt.", "la somme SHA-256 ne correspond pas, le fichier a été refusé.");
         // devices tab
         add("Devices", "Geräte", "Périphériques");
         add("Device", "Gerät", "Périphérique");
         add("Type", "Typ", "Type");
-        add("What it does", "Was es macht", "Ce qu'il fait");
         add("downloaded", "geladen", "téléchargé");
         add("Build:", "Dateiversion:", "Version des fichiers :");
         add("Show folder", "Ordner zeigen", "Afficher le dossier");
         add("Project page", "Projektseite", "Page du projet");
         add("Loading the device list…", "Geräteliste wird geladen…", "Chargement de la liste des périphériques…");
-        add("Bitwig's version wasn't detected, pick the matching one.", "Die Bitwig-Version wurde nicht erkannt, wähle die passende.", "La version de Bitwig n'a pas été détectée, choisissez celle qui convient.");
-        add("Detected Bitwig: ", "Erkanntes Bitwig: ", "Bitwig détecté : ");
         add("Download ticked (", "Ausgewählte laden (", "Télécharger la sélection (");
         add("Quit Bitwig Studio, then try again.", "Beende Bitwig Studio und versuche es dann erneut.", "Quittez Bitwig Studio, puis réessayez.");
         add("Downloading: ", "Download: ", "Téléchargement : ");
@@ -171,19 +165,13 @@ final class I18n {
             "die Datei weicht von der gelisteten Version ab. Klicke auf Neu laden und versuche es erneut.",
             "le fichier diffère de la version listée. Cliquez sur Actualiser et réessayez.");
         add("Patchbay's folder list can't be read: ", "Patchbays Ordnerliste kann nicht gelesen werden: ", "La liste des dossiers de Patchbay est illisible : ");
-        add("Author: ", "Autor: ", "Auteur : ");
-        add("Installed: ", "Installiert: ", "Installée : ");
-        add("Available: ", "Verfügbar: ", "Disponible : ");
         add("Source: ", "Quelle: ", "Source : ");
-        add("Needs:", "Benötigt:", "Nécessite :");
         // launcher 0.8.0: menu, sections and sources
         add("Sources", "Quellen", "Sources");
         add("Active Patchbay", "Aktives Patchbay", "Patchbay actif");
         add("Patchbay version", "Patchbay-Version", "Version de Patchbay");
-        add("Settings", "Einstellungen", "Réglages");
         add("Language", "Sprache", "Langue");
         add("Show the data folder", "Datenordner zeigen", "Afficher le dossier des données");
-        add("About", "Über", "À propos");
         add("Report a problem", "Problem melden", "Signaler un problème");
         add("All", "Alle", "Tous");
         add("Compatible", "Kompatibel", "Compatibles");
@@ -195,7 +183,6 @@ final class I18n {
         add("Not compatible with your Bitwig", "Nicht kompatibel mit deinem Bitwig", "Incompatible avec votre Bitwig");
         add("Your Bitwig:", "Dein Bitwig:", "Votre Bitwig :");
         add("Your Bitwig", "Dein Bitwig", "Votre Bitwig");
-        add("Your Bitwig: ", "Dein Bitwig: ", "Votre Bitwig : ");
         add("Show", "Anzeigen", "Afficher");
         add("don't know", "weiß nicht", "je ne sais pas");
         add("Built for exactly your Bitwig.", "Genau für dein Bitwig gebaut.", "Compilé exactement pour votre Bitwig.");
@@ -266,7 +253,6 @@ final class I18n {
         add("Release file (* = version)", "Release-Datei (* = Version)", "Fichier de version (* = version)");
         add("Which release files", "Welche Release-Dateien", "Quels fichiers de version");
         add("Folder in the repository (empty = all)", "Ordner im Repository (leer = alle)", "Dossier du dépôt (vide = tous)");
-        add("A built-in source can't be removed or moved. You can switch it off.", "Eine eingebaute Quelle lässt sich nicht entfernen oder verschieben. Du kannst sie ausschalten.", "Une source intégrée ne peut être ni supprimée ni déplacée. Vous pouvez la désactiver.");
         add("Patchbay comes from one source at a time. Switching this one on switches the others off.", "Patchbay kommt immer aus einer Quelle. Wenn du diese einschaltest, werden die anderen ausgeschaltet.", "Patchbay provient d'une seule source à la fois. Activer celle-ci désactive les autres.");
         add("Check", "Prüfen", "Vérifier");
         add("Add", "Hinzufügen", "Ajouter");
@@ -298,7 +284,6 @@ final class I18n {
         add("new", "neu", "nouveau");
         add("Refresh", "Neu laden", "Actualiser");
         add("Release page", "Release-Seite", "Page de la version");
-        add("Install Patchbay on the first tab first.", "Installiere zuerst Patchbay auf dem ersten Tab.", "Installez d'abord Patchbay dans le premier onglet.");
         add("Loading the mod list…", "Mod-Liste wird geladen…", "Chargement de la liste des mods…");
         add("Update all (", "Alle aktualisieren (", "Tout mettre à jour (");
         add("Mod updates: ", "Mod-Updates: ", "Mises à jour de mods : ");
@@ -360,6 +345,9 @@ final class I18n {
         add("Open the launcher's Discord channel", "Discord-Kanal des Launchers öffnen", "Ouvrir le canal Discord du lanceur");
         add("Light appearance", "Helles Erscheinungsbild", "Apparence claire");
         add("Dark appearance", "Dunkles Erscheinungsbild", "Apparence sombre");
+        add("Couldn't read the source ", "Quelle konnte nicht gelesen werden: ", "Impossible de lire la source ");
+        add("Couldn't read these sources: ", "Diese Quellen konnten nicht gelesen werden: ", "Impossible de lire ces sources : ");
+        add("Divider between the list and the details", "Trennlinie zwischen Liste und Details", "Séparateur entre la liste et les détails");
         add("Cut", "Ausschneiden", "Couper");
         add("Copy", "Kopieren", "Copier");
         add("Paste", "Einfügen", "Coller");
