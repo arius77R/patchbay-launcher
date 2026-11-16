@@ -516,11 +516,50 @@ public final class PatchbayLauncher {
         settings.add(s, BorderLayout.CENTER);
         settings.setAlignmentX(Component.LEFT_ALIGNMENT);
         col.add(settings);
+        col.add(Box.createVerticalStrut(16));
+        col.add(aboutCard());
 
         JPanel top = new JPanel(new BorderLayout());
         top.setOpaque(false);
         top.add(col, BorderLayout.NORTH);
         return Theme.page("Patchbay", installedLabel, null, top, null, null);
+    }
+
+    /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */
+    static final String PROJECT = "https://github.com/arius77R/patchbay-launcher";
+
+    /** Who makes the launcher and where to report problems with it, so they don't go to Patchbay's authors. */
+    private JPanel aboutCard() {
+        JPanel card = new Theme.Card(new BorderLayout(), Theme.FRAME);
+        card.setBorder(new EmptyBorder(18, 18, 18, 18));
+        JPanel a = new JPanel();
+        a.setOpaque(false);
+        a.setLayout(new BoxLayout(a, BoxLayout.Y_AXIS));
+        JLabel head = Theme.label(t("O aplikacji", "About") + " · Patchbay Launcher " + VERSION, Theme.bold(16f), Theme.TEXT);
+        head.setAlignmentX(Component.LEFT_ALIGNMENT);
+        a.add(head);
+        a.add(Box.createVerticalStrut(10));
+        JLabel who = Theme.wrapped(t(
+            "Patchbay Launcher to nieoficjalny projekt, który tworzy i wspiera Marius R. Nie jest częścią Patchbay: problemy z Launcherem zgłaszaj na jego stronie na GitHubie, a nie autorom Patchbay.",
+            "Patchbay Launcher is an unofficial project made and supported by Marius R. It is not part of Patchbay: please report problems with the launcher on its GitHub page, not to the authors of Patchbay."),
+            620, Theme.MUTED, 14f);
+        who.setAlignmentX(Component.LEFT_ALIGNMENT);
+        a.add(who);
+        a.add(Box.createVerticalStrut(12));
+        JButton report = Theme.button(t("Zgłoś problem", "Report a problem"), "secondary");
+        report.addActionListener(e -> browse(PROJECT + "/issues"));
+        JButton page = Theme.button(t("Strona projektu", "Project page"), "secondary");
+        page.addActionListener(e -> browse(PROJECT));
+        JPanel links = Theme.row(10, report, page);
+        links.setAlignmentX(Component.LEFT_ALIGNMENT);
+        a.add(links);
+        card.add(a, BorderLayout.CENTER);
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return card;
+    }
+
+    private static void browse(String url) {
+        try { Desktop.getDesktop().browse(java.net.URI.create(url)); } catch (Exception ignored) { }
     }
 
     private void show() {

@@ -183,6 +183,11 @@ final class I18n {
         add("Settings", "Einstellungen", "Réglages");
         add("Language", "Sprache", "Langue");
         add("Show the data folder", "Datenordner zeigen", "Afficher le dossier des données");
+        add("About", "Über", "À propos");
+        add("Report a problem", "Problem melden", "Signaler un problème");
+        add("Patchbay Launcher is an unofficial project made and supported by Marius R. It is not part of Patchbay: please report problems with the launcher on its GitHub page, not to the authors of Patchbay.",
+            "Patchbay Launcher ist ein inoffizielles Projekt, das Marius R entwickelt und betreut. Es ist kein Teil von Patchbay: Probleme mit dem Launcher bitte auf seiner GitHub-Seite melden, nicht bei den Autoren von Patchbay.",
+            "Patchbay Launcher est un projet non officiel créé et maintenu par Marius R. Il ne fait pas partie de Patchbay : signalez les problèmes du lanceur sur sa page GitHub, pas aux auteurs de Patchbay.");
         add("Click a mod in the list to see what it does and needs.", "Klicke auf einen Mod in der Liste, um zu sehen, was er macht und braucht.", "Cliquez sur un mod de la liste pour voir ce qu'il fait et ce qu'il nécessite.");
         add("Author", "Autor", "Auteur");
         add("Built for", "Gebaut für", "Compilé pour");

@@ -27,3 +27,9 @@ Ważne
   przyciskiem Load. Bitwig otwarty zwyczajnie startuje bez modów.
 - Mody i urządzenia to kod uruchamiany wewnątrz Bitwiga. Dodawaj tylko źródła,
   którym ufasz.
+
+Pomoc
+- Patchbay Launcher to nieoficjalny projekt, który tworzy i wspiera Marius R,
+  osobny od Patchbay. Problemy z Launcherem zgłaszaj na
+  https://github.com/arius77R/patchbay-launcher/issues
+  (albo przyciskiem „Zgłoś problem” w aplikacji), a nie autorom Patchbay.

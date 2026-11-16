@@ -6,6 +6,7 @@
 - GitHub answers are cached with their ETag: unchanged lists don't count against GitHub's hourly limit, and when GitHub can't be reached or is rate-limiting, the last list is shown instead of an empty one. A failed request is retried once.
 - Mods: up to 500 releases per source are read (100 per page) instead of 30, so older mods no longer drop out of the catalogue.
 - Mod details show which Bitwig version the mod was built for (`built_against` in its manifest).
+- About card in the Patchbay section: the launcher is an unofficial project made and supported by Marius R; "Report a problem" opens this repository's Issues. The same note is in the README and the install notes.
 - A refresh asked for while the list is loading (after changing sources, say) now runs when the first one ends.
 
 ## 0.9.1

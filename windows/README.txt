@@ -2,7 +2,7 @@
 ===================================
 
 Installs, updates and starts Patchbay (the mod loader for Bitwig Studio) and
-downloads mods and devices. Not affiliated with Bitwig GmbH or Patchbay's authors.
+downloads mods and devices. Unofficial: not made by Bitwig GmbH or Patchbay's authors.
 
 Requirements
 - Windows 10 or 11 (64-bit)
@@ -25,3 +25,9 @@ Good to know
 - Mods only work when Bitwig is started from the Patchbay window with Load.
   Bitwig opened the usual way starts without mods.
 - Mods and devices are code that runs inside Bitwig. Only add sources you trust.
+
+Support
+- Patchbay Launcher is an unofficial project made and supported by Marius R,
+  separate from Patchbay. Please report problems with the launcher at
+  https://github.com/arius77R/patchbay-launcher/issues
+  (or "Report a problem" in the app), not to the authors of Patchbay.
