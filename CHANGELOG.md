@@ -8,6 +8,7 @@
 - **Bottom bar:** on the left a **sun / moon** switch for the light or dark look (light colours on warm off-white), on the right a button to the launcher's channel on the Bitwig Discord.
 - Changing the look or the language keeps the window where it was, at the same size and on the same tab.
 - **Copy and paste on macOS:** ⌘V, ⌘C, ⌘X and ⌘A work in every text field (pasting a repository link into Sources didn't); a right-click menu with Cut, Copy, Paste and Select all in every text field.
+- Themes: a theme source that can't be read (GitHub limiting requests, a moved or private repository) is named under the list instead of being left out silently. A repository typed as `github.com/owner/name` without `https://` is accepted too.
 - A bigger app icon in the top bar, with the version under the name; the note about who makes the launcher sits at the bottom of the Patchbay page.
 - Theme and device details scroll when they are taller than the window, so the buttons stay in view.
 

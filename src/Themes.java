@@ -231,6 +231,11 @@ final class Themes {
 
     /** Every enabled theme source's themes; a source that fails is skipped unless all fail. */
     static List<Item> fetch() throws IOException {
+        return fetch(new ArrayList<>());
+    }
+
+    /** As fetch(), noting each source that could not be read ("owner/name: why") in failed. */
+    static List<Item> fetch(List<String> failed) throws IOException {
         List<Item> all = new ArrayList<>();
         IOException failure = null;
         for (Sources.Source s : Sources.enabled(Sources.THEMES)) {
@@ -238,10 +243,18 @@ final class Themes {
                 all.addAll(fetchRepo(s.repo(), s.filter()));
             } catch (IOException | RuntimeException ex) {
                 failure = ex instanceof IOException io ? io : new IOException(s.repo() + ": " + ex.getMessage());
+                failed.add(s.repo() + ": " + ex.getMessage());
             }
         }
         if (all.isEmpty() && failure != null) throw failure;
         return all;
+    }
+
+    /** The line under the list when some sources could not be read; empty when all were. */
+    static String failedNote(List<String> failed) {
+        if (failed.isEmpty()) return "";
+        return (failed.size() == 1 ? PatchbayLauncher.t("Nie udało się wczytać źródła ", "Couldn't read the source ")
+            : PatchbayLauncher.t("Nie udało się wczytać źródeł: ", "Couldn't read these sources: ")) + String.join(" · ", failed);
     }
 
     // ---------- where they go ----------
@@ -486,8 +499,9 @@ final class Themes {
             setBusy(true, PatchbayLauncher.t("Pobieranie listy motywów…", "Loading the theme list…"));
             new Thread(() -> {
                 try {
-                    List<Item> found = fetch();
-                    SwingUtilities.invokeLater(() -> { items = found; setBusy(false, ""); rebuild(); });
+                    List<String> failed = new ArrayList<>();
+                    List<Item> found = fetch(failed);
+                    SwingUtilities.invokeLater(() -> { items = found; setBusy(false, failedNote(failed)); rebuild(); });
                 } catch (IOException | RuntimeException ex) {
                     SwingUtilities.invokeLater(() -> setBusy(false, String.valueOf(ex.getMessage())));
                 }

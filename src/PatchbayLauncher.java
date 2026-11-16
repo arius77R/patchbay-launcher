@@ -1095,6 +1095,8 @@ public final class PatchbayLauncher {
             check(javax.swing.text.DefaultEditorKit.copyAction.equals(im.get(KeyStroke.getKeyStroke('C', cmd))), "Cmd+C copies");
             check(javax.swing.text.DefaultEditorKit.selectAllAction.equals(im.get(KeyStroke.getKeyStroke('A', cmd))), "Cmd+A selects all");
             check("polarity/bitwig-mods".equals(Sources.normalizeRepo("https://github.com/polarity/bitwig-mods")), "a pasted github.com link becomes owner/name");
+            check("polarity/bitwig-mods".equals(Sources.normalizeRepo("github.com/polarity/bitwig-mods/")), "a link without https:// too");
+            check(Themes.failedNote(List.of()).isEmpty() && Themes.failedNote(List.of("a/b: x")).contains("a/b: x"), "a theme source that can't be read is named");
         }
 
         static void check(boolean ok, String what) {

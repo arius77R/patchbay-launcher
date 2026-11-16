@@ -148,7 +148,7 @@ final class Sources {
     static String normalizeRepo(String typed) {
         if (typed == null) return null;
         String s = typed.strip();
-        s = s.replaceFirst("^(?i)https?://(www\\.)?github\\.com/", "");
+        s = s.replaceFirst("^(?i)(https?://)?(www\\.)?github\\.com/", "");
         s = s.replaceFirst("\\.git$", "");
         String[] parts = s.split("/");
         if (parts.length < 2) return null;
