@@ -27,13 +27,9 @@ final class Themes {
     /** One file of a theme: its path in the repository, its git blob hash and size. */
     record File(String path, String sha, long size) { }
 
-    /**
-     * A theme in a repository: folder "" for a lone file; files holds what gets installed. bte is the theme file,
-     * which may be an older Theme Editor .json that is turned into a .bte when it is installed.
-     */
+    /** A theme in a repository: folder "" for a lone .bte file; files holds what gets installed. */
     record Item(String repo, String name, String folder, File bte, List<File> files, String preview) {
         boolean isFolder() { return !folder.isEmpty(); }
-        boolean isJson() { return bte.path().toLowerCase(Locale.ROOT).endsWith(".json"); }
         long size() { return files.stream().mapToLong(File::size).sum(); }
     }
 
@@ -60,14 +56,6 @@ final class Themes {
         }
         Map<String, List<File>> btesByDir = new LinkedHashMap<>();
         for (File f : blobs) if (f.path().toLowerCase(Locale.ROOT).endsWith(".bte")) btesByDir.computeIfAbsent(parent(f.path()), k -> new ArrayList<>()).add(f);
-        // older themes from the Theme Editor are .json; one with a .bte of the same name beside it is that theme's older copy
-        List<File> jsons = new ArrayList<>();
-        for (File f : blobs) {
-            if (!jsonTheme(f.path())) continue;
-            String name = stem(leaf(f.path()));
-            boolean hasBte = btesByDir.getOrDefault(parent(f.path()), List.of()).stream().anyMatch(b -> stem(leaf(b.path())).equalsIgnoreCase(name));
-            if (!hasBte) jsons.add(f);
-        }
 
         List<Item> out = new ArrayList<>();
         for (Map.Entry<String, List<File>> dir : btesByDir.entrySet()) {
@@ -99,57 +87,8 @@ final class Themes {
                 }
             }
         }
-        for (File jf : jsons) {
-            String d = parent(jf.path()), name = stem(leaf(jf.path()));
-            String preview = null;
-            for (File f : blobs)
-                if (parent(f.path()).equals(d) && image(f.path()) && stem(leaf(f.path())).equalsIgnoreCase(name)) preview = f.path();
-            out.add(new Item(repo, name, "", jf, List.of(jf), preview));
-        }
         out.sort(Comparator.comparing(Item::name, String.CASE_INSENSITIVE_ORDER));
         return out;
-    }
-
-    private static final Set<String> NOT_THEMES = Set.of("package.json", "package-lock.json", "catalog.json", "mod.json", "manifest.json",
-        "tsconfig.json", "composer.json", "renovate.json", "settings.json", "launch.json", "tasks.json", "extensions.json");
-
-    /** A .json that may be a Theme Editor theme (what is in it is checked when it is installed). */
-    static boolean jsonTheme(String path) {
-        String p = path.toLowerCase(Locale.ROOT), name = leaf(p);
-        if (!p.endsWith(".json") || NOT_THEMES.contains(name) || name.startsWith(".")) return false;
-        for (String part : p.split("/")) if (part.startsWith(".") || part.equals("node_modules")) return false;
-        return true;
-    }
-
-    /** Colours the Theme Editor no longer writes; Bitwig 6 themes leave them out. */
-    private static final Set<String> DEFUNCT = Set.of("Irrelevant Timeline Overlay", "Transparent", "Image Source", "Same as background", "Inherited");
-
-    /**
-     * A Theme Editor .json theme ({"window": {"Name": "#rrggbb", …}, "arranger": {…}, "advanced": {…}}) as a .bte file:
-     * one "Name: #colour" line per colour, as the Theme Editor itself does when it imports one. null when it isn't such a theme.
-     */
-    static String jsonToBte(String json, String source) {
-        Object parsed;
-        try { parsed = Mods.Json.parse(json); } catch (RuntimeException e) { return null; }
-        // the Theme Editor's sections; other .json files with colours in them (palettes, catalogues) are not themes
-        if (!(parsed instanceof Map<?, ?> root) || !(root.get("window") instanceof Map || root.get("arranger") instanceof Map)) return null;
-        StringBuilder out = new StringBuilder("// Converted from the Theme Editor .json " + source + " by Patchbay Launcher\n");
-        Set<String> seen = new HashSet<>();
-        int colours = 0;
-        for (Map.Entry<?, ?> section : root.entrySet()) {
-            if (!(section.getValue() instanceof Map<?, ?> entries)) continue;
-            for (Map.Entry<?, ?> e : entries.entrySet()) {
-                String key = String.valueOf(e.getKey()).strip();
-                if (!(e.getValue() instanceof String value)) continue;
-                value = value.strip();
-                if (key.equals("Gradient") && (value.equals("true") || value.equals("false"))) { out.append(key).append(": ").append(value).append('\n'); continue; }
-                if (!value.matches("#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?") || DEFUNCT.contains(key) || !seen.add(key)) continue;
-                if (key.equals("Piano Roll White Key") && value.length() == 9) value = "#b3b3b3"; // as the Theme Editor does
-                out.append(key).append(": ").append(value).append('\n');
-                colours++;
-            }
-        }
-        return colours >= 10 ? out.toString() : null;
     }
 
     private static Path fixtures() {
@@ -158,75 +97,11 @@ final class Themes {
     }
 
     static List<Item> fetchRepo(String repo, String folder) throws IOException {
-        return fetchRepo(repo, folder, true);
-    }
-
-    /** At most this many repositories are followed from a list repository's README. */
-    static final int LIST_LINKS = 40;
-
-    /**
-     * The themes in a repository. A repository with no themes of its own whose README links to other
-     * repositories (a list like awesome-bitwig-themes) brings in the themes of the repositories it links to.
-     */
-    static List<Item> fetchRepo(String repo, String folder, boolean followList) throws IOException {
         Path fx = fixtures();
         String tree = fx != null
             ? Files.readString(fx.resolve(repo.replace('/', '_') + ".tree.json"))
             : PatchbayLauncher.httpText("https://api.github.com/repos/" + repo + "/git/trees/HEAD?recursive=1");
-        List<Item> items = keepRealThemes(parseTree(tree, repo, folder));
-        if (!items.isEmpty() || !followList || (folder != null && !folder.isBlank())) return items;
-        String readme = readmePath(tree);
-        if (readme == null) return items;
-        String text = fx != null ? Files.readString(fx.resolve(repo.replace('/', '_')).resolve(readme))
-            : PatchbayLauncher.httpText(Devices.rawUrl(repo, readme));
-        List<Item> all = new ArrayList<>();
-        for (String linked : linkedRepos(text, repo)) {
-            try { all.addAll(fetchRepo(linked, "", false)); } catch (IOException | RuntimeException skip) { /* a moved or private repository */ }
-        }
-        all.sort(Comparator.comparing(Item::name, String.CASE_INSENSITIVE_ORDER));
-        return all;
-    }
-
-    private static String readmePath(String tree) {
-        for (Object e : Mods.Json.array(Mods.Json.object(Mods.Json.parse(tree)).get("tree"))) {
-            String path = Mods.Json.text(Mods.Json.object(e), "path");
-            if (path != null && !path.contains("/") && path.toLowerCase(Locale.ROOT).matches("readme(\\.md|\\.markdown|\\.txt)?")) return path;
-        }
-        return null;
-    }
-
-    /** The GitHub repositories a README links to, each once, in order, without the list itself. */
-    static List<String> linkedRepos(String readme, String self) {
-        Set<String> out = new LinkedHashSet<>();
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("github\\.com/([A-Za-z0-9-]{1,39})/([A-Za-z0-9._-]{1,100})").matcher(readme);
-        while (m.find() && out.size() < LIST_LINKS) {
-            String name = m.group(2).replaceAll("\\.git$", "").replaceAll("[.]+$", "");
-            String r = m.group(1) + "/" + name;
-            if (!r.equalsIgnoreCase(self) && !name.isEmpty()) out.add(r);
-        }
-        return List.copyOf(out);
-    }
-
-    /** At most this many .json files per repository are opened to see whether they are themes. */
-    static final int JSON_CHECKS = 60;
-
-    /** Leaves out .json files that aren't Theme Editor themes (they are read from GitHub's raw files, which don't count against the API limit). */
-    static List<Item> keepRealThemes(List<Item> items) {
-        List<Item> out = new ArrayList<>();
-        int checked = 0;
-        for (Item i : items) {
-            if (!i.isJson()) { out.add(i); continue; }
-            if (checked++ >= JSON_CHECKS) continue;
-            try {
-                Path fx = fixtures();
-                String text = fx != null ? Files.readString(fx.resolve(i.repo().replace('/', '_')).resolve(i.bte().path()))
-                    : PatchbayLauncher.httpText(Devices.rawUrl(i.repo(), i.bte().path()));
-                if (jsonToBte(text, "") != null) out.add(i);
-            } catch (IOException | RuntimeException skip) {
-                // unreadable: not listed
-            }
-        }
-        return out;
+        return parseTree(tree, repo, folder);
     }
 
     /** Every enabled theme source's themes; a source that fails is skipped unless all fail. */
@@ -254,7 +129,7 @@ final class Themes {
 
     /** Where a theme sits in components/: its folder, or its .bte file for a lone file. */
     static Path target(Path components, Item item) {
-        return item.isFolder() ? components.resolve(item.name()) : components.resolve(stem(leaf(item.bte().path())) + ".bte");
+        return item.isFolder() ? components.resolve(item.name()) : components.resolve(leaf(item.bte().path()));
     }
 
     private static Path installedBte(Path components, Item item) {
@@ -268,13 +143,8 @@ final class Themes {
         Path bte = installedBte(components, item);
         if (!Files.isRegularFile(bte)) return 2;
         try {
-            if (item.isJson()) {
-                // a converted theme remembers the hash of the .json it came from in its first line
-                String first = Files.readAllLines(bte, StandardCharsets.UTF_8).stream().findFirst().orElse("");
-                return first.contains("(" + item.bte().sha() + ")") ? 1 : 0;
-            }
             return Devices.gitBlobSha(bte).equals(item.bte().sha()) ? 1 : 0;
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException e) {
             return 0;
         }
     }
@@ -297,17 +167,9 @@ final class Themes {
                         "plik różni się od wersji z listy. Kliknij Odśwież i spróbuj ponownie.",
                         "the file differs from the listed version. Click Refresh and try again."));
             }
-            if (item.isJson()) {
-                Path json = staging.resolve(leaf(item.bte().path()));
-                String bte = jsonToBte(Files.readString(json, StandardCharsets.UTF_8), item.repo() + "/" + item.bte().path() + " (" + item.bte().sha() + ")");
-                if (bte == null) throw new IOException(item.name() + ": " + PatchbayLauncher.t(
-                    "to nie jest motyw (plik .json bez kolorów Theme Editora).", "this isn't a theme (a .json without Theme Editor colours)."));
-                Files.delete(json);
-                Files.writeString(staging.resolve(stem(leaf(item.bte().path())) + ".bte"), bte, StandardCharsets.UTF_8);
-            }
             Path target = target(components, item);
             remove(target);
-            Path made = item.isFolder() ? staging : staging.resolve(stem(leaf(item.bte().path())) + ".bte");
+            Path made = item.isFolder() ? staging : staging.resolve(leaf(item.bte().path()));
             Files.move(made, target, StandardCopyOption.ATOMIC_MOVE);
         } finally {
             remove(staging);
@@ -598,10 +460,6 @@ final class Themes {
                     : row.rank() == 2 ? PatchbayLauncher.t("nie zainstalowany", "not installed")
                     : row.rank() == 0 ? PatchbayLauncher.t("jest nowsza wersja", "a newer version is out") : PatchbayLauncher.t("zainstalowany", "installed") },
                 { PatchbayLauncher.t("Rozmiar", "Size"), Math.max(1, item.size() / 1024) + " KB" },
-                { PatchbayLauncher.t("Format", "Format"), item.isJson()
-                    ? PatchbayLauncher.t(".json z Theme Editora, zamieniany na .bte (starsze motywy mogą nie zmienić wszystkich kolorów Bitwiga 6)",
-                        ".json from the Theme Editor, turned into .bte (older themes may not change every Bitwig 6 colour)")
-                    : ".bte" },
                 { PatchbayLauncher.t("Źródło", "Source"), item.repo() } });
             facts.setAlignmentX(LEFT_ALIGNMENT);
             facts.setMaximumSize(new Dimension(Integer.MAX_VALUE, facts.getPreferredSize().height));

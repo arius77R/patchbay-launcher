@@ -346,16 +346,11 @@ final class I18n {
         add("Installed. Pick a theme and click \"Use this theme\".",
             "Installiert. Wähle ein Theme und klicke auf „Dieses Theme verwenden“.",
             "Installé. Choisissez un thème et cliquez sur « Utiliser ce thème ».");
-        add("The repository exists, but it holds no themes (.bte, or .json from the Theme Editor).",
-            "Das Repository existiert, enthält aber keine Themes (.bte oder .json aus dem Theme Editor).",
-            "Le dépôt existe, mais ne contient aucun thème (.bte, ou .json du Theme Editor).");
-        add("Format", "Format", "Format");
-        add(".json from the Theme Editor, turned into .bte (older themes may not change every Bitwig 6 colour)",
-            ".json aus dem Theme Editor, wird zu .bte (ältere Themes ändern evtl. nicht jede Farbe von Bitwig 6)",
-            ".json du Theme Editor, converti en .bte (les anciens thèmes peuvent ne pas changer toutes les couleurs de Bitwig 6)");
-        add("this isn't a theme (a .json without Theme Editor colours).", "das ist kein Theme (eine .json ohne Theme-Editor-Farben).", "ce n'est pas un thème (un .json sans couleurs du Theme Editor).");
+        add("The repository exists, but it holds no .bte theme files.",
+            "Das Repository existiert, enthält aber keine .bte-Theme-Dateien.",
+            "Le dépôt existe, mais ne contient aucun fichier de thème .bte.");
         add("Themes found: ", "Gefundene Themes: ", "Thèmes trouvés : ");
-        add(".bte and .json themes", ".bte- und .json-Themes", "thèmes .bte et .json");
+        add(".bte theme files", ".bte-Theme-Dateien", "fichiers de thème .bte");
 
         // New look
         add("Update available", "Update verfügbar", "Mise à jour disponible");
