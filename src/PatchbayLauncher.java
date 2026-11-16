@@ -1321,15 +1321,8 @@ public final class PatchbayLauncher {
             check(Themes.derivedId("Neon Glow").equals("neon-glow") && Themes.derivedId("Café  Noir!").equals("cafe-noir")
                 && Themes.derivedId("2024 dark").equals("c-2024-dark") && Themes.derivedId("--live12--").equals("live12"), "theme IDs as Patchbay makes them");
 
-            String editorJson = "{\"advanced\":{\"Timeline Playhead\":\"#2e3440\"},\"window\":{\"Inherited\":\"#a9a9fe\",\"Piano Roll White Key\":\"#ffffff1a\""
-                + java.util.stream.IntStream.range(0, 12).mapToObj(n -> ",\"Colour " + n + "\":\"#10203" + (n % 10) + "\"").collect(java.util.stream.Collectors.joining()) + "},\"arranger\":{\"Colour 1\":\"#ffffff\"}}";
-            String bte = Themes.jsonToBte(editorJson, "x/y.json");
-            check(bte != null && bte.contains("Timeline Playhead: #2e3440") && bte.contains("Piano Roll White Key: #b3b3b3") && !bte.contains("Inherited")
-                && bte.split("Colour 1:", -1).length == 2, "Theme Editor .json becomes a .bte (defunct keys out, first colour wins)");
-            check(Themes.jsonToBte("{\"colors\":{\"a\":\"#000000\"}}", "") == null && Themes.jsonToBte("{\"name\":\"x\"}", "") == null && Themes.jsonToBte("[1]", "") == null, "other .json files are not themes");
-            String tree = "{\"tree\":[{\"path\":\"nord.json\",\"type\":\"blob\",\"sha\":\"a\",\"size\":1},{\"path\":\"package.json\",\"type\":\"blob\",\"sha\":\"b\",\"size\":1},"
-                + "{\"path\":\"Frost.bte\",\"type\":\"blob\",\"sha\":\"c\",\"size\":1},{\"path\":\"frost.json\",\"type\":\"blob\",\"sha\":\"d\",\"size\":1},{\"path\":\".vscode/x.json\",\"type\":\"blob\",\"sha\":\"e\",\"size\":1}]}";
-            check(Themes.parseTree(tree, "o/r", "").stream().map(Themes.Item::name).toList().equals(List.of("Frost", "nord")), "a .json with a .bte of the same name, and other .json files, are left out");
+            String tree = "{\"tree\":[{\"path\":\"nord.json\",\"type\":\"blob\",\"sha\":\"a\",\"size\":1},{\"path\":\"Frost.bte\",\"type\":\"blob\",\"sha\":\"c\",\"size\":1}]}";
+            check(Themes.parseTree(tree, "o/r", "").stream().map(Themes.Item::name).toList().equals(List.of("Frost")), "only .bte files are themes (.json files are not listed)");
             check(Themes.linkedRepos("[a](https://github.com/lenninst/Macchiato_BitwigTheme.git) [b](https://github.com/o/r) https://github.com/Berikai/awesome-bitwig-themes https://github.com/o/r", "Berikai/awesome-bitwig-themes")
                 .equals(List.of("lenninst/Macchiato_BitwigTheme", "o/r")), "a list repository's links: each once, without itself");
 

@@ -2,9 +2,7 @@
 
 ## 0.9.4
 
-- **Themes in the older `.json` format** from the Bitwig Theme Editor (most of the "awesome-bitwig-themes" list: Nord, GruvBit, Dracula, Macchiato, Cubitwig, Ghosty…) are listed too and turned into `.bte` when installed. A `.json` beside a `.bte` of the same name is left out (it's the same theme, older); other `.json` files (palettes, catalogues) are not listed.
-- **List repositories:** a theme source whose repository has no themes but links to theme repositories in its README (like `Berikai/awesome-bitwig-themes`) brings in the themes of every repository it links to.
-- Theme details show the format.
+- **List repositories:** a theme source whose repository has no `.bte` themes but links to theme repositories in its README (like `Berikai/awesome-bitwig-themes`) brings in the `.bte` themes of every repository it links to. Only `.bte` files are themes: older Theme Editor `.json` themes were made for Bitwig 5 and change little in Bitwig 6, so they are not listed.
 - **Bottom bar:** on the left a **sun / moon** switch for the light or dark look (light colours on warm off-white), on the right a button to the launcher's channel on the Bitwig Discord.
 - Changing the look or the language keeps the window where it was, at the same size and on the same tab.
 - **Copy and paste on macOS:** ⌘V, ⌘C, ⌘X and ⌘A work in every text field (pasting a repository link into Sources didn't); a right-click menu with Cut, Copy, Paste and Select all in every text field.
