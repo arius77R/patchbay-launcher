@@ -331,26 +331,27 @@ final class Devices {
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
-            JComponent body = Theme.split(Theme.framed(table), details);
 
-            buildBox.setPreferredSize(new Dimension(170, 32));
+            buildBox.setPreferredSize(new Dimension(160, 32));
             buildBox.setFont(Theme.mono(13f));
             buildBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Wersja plików", "Build"));
-            JPanel actions = Theme.row(8, Theme.label(PatchbayLauncher.t("Wersja plików", "Build"), Theme.text(13f), Theme.MUTED), buildBox,
-                Box.createHorizontalStrut(6), Theme.label(PatchbayLauncher.t("Sortuj", "Sort"), Theme.text(13f), Theme.MUTED), sortBox, Box.createHorizontalStrut(6), checkAllButton);
+            buildBox.setToolTipText(PatchbayLauncher.t("Wersja plików", "Build"));
+            JPanel tools = Theme.row(8, buildBox,
+                Box.createHorizontalStrut(6), Theme.label(PatchbayLauncher.t("Sortuj", "Sort"), Theme.text(13f), Theme.MUTED), sortBox);
             for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Nazwa", "Name") })
                 sortBox.addItem(o);
             try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("devicesSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
             sortBox.addActionListener(e -> { I18n.remember("devicesSort", String.valueOf(sortBox.getSelectedIndex())); if (loaded) rebuild(); });
             sortBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Sortuj", "Sort"));
-            sortBox.setPreferredSize(new Dimension(150, 32));
+            sortBox.setPreferredSize(new Dimension(130, 32));
             bar.setPreferredSize(new Dimension(10, 4));
             bar.setVisible(false);
             JPanel left = new JPanel(new BorderLayout(0, 6));
             left.setOpaque(false);
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
-            add(Theme.listPage(PatchbayLauncher.t("Urządzenia", "Devices"), subtitle, actions, refreshButton, body, left, Theme.row(8, folderButton, installButton)), BorderLayout.CENTER);
+            JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), null, refreshButton, details);
+            add(Theme.listPage(PatchbayLauncher.t("Urządzenia", "Devices"), subtitle, null, body, left, Theme.row(8, folderButton, installButton)), BorderLayout.CENTER);
 
             buildBox.addActionListener(e -> { if (!filling) rebuild(); });
             checkAllButton.addActionListener(e -> checkAll());

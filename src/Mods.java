@@ -598,7 +598,6 @@ final class Mods {
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
-            JComponent body = Theme.split(Theme.framed(table), details);
 
             bar.setPreferredSize(new Dimension(10, 4));
             bar.setVisible(false);
@@ -614,14 +613,14 @@ final class Mods {
             try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(1); } // first time: only the mods that can run
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
             showBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Pokaż", "Show"));
-            showBox.setPreferredSize(new Dimension(200, 32));
+            showBox.setPreferredSize(new Dimension(160, 32));
             for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Kategoria", "Category"), PatchbayLauncher.t("Najnowsze", "Newest") })
                 sortBox.addItem(o);
             try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
             sortBox.addActionListener(e -> { I18n.remember("modsSort", String.valueOf(sortBox.getSelectedIndex())); refilter(); });
             sortBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Sortuj", "Sort"));
-            sortBox.setPreferredSize(new Dimension(150, 32));
-            bitwigBox.setPreferredSize(new Dimension(150, 32));
+            sortBox.setPreferredSize(new Dimension(130, 32));
+            bitwigBox.setPreferredSize(new Dimension(120, 32));
             bitwigBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Twój Bitwig", "Your Bitwig"));
             bitwigBox.addActionListener(e -> {
                 if (filling || bitwigBox.getSelectedIndex() < 0) return;
@@ -630,14 +629,10 @@ final class Mods {
             });
             bitwigLabel.setVisible(false);
             bitwigBox.setVisible(false);
-            JPanel toolbar = Theme.row(8, Theme.label(PatchbayLauncher.t("Pokaż", "Show"), Theme.text(13f), Theme.MUTED), showBox,
-                Box.createHorizontalStrut(6), Theme.label(PatchbayLauncher.t("Sortuj", "Sort"), Theme.text(13f), Theme.MUTED), sortBox,
-                Box.createHorizontalStrut(6), bitwigLabel, bitwigBox, checkAllButton);
-            JPanel center = new JPanel(new BorderLayout(0, 10));
-            center.setOpaque(false);
-            center.add(updateBar, BorderLayout.NORTH);
-            center.add(body, BorderLayout.CENTER);
-            add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, toolbar, refreshButton, center,
+            JPanel tools = Theme.row(8, Theme.label(PatchbayLauncher.t("Pokaż", "Show"), Theme.text(13f), Theme.MUTED), showBox,
+                Box.createHorizontalStrut(6), Theme.label(PatchbayLauncher.t("Sortuj", "Sort"), Theme.text(13f), Theme.MUTED), sortBox);
+            JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), Theme.row(8, bitwigLabel, bitwigBox), refreshButton, details);
+            add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, updateBar, body,
                 left, Theme.row(8, updateAllButton, installButton)), BorderLayout.CENTER);
 
             installButton.addActionListener(e -> installRows(checkedRows()));

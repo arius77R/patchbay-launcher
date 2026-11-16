@@ -905,24 +905,20 @@ public final class Theme {
      */
     /**
      * A section with a list, the same on every such tab: the title with the counts at the right of its line,
-     * under it one row of controls (what to show, how to sort, the buttons; Refresh at the right edge), the list, and the foot.
+     * an optional strip under it, the list beside its details (see split with tools), and the foot.
      */
-    static JPanel listPage(String title, JLabel stats, JComponent toolbar, JComponent atEdge, JComponent body, JComponent footLeft, JComponent footRight) {
+    static JPanel listPage(String title, JLabel stats, JComponent strip, JComponent body, JComponent footLeft, JComponent footRight) {
         stats.setFont(mono(12f));
         stats.setHorizontalAlignment(SwingConstants.RIGHT);
         JPanel titleLine = new JPanel(new BorderLayout(16, 0));
         titleLine.setOpaque(false);
         titleLine.add(label(title, bold(20f), TEXT), BorderLayout.WEST);
         titleLine.add(stats, BorderLayout.CENTER);
-        JPanel tools = new JPanel(new BorderLayout());
-        tools.setOpaque(false);
-        tools.add(toolbar, BorderLayout.WEST);
-        tools.add(atEdge, BorderLayout.EAST); // Refresh, at the right edge on every list
         JPanel top = new JPanel(new BorderLayout(0, 10));
         top.setOpaque(false);
         top.add(titleLine, BorderLayout.NORTH);
-        top.add(tools, BorderLayout.SOUTH);
-        JPanel all = new JPanel(new BorderLayout(0, 12));
+        if (strip != null) top.add(strip, BorderLayout.SOUTH);
+        JPanel all = new JPanel(new BorderLayout(0, 10));
         all.setOpaque(false);
         all.add(top, BorderLayout.NORTH);
         all.add(body, BorderLayout.CENTER);
@@ -932,6 +928,34 @@ public final class Theme {
         ((JComponent) ((BorderLayout) p.getLayout()).getLayoutComponent(BorderLayout.CENTER)).setBorder(
             new EmptyBorder(16, 18, footLeft == null && footRight == null ? 18 : 0, 18));
         return p;
+    }
+
+    /**
+     * The list beside its details with a row of controls over each, so the controls follow the divider:
+     * tools at the list's left, atListEdge (Tick all) at the list's right edge, atEdge (Refresh) at the window's.
+     */
+    static JSplitPane split(JComponent tools, JComponent atListEdge, JComponent list, JComponent besideRefresh, JComponent atEdge, JComponent details) {
+        JPanel overList = new JPanel(new BorderLayout(8, 0));
+        overList.setOpaque(false);
+        overList.add(tools, BorderLayout.WEST);
+        overList.add(atListEdge, BorderLayout.EAST);
+        JPanel left = new JPanel(new BorderLayout(0, 10));
+        left.setOpaque(false);
+        left.add(overList, BorderLayout.NORTH);
+        left.add(list, BorderLayout.CENTER);
+        JPanel overDetails = new JPanel(new BorderLayout(8, 0));
+        overDetails.setOpaque(false);
+        if (besideRefresh != null) overDetails.add(besideRefresh, BorderLayout.WEST);
+        overDetails.add(atEdge, BorderLayout.EAST);
+        // both rows are as tall as the taller one, so the list and the details start on one line
+        int tall = Math.max(overList.getPreferredSize().height, overDetails.getPreferredSize().height);
+        overList.setPreferredSize(new Dimension(overList.getPreferredSize().width, tall));
+        overDetails.setPreferredSize(new Dimension(overDetails.getPreferredSize().width, tall));
+        JPanel right = new JPanel(new BorderLayout(0, 10));
+        right.setOpaque(false);
+        right.add(overDetails, BorderLayout.NORTH);
+        right.add(details, BorderLayout.CENTER);
+        return split(left, right);
     }
 
     static JPanel page(String title, JComponent subtitle, JComponent actions, JComponent body, JComponent footLeft, JComponent footRight) {

@@ -455,7 +455,6 @@ final class Themes {
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
-            JComponent body = Theme.split(Theme.framed(table), details);
 
             bar.setPreferredSize(new Dimension(10, 4));
             bar.setVisible(false);
@@ -463,7 +462,8 @@ final class Themes {
             left.setOpaque(false);
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
-            add(Theme.listPage(PatchbayLauncher.t("Motywy", "Themes"), subtitle, Theme.row(8, addFileButton, checkAllButton), refreshButton, body,
+            JComponent body = Theme.split(Theme.row(8, addFileButton), checkAllButton, Theme.framed(table), null, refreshButton, details);
+            add(Theme.listPage(PatchbayLauncher.t("Motywy", "Themes"), subtitle, null, body,
                 left, Theme.row(8, folderButton, installButton)), BorderLayout.CENTER);
 
             checkAllButton.addActionListener(e -> checkAll());
