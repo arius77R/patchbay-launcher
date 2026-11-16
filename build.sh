@@ -19,6 +19,7 @@ echo "Patchbay Launcher $VERSION"
 # 1. launcher.jar
 javac --release 21 -d "$OUT/classes" src/*.java
 cp res/icon-128.png res/icon-256.png "$OUT/classes/"
+mkdir -p "$OUT/classes/fonts" && cp res/fonts/* "$OUT/classes/fonts/"
 jar cfm "$OUT/launcher.jar" manifest.txt -C "$OUT/classes" .
 echo "  launcher.jar"
 

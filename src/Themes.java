@@ -275,7 +275,7 @@ final class Themes {
                     case 0 -> checked.contains(key(row.item()));
                     case 1 -> row.item().name();
                     case 2 -> row.item().repo();
-                    default -> row.active() ? "update|" + PatchbayLauncher.t("aktywny", "active") : switch (row.rank()) {
+                    default -> row.active() ? "active|" + PatchbayLauncher.t("aktywny", "active") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("zainstalowany", "installed");
                         default -> "new|" + PatchbayLauncher.t("nowy", "new");
@@ -307,7 +307,7 @@ final class Themes {
             table.getColumnModel().getColumn(0).setMaxWidth(40);
             table.getColumnModel().getColumn(1).setPreferredWidth(220);
             table.getColumnModel().getColumn(2).setPreferredWidth(180);
-            table.getColumnModel().getColumn(3).setMinWidth(136);
+            table.getColumnModel().getColumn(3).setMinWidth(140);
             table.getColumnModel().getColumn(3).setMaxWidth(150);
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.pillCells());
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });

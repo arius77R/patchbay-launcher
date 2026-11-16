@@ -499,6 +499,8 @@ final class Mods {
         private final List<Row> rows = new ArrayList<>();
         /** Show: 0 all, 1 works on my Bitwig, 2 installed, 3 updates, 4 not available. */
         private final JComboBox<String> showBox = new JComboBox<>();
+        /** "Update available" above the list; a click shows only the mods with updates. */
+        private final Theme.UpdateBar updateBar = new Theme.UpdateBar(() -> showBox.setSelectedIndex(3));
         /** The Bitwig version when it can't be read from the system: chosen from the versions Patchbay has maps for. */
         private final JComboBox<String> bitwigBox = new JComboBox<>();
         private final JLabel bitwigLabel = Theme.label(PatchbayLauncher.t("Twój Bitwig:", "Your Bitwig:"), Theme.text(13f), Theme.MUTED);
@@ -577,11 +579,11 @@ final class Mods {
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.monoCells(Theme.SOFT));
             table.getColumnModel().getColumn(4).setCellRenderer(Theme.pillCells());
             for (int c = 2; c <= 3; c++) {
-                table.getColumnModel().getColumn(c).setMinWidth(96);
-                table.getColumnModel().getColumn(c).setMaxWidth(104);
+                table.getColumnModel().getColumn(c).setMinWidth(118);
+                table.getColumnModel().getColumn(c).setMaxWidth(124);
             }
-            table.getColumnModel().getColumn(4).setMinWidth(104);
-            table.getColumnModel().getColumn(4).setMaxWidth(112);
+            table.getColumnModel().getColumn(4).setMinWidth(140);
+            table.getColumnModel().getColumn(4).setMaxWidth(150);
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setPreferredSize(new Dimension(284, 10));
@@ -619,7 +621,11 @@ final class Mods {
                 Box.createHorizontalStrut(10), bitwigLabel, bitwigBox);
             JPanel center = new JPanel(new BorderLayout(0, 12));
             center.setOpaque(false);
-            center.add(filters, BorderLayout.NORTH);
+            JPanel above = new JPanel(new BorderLayout(0, 10));
+            above.setOpaque(false);
+            above.add(updateBar, BorderLayout.NORTH);
+            above.add(filters, BorderLayout.SOUTH);
+            center.add(above, BorderLayout.NORTH);
             center.add(body, BorderLayout.CENTER);
             add(Theme.page(PatchbayLauncher.t("Mody", "Mods"), subtitle, Theme.row(8, checkAllButton, refreshButton), center,
                 left, Theme.row(8, updateAllButton, installButton)), BorderLayout.CENTER);
@@ -709,9 +715,11 @@ final class Mods {
             if (v.state() != Compat.State.UNKNOWN) {
                 boolean ok = v.state() != Compat.State.UNAVAILABLE;
                 JPanel box = new Theme.Card(new BorderLayout(0, 6), Theme.WELL);
-                box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(ok ? Theme.ACCENT : Theme.FAULT_TEXT, 1, true), new EmptyBorder(10, 10, 10, 10)));
-                JLabel head = Theme.label((ok ? "✓  " : "×  ") + (ok ? PatchbayLauncher.t("Zgodny z Twoim Bitwigiem", "Compatible with your Bitwig")
-                    : PatchbayLauncher.t("Niezgodny z Twoim Bitwigiem", "Not compatible with your Bitwig")), Theme.bold(13f), ok ? Theme.ACCENT : Theme.FAULT_TEXT);
+                box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(ok ? Theme.LINE : Theme.FAULT_TEXT, 1, true), new EmptyBorder(10, 10, 10, 10)));
+                String verdictText = ok ? PatchbayLauncher.t("Zgodny z Twoim Bitwigiem", "Compatible with your Bitwig")
+                    : PatchbayLauncher.t("Niezgodny z Twoim Bitwigiem", "Not compatible with your Bitwig");
+                JLabel head = Theme.label(ok ? "<html><font color='#FF6A1A'>✓</font>&nbsp; " + verdictText + "</html>" : "×  " + verdictText,
+                    Theme.bold(13f), ok ? Theme.TEXT : Theme.FAULT_TEXT);
                 box.add(head, BorderLayout.NORTH);
                 String why = v.state() == Compat.State.NATIVE ? PatchbayLauncher.t("Zbudowany dokładnie dla Twojego Bitwiga.", "Built for exactly your Bitwig.") : v.reason();
                 box.add(Theme.wrapped(why, 166, Theme.SOFT, 13f), BorderLayout.CENTER);
@@ -935,8 +943,12 @@ final class Mods {
             if (select == null) select = keep;
             int pick = rows.isEmpty() ? -1 : 0;
             for (int r = 0; select != null && r < rows.size(); r++) if (rows.get(r).id().equals(select)) pick = r;
-            if (pick >= 0) table.setRowSelectionInterval(pick, pick);
+            if (pick >= 0) { table.setRowSelectionInterval(pick, pick); table.scrollRectToVisible(table.getCellRect(pick, 0, true)); }
             updateAllButton.setText(PatchbayLauncher.t("Aktualizuj wszystkie (", "Update all (") + updates + ")");
+            List<Row> waiting = all.stream().filter(r -> r.rank() == 0 && !unavailable(r)).toList();
+            updateBar.show(updates, waiting.size() == 1
+                ? nameOf(waiting.get(0)) + "  " + waiting.get(0).installed() + " → " + waiting.get(0).available().version()
+                : String.join(", ", waiting.stream().map(this::nameOf).toList()));
             updatesFound.accept(updates);
             if (updates > 0 && !notified) {
                 notified = true;

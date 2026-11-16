@@ -13,15 +13,13 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Locale;
 import java.util.function.Consumer;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
- * The launcher's look: the colors and faces of Patchbay's own window (its PatchbayStyle and the
- * Outfit and JetBrains Mono fonts it ships), so the two windows read as one product.
+ * The launcher's look: the dark greys of Patchbay's own window (its PatchbayStyle), Bitwig's orange
+ * as the accent, red for what is waiting (updates, as macOS shows them), Inter and JetBrains Mono
+ * (bundled), thin frames with small corners.
  */
 public final class Theme {
     private Theme() { }
@@ -31,36 +29,37 @@ public final class Theme {
     static final Color WELL = new Color(0x1C1D20), LINE = new Color(0x3B3D42), HAIR = new Color(0x25262A);
     static final Color TEXT = new Color(0xE4E5E7), SOFT = new Color(0xC9CBCF), MUTED = new Color(0x9C9FA5), DIM = new Color(0x63666C);
     static final Color FAULT = new Color(0xF0524A), FAULT_TEXT = new Color(0xF48A84);
-    /** Bitwig's orange, for the button that starts Patchbay (and with it Bitwig). */
-    static final Color BITWIG = new Color(0xFF6A1A), BITWIG_INK = new Color(0x17181A);
-    static final Color ACCENT = new Color(0x2EC4B6), ACCENT_INK = new Color(0x06201D), ACCENT_SEL = new Color(0x1E3836), ACCENT_SOFT = new Color(0x7FDCD2);
-    static final Color CONTROL = new Color(0x2E3034), CONTROL_HOVER = new Color(0x36383D);
+    /** Bitwig's orange: the accent for everything you can do (ticks, the main button of a section, selection). */
+    static final Color ACCENT = new Color(0xFF6A1A), ACCENT_INK = new Color(0x17181A), ACCENT_SEL = new Color(0x33241B), ACCENT_SOFT = new Color(0xFFA36B);
+    /** The button that starts Patchbay. */
+    static final Color START = new Color(0x2EC4B6), START_INK = new Color(0x06201D);
+    /** Something waiting for you: the count on a tab, "update" in a list (as macOS marks updates). */
+    static final Color BADGE = new Color(0xE5372E), UPDATE = new Color(0xFF6B62);
+    static final Color CONTROL = new Color(0x2E3034), CONTROL_HOVER = new Color(0x36383D), EDGE = new Color(0x2E3034), NAV_ON = new Color(0x3A2619);
 
-    private static Font regular, semibold, mono;
+    private static Font regular, medium, semibold, mono;
 
-    /** Loads Patchbay's fonts from its control jar; without one the system's faces stand in. */
-    static void loadFonts(Path controlJar) {
-        if (controlJar == null || !Files.isRegularFile(controlJar)) return;
-        try (ZipFile z = new ZipFile(controlJar.toFile())) {
-            regular = font(z, "dev/bitwigre/bml/fonts/Outfit-Regular.ttf", regular);
-            semibold = font(z, "dev/bitwigre/bml/fonts/Outfit-SemiBold.ttf", semibold);
-            mono = font(z, "dev/bitwigre/bml/fonts/JetBrainsMono-Regular.ttf", mono);
-        } catch (Exception ignored) { }
+    /** Loads the bundled fonts (Inter, JetBrains Mono); without them the system's faces stand in. */
+    static void loadFonts() {
+        regular = font("/fonts/Inter-Regular.ttf");
+        medium = font("/fonts/Inter-Medium.ttf");
+        semibold = font("/fonts/Inter-SemiBold.ttf");
+        mono = font("/fonts/JetBrainsMonoNL-Regular.ttf");
     }
 
-    private static Font font(ZipFile z, String path, Font fallback) {
-        ZipEntry e = z.getEntry(path);
-        if (e == null) return fallback;
-        try (InputStream in = z.getInputStream(e)) {
+    private static Font font(String resource) {
+        try (InputStream in = Theme.class.getResourceAsStream(resource)) {
+            if (in == null) return null;
             Font f = Font.createFont(Font.TRUETYPE_FONT, in);
             GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(f);
             return f;
         } catch (Exception ex) {
-            return fallback;
+            return null;
         }
     }
 
     static Font text(float size) { return regular != null ? regular.deriveFont(size) : new Font(Font.SANS_SERIF, Font.PLAIN, Math.round(size)); }
+    static Font medium(float size) { return medium != null ? medium.deriveFont(size) : text(size); }
     static Font bold(float size) { return semibold != null ? semibold.deriveFont(size) : new Font(Font.SANS_SERIF, Font.BOLD, Math.round(size)); }
     static Font mono(float size) { return mono != null ? mono.deriveFont(size) : new Font(Font.MONOSPACED, Font.PLAIN, Math.round(size)); }
 
@@ -74,7 +73,7 @@ public final class Theme {
         d.put("ButtonUI", FlatButtonUI.class.getName());
         d.put("ScrollBarUI", ThinScrollBarUI.class.getName());
         d.put("ComboBoxUI", FlatComboUI.class.getName());
-        FontUIResource f = new FontUIResource(text(14f));
+        FontUIResource f = new FontUIResource(text(13f));
         for (String k : new String[] { "Label", "Button", "ComboBox", "TextField", "TextArea", "Table", "TableHeader",
             "OptionPane", "List", "CheckBox", "ToolTip", "ProgressBar", "OptionPane.message", "OptionPane.button", "EditorPane" })
             d.put(k.endsWith(".message") || k.endsWith(".button") ? k + "Font" : k + ".font", f);
@@ -93,7 +92,7 @@ public final class Theme {
         d.put("ProgressBar.border", BorderFactory.createEmptyBorder());
         d.put("ProgressBar.selectionForeground", new ColorUIResource(ACCENT_INK));
         d.put("ComboBox.border", BorderFactory.createEmptyBorder(4, 8, 4, 4));
-        d.put("TextField.border", new Round(6, LINE, new Insets(7, 10, 7, 10)));
+        d.put("TextField.border", new Round(4, LINE, new Insets(7, 10, 7, 10)));
         d.put("ToolTip.border", BorderFactory.createEmptyBorder(6, 8, 6, 8));
         d.put("ScrollPane.border", BorderFactory.createEmptyBorder());
         d.put("SplitPane.border", BorderFactory.createEmptyBorder());
@@ -109,7 +108,7 @@ public final class Theme {
 
     // ---------- buttons ----------
 
-    /** primary (accent), secondary (grey), nav (side menu), danger (outlined red). */
+    /** primary (accent), secondary (grey), start (starts Patchbay), nav (tabs), danger (outlined red). A client property "badge" (Integer) adds a red count. */
     static JButton button(String text, String kind) {
         JButton b = new JButton(text);
         b.putClientProperty("kind", kind);
@@ -132,18 +131,18 @@ public final class Theme {
             b.setContentAreaFilled(false);
             b.setFocusPainted(false);
             b.setRolloverEnabled(true);
-            b.setBorder(new EmptyBorder(0, k.equals("nav") ? 12 : 14, 0, k.equals("nav") ? 12 : 14));
-            b.setFont(k.equals("primary") || k.equals("bitwig") ? bold(14f) : k.equals("nav") ? text(14f) : text(13f));
-            b.setHorizontalAlignment(k.equals("nav") ? SwingConstants.LEFT : SwingConstants.CENTER);
+            b.setBorder(new EmptyBorder(0, 14, 0, 14));
+            b.setFont(k.equals("primary") || k.equals("start") ? bold(13f) : text(13f));
+            b.setHorizontalAlignment(SwingConstants.CENTER);
             b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         }
 
         @Override public Dimension getPreferredSize(JComponent c) {
             Dimension d = super.getPreferredSize(c);
             String k = kind((AbstractButton) c);
-            int h = k.equals("primary") || k.equals("bitwig") || k.equals("nav") ? 38 : 34;
+            int h = k.equals("nav") ? 30 : 32;
             if (Boolean.TRUE.equals(c.getClientProperty("small"))) h = 28;
-            int w = d.width + (c.getClientProperty("badge") instanceof Integer n && n > 0 ? 34 : 0);
+            int w = d.width + (c.getClientProperty("badge") instanceof Integer n && n > 0 ? 26 : 0);
             return new Dimension(w, h);
         }
 
@@ -155,8 +154,8 @@ public final class Theme {
             boolean on = Boolean.TRUE.equals(b.getClientProperty("current"));
             Color bg = switch (k) {
                 case "primary" -> !b.isEnabled() ? CONTROL : m.isPressed() ? ACCENT.darker() : m.isRollover() ? ACCENT.brighter() : ACCENT;
-                case "bitwig" -> !b.isEnabled() ? CONTROL : m.isPressed() ? new Color(0xE05A10) : m.isRollover() ? new Color(0xFF8340) : BITWIG;
-                case "nav" -> on ? ACCENT_SEL : m.isRollover() ? FRAME : null;
+                case "start" -> !b.isEnabled() ? CONTROL : m.isPressed() ? START.darker() : m.isRollover() ? START.brighter() : START;
+                case "nav" -> on ? NAV_ON : m.isRollover() ? FRAME : null;
                 case "danger" -> m.isRollover() ? new Color(0x2E1A19) : null;
                 default -> !b.isEnabled() ? new Color(0x26282B) : m.isPressed() ? LINE : m.isRollover() ? CONTROL_HOVER : CONTROL;
             };
@@ -164,26 +163,30 @@ public final class Theme {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             if (bg != null) {
                 g2.setColor(bg);
-                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 12, 12);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), k.equals("nav") ? 6 : 8, k.equals("nav") ? 6 : 8);
+            }
+            if (k.equals("secondary") && b.isEnabled()) {
+                g2.setColor(LINE);
+                g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, 8, 8);
             }
             if (k.equals("danger")) {
                 g2.setColor(FAULT);
-                g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, 12, 12);
+                g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, 8, 8);
             }
-            if (b.isFocusOwner() && !k.equals("nav")) {
+            if (b.isFocusOwner()) {
                 g2.setColor(ACCENT);
                 g2.setStroke(new BasicStroke(2f));
-                g2.drawRoundRect(1, 1, c.getWidth() - 3, c.getHeight() - 3, 10, 10);
+                g2.drawRoundRect(1, 1, c.getWidth() - 3, c.getHeight() - 3, 6, 6);
             }
             if (c.getClientProperty("badge") instanceof Integer n && n > 0) {
                 String s = String.valueOf(n);
-                g2.setFont(bold(12f));
+                g2.setFont(bold(11f));
                 FontMetrics fm = g2.getFontMetrics();
-                int w = Math.max(20, fm.stringWidth(s) + 12), x = c.getWidth() - w - 10, y = (c.getHeight() - 20) / 2;
-                g2.setColor(ACCENT);
-                g2.fillRoundRect(x, y, w, 20, 20, 20);
-                g2.setColor(ACCENT_INK);
-                g2.drawString(s, x + (w - fm.stringWidth(s)) / 2, y + (20 + fm.getAscent() - fm.getDescent()) / 2);
+                int w = Math.max(18, fm.stringWidth(s) + 10), x = c.getWidth() - w - 12, y = (c.getHeight() - 18) / 2;
+                g2.setColor(BADGE);
+                g2.fillRoundRect(x, y, w, 18, 18, 18);
+                g2.setColor(Color.WHITE);
+                g2.drawString(s, x + (w - fm.stringWidth(s)) / 2, y + (18 + fm.getAscent() - fm.getDescent()) / 2);
             }
             g2.dispose();
             super.paint(g, c);
@@ -194,7 +197,7 @@ public final class Theme {
             boolean on = Boolean.TRUE.equals(b.getClientProperty("current"));
             Color fg = !b.isEnabled() ? DIM : switch (k) {
                 case "primary" -> ACCENT_INK;
-                case "bitwig" -> BITWIG_INK;
+                case "start" -> START_INK;
                 case "nav" -> on ? Color.WHITE : SOFT;
                 case "danger" -> FAULT_TEXT;
                 default -> TEXT;
@@ -202,9 +205,10 @@ public final class Theme {
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g2.setColor(fg);
-            if (k.equals("nav") && on) g2.setFont(bold(14f));
+            if (k.equals("nav") && on) g2.setFont(bold(13f));
             FontMetrics fm = g2.getFontMetrics();
-            BasicGraphicsUtils.drawStringUnderlineCharAt(b, g2, text, -1, r.x, r.y + fm.getAscent());
+            int shift = b.getClientProperty("badge") instanceof Integer n && n > 0 ? -13 : 0;
+            BasicGraphicsUtils.drawStringUnderlineCharAt(b, g2, text, -1, r.x + shift, r.y + fm.getAscent());
         }
 
         @Override protected void paintFocus(Graphics g, AbstractButton b, Rectangle v, Rectangle t, Rectangle i) { }
@@ -250,12 +254,10 @@ public final class Theme {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(!c.isEnabled() ? FRAME : comboBox.isPopupVisible() ? CONTROL_HOVER : CONTROL);
-            g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 12, 12);
-            if (comboBox.hasFocus()) {
-                g2.setColor(ACCENT);
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawRoundRect(1, 1, c.getWidth() - 3, c.getHeight() - 3, 10, 10);
-            }
+            g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 8, 8);
+            g2.setColor(comboBox.hasFocus() ? ACCENT : LINE);
+            g2.setStroke(new BasicStroke(comboBox.hasFocus() ? 1.5f : 1f));
+            g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, 8, 8);
             g2.dispose();
             super.paint(g, c);
         }
@@ -330,14 +332,14 @@ public final class Theme {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             if (on) {
                 g2.setColor(enabled ? ACCENT : DIM);
-                g2.fillRoundRect(x, y, 18, 18, 8, 8);
+                g2.fillRoundRect(x, y, 18, 18, 6, 6);
                 g2.setColor(ACCENT_INK);
                 g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2.drawPolyline(new int[] { x + 4, x + 8, x + 14 }, new int[] { y + 9, y + 13, y + 5 }, 3);
             } else {
                 g2.setColor(enabled ? DIM : HAIR);
                 g2.setStroke(new BasicStroke(1.5f));
-                g2.drawRoundRect(x + 1, y + 1, 16, 16, 7, 7);
+                g2.drawRoundRect(x + 1, y + 1, 16, 16, 5, 5);
             }
             g2.dispose();
         }
@@ -384,9 +386,9 @@ public final class Theme {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(fill);
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
-            g2.setColor(HAIR);
-            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+            g2.setColor(EDGE);
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
             g2.dispose();
         }
     }
@@ -417,6 +419,85 @@ public final class Theme {
                 g2.setColor(ACCENT);
                 g2.setStroke(new BasicStroke(1.5f));
                 g2.drawRoundRect(x - 2, y - 2, 39, 23, 24, 24);
+            }
+            g2.dispose();
+        }
+    }
+
+    /**
+     * "Update available" across a section, as macOS shows it: the text and what is new on the left,
+     * a red count and a chevron on the right. Hidden while there is nothing to update; clicking it runs onClick.
+     */
+    static final class UpdateBar extends JButton {
+        private int count;
+        private String detail = "";
+
+        UpdateBar(Runnable onClick) {
+            putClientProperty("kind", "plain");
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
+            setRolloverEnabled(true);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            addActionListener(e -> onClick.run());
+            setVisible(false);
+        }
+
+        static String title(int count) {
+            return count == 1 ? PatchbayLauncher.t("Dostępne uaktualnienie", "Update available")
+                : PatchbayLauncher.t("Dostępne uaktualnienia", "Updates available");
+        }
+
+        void show(int count, String detail) {
+            this.count = count;
+            this.detail = detail == null ? "" : detail;
+            getAccessibleContext().setAccessibleName(title(count) + ": " + count + (this.detail.isEmpty() ? "" : ". " + this.detail));
+            setToolTipText(this.detail.isEmpty() ? null : this.detail);
+            setVisible(count > 0);
+            repaint();
+        }
+
+        @Override public Dimension getPreferredSize() { return new Dimension(200, 40); }
+        @Override public Dimension getMaximumSize() { return new Dimension(Integer.MAX_VALUE, 40); }
+
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            int w = getWidth(), h = getHeight();
+            g2.setColor(getModel().isRollover() ? CONTROL : FRAME);
+            g2.fillRoundRect(0, 0, w, h, 8, 8);
+            g2.setColor(isFocusOwner() ? ACCENT : getModel().isRollover() ? LINE : EDGE);
+            g2.setStroke(new BasicStroke(isFocusOwner() ? 2f : 1f));
+            g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
+            // right: count and chevron
+            String n = String.valueOf(count);
+            g2.setFont(bold(12f));
+            FontMetrics bm = g2.getFontMetrics();
+            int bw = Math.max(20, bm.stringWidth(n) + 12), bx = w - 14 - 8 - 10 - bw, by = (h - 20) / 2;
+            g2.setColor(BADGE);
+            g2.fillRoundRect(bx, by, bw, 20, 20, 20);
+            g2.setColor(Color.WHITE);
+            g2.drawString(n, bx + (bw - bm.stringWidth(n)) / 2, by + (20 + bm.getAscent() - bm.getDescent()) / 2);
+            g2.setColor(MUTED);
+            g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            int cx = w - 14 - 6, cy = h / 2;
+            g2.drawPolyline(new int[] { cx, cx + 5, cx }, new int[] { cy - 5, cy, cy + 5 }, 3);
+            // left: title and what is new, cut to fit
+            g2.setFont(text(13f));
+            FontMetrics fm = g2.getFontMetrics();
+            String head = title(count);
+            int x = 14, base = (h + fm.getAscent() - fm.getDescent()) / 2, room = bx - 12 - x;
+            g2.setColor(TEXT);
+            g2.drawString(head, x, base);
+            int used = fm.stringWidth(head);
+            if (!detail.isEmpty() && room - used > 40) {
+                String more = " · " + detail;
+                while (more.length() > 4 && fm.stringWidth(more) > room - used) more = more.substring(0, more.length() - 2) + "…";
+                if (more.endsWith("……")) more = more.substring(0, more.length() - 1);
+                g2.setColor(MUTED);
+                g2.drawString(more, x + used, base);
             }
             g2.dispose();
         }
@@ -467,14 +548,15 @@ public final class Theme {
         p.setBackground(WELL);
         JPanel head = new JPanel(new BorderLayout(16, 0));
         head.setOpaque(false);
-        head.setBorder(new EmptyBorder(24, 24, 16, 24));
+        head.setBorder(new EmptyBorder(16, 18, 12, 18));
         JPanel titles = new JPanel();
         titles.setOpaque(false);
         titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
-        JLabel t = label(title, bold(26f), TEXT);
+        JLabel t = label(title, bold(20f), TEXT);
         titles.add(t);
         if (subtitle != null) {
-            titles.add(Box.createVerticalStrut(4));
+            titles.add(Box.createVerticalStrut(3));
+            if (subtitle instanceof JLabel l && l.getClientProperty("prose") == null) l.setFont(mono(12f));
             titles.add(subtitle);
         }
         head.add(titles, BorderLayout.CENTER);
@@ -488,14 +570,14 @@ public final class Theme {
         if (body != null) {
             JPanel wrap = new JPanel(new BorderLayout());
             wrap.setOpaque(false);
-            wrap.setBorder(new EmptyBorder(0, 24, footLeft == null && footRight == null ? 24 : 0, 24));
+            wrap.setBorder(new EmptyBorder(0, 18, footLeft == null && footRight == null ? 18 : 0, 18));
             wrap.add(body, BorderLayout.CENTER);
             p.add(wrap, BorderLayout.CENTER);
         }
         if (footLeft != null || footRight != null) {
             JPanel foot = new JPanel(new BorderLayout(12, 0));
             foot.setOpaque(false);
-            foot.setBorder(new EmptyBorder(14, 24, 18, 24));
+            foot.setBorder(new EmptyBorder(12, 18, 14, 18));
             if (footLeft != null) foot.add(footLeft, BorderLayout.CENTER);
             if (footRight != null) foot.add(footRight, BorderLayout.EAST);
             p.add(foot, BorderLayout.SOUTH);
@@ -506,7 +588,7 @@ public final class Theme {
     // ---------- tables ----------
 
     static void styleTable(JTable table) {
-        table.setRowHeight(38);
+        table.setRowHeight(34);
         table.setShowVerticalLines(false);
         table.setShowHorizontalLines(true);
         table.setGridColor(HAIR);
@@ -515,17 +597,17 @@ public final class Theme {
         table.setBackground(WELL);
         table.setSelectionBackground(ACCENT_SEL);
         table.setSelectionForeground(TEXT);
-        table.setFont(text(14f));
+        table.setFont(text(13f));
         JTableHeader h = table.getTableHeader();
         h.setReorderingAllowed(false);
-        h.setPreferredSize(new Dimension(10, 34));
+        h.setPreferredSize(new Dimension(10, 28));
         h.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
-                JLabel l = (JLabel) super.getTableCellRendererComponent(t, v, false, false, r, c);
+                JLabel l = (JLabel) super.getTableCellRendererComponent(t, v == null ? "" : v.toString().toUpperCase(Locale.ROOT), false, false, r, c);
                 l.setBackground(FRAME);
                 l.setForeground(MUTED);
-                l.setFont(text(12f));
-                l.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, HAIR), new EmptyBorder(0, 10, 0, 6)));
+                l.setFont(mono(11f));
+                l.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, EDGE), new EmptyBorder(0, 10, 0, 6)));
                 return l;
             }
         });
@@ -533,7 +615,7 @@ public final class Theme {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 JLabel l = (JLabel) super.getTableCellRendererComponent(t, v, s, false, r, c);
                 l.setBorder(new EmptyBorder(0, 10, 0, 6));
-                l.setFont(text(14f));
+                l.setFont(text(13f));
                 l.setForeground(TEXT);
                 return l;
             }
@@ -544,8 +626,9 @@ public final class Theme {
         table.setDefaultRenderer(Boolean.class, (t, v, s, f, r, c) -> {
             Component comp = checks.getTableCellRendererComponent(t, v, s, false, r, c);
             if (comp instanceof JCheckBox box) {
-                box.setBorderPainted(false);
-                box.setBorder(new EmptyBorder(0, 0, 0, 0));
+                // the selected row is marked with an accent edge on its left, as in the design
+                box.setBorderPainted(s);
+                box.setBorder(s ? BorderFactory.createMatteBorder(0, 2, 0, 0, ACCENT) : new EmptyBorder(0, 0, 0, 0));
                 box.setHorizontalAlignment(SwingConstants.CENTER);
                 box.setBackground(s ? ACCENT_SEL : WELL);
                 box.setEnabled(t.isCellEditable(r, c) || Boolean.TRUE.equals(v));
@@ -581,28 +664,58 @@ public final class Theme {
                 JLabel l = (JLabel) super.getTableCellRendererComponent(t, dim ? "<html><nobr>" + name.replace("&", "&amp;").replace("<", "&lt;") + "</nobr></html>" : twoTone(name), s, false, r, c);
                 l.setToolTipText(name.isEmpty() ? null : name);
                 l.setBorder(new EmptyBorder(0, 10, 0, 6));
-                l.setFont(text(14f));
+                l.setFont(medium(13f));
                 l.setForeground(dim ? MUTED : TEXT);
                 return l;
             }
         };
     }
 
-    /** Status as a pill; the value is "kind|label" with kind update, installed, new or off (outlined: can't run here). */
+    /**
+     * Status as a small drawn mark and coloured text; the value is "kind|label" with kind update (red dot),
+     * installed (tick), new (plus), off (cross: can't run here) or active (accent dot).
+     */
     static TableCellRenderer pillCells() {
         return new TableCellRenderer() {
-            private final Pill pill = new Pill();
+            private final Status cell = new Status();
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 String[] parts = v == null ? new String[] { "", "" } : v.toString().split("\\|", 2);
-                pill.kind = parts[0];
-                pill.text = parts.length > 1 ? parts[1] : "";
-                pill.setBackground(s ? ACCENT_SEL : WELL);
-                return pill;
+                cell.kind = parts[0];
+                cell.text = parts.length > 1 ? parts[1] : "";
+                cell.setBackground(s ? ACCENT_SEL : WELL);
+                cell.setToolTipText(cell.text.isEmpty() ? null : cell.text);
+                return cell;
             }
         };
     }
 
-    private static final class Pill extends JComponent {
+    static Color statusColor(String kind) {
+        return switch (kind) { case "update" -> UPDATE; case "active" -> ACCENT; case "installed" -> SOFT; case "off" -> DIM; default -> MUTED; };
+    }
+
+    /** The mark before a status: dot, tick, plus or cross, drawn so it never depends on a font's glyphs. */
+    static void paintMark(Graphics2D g2, String kind, int x, int cy, Color color) {
+        g2.setColor(color);
+        switch (kind) {
+            case "update", "active" -> g2.fillOval(x + 1, cy - 4, 8, 8);
+            case "installed" -> {
+                g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.drawPolyline(new int[] { x, x + 3, x + 9 }, new int[] { cy, cy + 3, cy - 4 }, 3);
+            }
+            case "off" -> {
+                g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.drawLine(x + 1, cy - 4, x + 8, cy + 3);
+                g2.drawLine(x + 8, cy - 4, x + 1, cy + 3);
+            }
+            default -> {
+                g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.drawLine(x + 1, cy, x + 9, cy);
+                g2.drawLine(x + 5, cy - 4, x + 5, cy + 4);
+            }
+        }
+    }
+
+    private static final class Status extends JComponent {
         String kind = "", text = "";
         @Override protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -611,24 +724,19 @@ public final class Theme {
             if (text.isEmpty()) { g2.dispose(); return; }
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2.setFont(bold(12f));
+            Color color = statusColor(kind);
+            int cy = getHeight() / 2, x = 10;
+            paintMark(g2, kind, x, cy, color);
+            g2.setFont(kind.equals("update") || kind.equals("active") ? medium(13f) : text(13f));
             FontMetrics fm = g2.getFontMetrics();
-            int w = fm.stringWidth(text) + 18, h = 22, x = 10, y = (getHeight() - h) / 2;
-            Color bg = switch (kind) { case "update" -> ACCENT; case "installed" -> ACCENT_SEL; default -> CONTROL; };
-            Color fg = switch (kind) { case "update" -> ACCENT_INK; case "installed" -> ACCENT_SOFT; default -> SOFT; };
-            if (kind.equals("installed") && getBackground().equals(ACCENT_SEL)) bg = WELL;
-            if (kind.equals("off")) {
-                g2.setColor(MUTED);
-                g2.drawRoundRect(x, y, w - 1, h - 1, h, h);
-                g2.setColor(MUTED);
-                g2.drawString(text, x + 9, y + (h + fm.getAscent() - fm.getDescent()) / 2);
-                g2.dispose();
-                return;
+            g2.setColor(color);
+            String shown = text;
+            int room = getWidth() - x - 16 - 6;
+            if (fm.stringWidth(shown) > room) {
+                while (shown.length() > 1 && fm.stringWidth(shown + "…") > room) shown = shown.substring(0, shown.length() - 1);
+                shown += "…";
             }
-            g2.setColor(bg);
-            g2.fillRoundRect(x, y, w, h, h, h);
-            g2.setColor(fg);
-            g2.drawString(text, x + 9, y + (h + fm.getAscent() - fm.getDescent()) / 2);
+            g2.drawString(shown, x + 16, cy + (fm.getAscent() - fm.getDescent()) / 2);
             g2.dispose();
         }
     }
@@ -636,7 +744,7 @@ public final class Theme {
     /** A scroll pane with a hairline frame, for tables and lists. */
     static JScrollPane framed(JComponent inside) {
         JScrollPane s = new JScrollPane(inside);
-        s.setBorder(BorderFactory.createLineBorder(HAIR));
+        s.setBorder(BorderFactory.createLineBorder(EDGE));
         s.getViewport().setBackground(WELL);
         return s;
     }

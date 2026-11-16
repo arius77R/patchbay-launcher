@@ -218,8 +218,8 @@ final class Sources {
             JButton add = Theme.button(PatchbayLauncher.t("Dodaj źródło", "Add source"), "secondary");
             add.addActionListener(e -> startNew(MODS));
             add(Theme.page(PatchbayLauncher.t("Źródła", "Sources"),
-                Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody, urządzenia i motywy.",
-                    "GitHub repositories the launcher gets Patchbay, mods, devices and themes from."), Theme.text(14f), Theme.MUTED),
+                prose(Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody, urządzenia i motywy.",
+                    "GitHub repositories the launcher gets Patchbay, mods, devices and themes from."), Theme.text(13f), Theme.MUTED)),
                 add, body, null, null), BorderLayout.CENTER);
             repoField.setFont(Theme.mono(13f));
             filterField.setFont(Theme.mono(13f));
@@ -305,6 +305,9 @@ final class Sources {
             row.setMaximumSize(new Dimension(Integer.MAX_VALUE, row.getPreferredSize().height));
             return row;
         }
+
+        /** A subtitle that is a sentence keeps the text face (numbers and versions get the mono one). */
+        private static JLabel prose(JLabel l) { l.putClientProperty("prose", true); return l; }
 
         private static JComponent badge(String text) {
             JLabel l = Theme.label(text, Theme.text(11f), Theme.MUTED);

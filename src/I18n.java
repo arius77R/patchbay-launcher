@@ -349,6 +349,28 @@ final class I18n {
             "Le dépôt existe, mais ne contient aucun fichier de thème .bte.");
         add("Themes found: ", "Gefundene Themes: ", "Thèmes trouvés : ");
         add(".bte theme files", ".bte-Theme-Dateien", "fichiers de thème .bte");
+
+        // New look, hiding the Patchbay window
+        add("Update available", "Update verfügbar", "Mise à jour disponible");
+        add("Updates available", "Updates verfügbar", "Mises à jour disponibles");
+        add("Updates: ", "Updates: ", "Mises à jour : ");
+        add("Sections", "Bereiche", "Sections");
+        add("Version", "Version", "Version");
+        add("After Bitwig starts", "Nach dem Start von Bitwig", "Après le démarrage de Bitwig");
+        add("Mods and themes move to the new version.", "Mods und Themes werden in die neue Version übernommen.", "Les mods et les thèmes passent à la nouvelle version.");
+        add("Hide the Patchbay window when Bitwig starts", "Patchbay-Fenster ausblenden, wenn Bitwig startet", "Masquer la fenêtre Patchbay au démarrage de Bitwig");
+        add("After you click Load, the Patchbay window hides and its icon stays in the Dock. Patchbay keeps running: click the icon to bring the window back, for example to quit Bitwig with Stop.",
+            "Nach einem Klick auf Load wird das Patchbay-Fenster ausgeblendet, sein Symbol bleibt im Dock. Patchbay läuft weiter: Klicke auf das Symbol, um das Fenster zurückzuholen, etwa um Bitwig mit Stop zu beenden.",
+            "Après un clic sur Load, la fenêtre Patchbay se masque et son icône reste dans le Dock. Patchbay continue de tourner : cliquez sur l'icône pour rappeler la fenêtre, par exemple pour quitter Bitwig avec Stop.");
+        add("After you click Load, the Patchbay window minimises to the taskbar. Patchbay keeps running: click it in the taskbar to bring the window back, for example to quit Bitwig with Stop.",
+            "Nach einem Klick auf Load wird das Patchbay-Fenster in die Taskleiste minimiert. Patchbay läuft weiter: Klicke in der Taskleiste darauf, um das Fenster zurückzuholen, etwa um Bitwig mit Stop zu beenden.",
+            "Après un clic sur Load, la fenêtre Patchbay se réduit dans la barre des tâches. Patchbay continue de tourner : cliquez dessus dans la barre des tâches pour rappeler la fenêtre, par exemple pour quitter Bitwig avec Stop.");
+        add("The first time, macOS asks whether Patchbay Launcher may control \"System Events\". Click OK, or the window won't hide.",
+            "Beim ersten Mal fragt macOS, ob Patchbay Launcher „System Events“ steuern darf. Klicke auf OK, sonst wird das Fenster nicht ausgeblendet.",
+            "La première fois, macOS demande si Patchbay Launcher peut contrôler « System Events ». Cliquez sur OK, sinon la fenêtre ne se masquera pas.");
+        add("This needs the xdotool program (for example sudo apt install xdotool); without it the window won't hide.",
+            "Dafür wird das Programm xdotool gebraucht (z. B. sudo apt install xdotool); ohne es wird das Fenster nicht ausgeblendet.",
+            "Il faut pour cela le programme xdotool (par exemple sudo apt install xdotool) ; sans lui, la fenêtre ne se masquera pas.");
     }
 
     /** "<mod> needs <id> [min version]" in the language in use; installedVersion is null when the needed mod is absent. */

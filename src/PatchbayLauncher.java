@@ -338,11 +338,10 @@ public final class PatchbayLauncher {
     private final JFrame frame = new JFrame("Patchbay Launcher");
     private final JLabel installedLabel = Theme.label(" ", Theme.text(14f), Theme.MUTED);
     private final JLabel latestLabel = Theme.label(" ", Theme.bold(16f), Theme.TEXT);
-    private final JLabel sourceLabel = Theme.label(" ", Theme.text(13f), Theme.MUTED);
-    private final JLabel activeLabel = Theme.label("–", Theme.mono(13f), Theme.TEXT);
+    private final JLabel activeLabel = Theme.label(" ", Theme.mono(12f), Theme.MUTED);
     private final JComboBox<String> versionBox = new JComboBox<>();
     private final JButton installButton = Theme.button(" ", "primary");
-    private final JButton startButton = Theme.button(t("Uruchom Patchbay", "Start Patchbay"), "bitwig");
+    private final JButton startButton = Theme.button(t("Uruchom Patchbay", "Start Patchbay"), "start");
     private final JProgressBar bar = new JProgressBar(0, 1000);
     private final JLabel statusLabel = Theme.label(" ", Theme.text(13f), Theme.MUTED);
     private final JComboBox<String> languageBox = new JComboBox<>();
@@ -361,6 +360,7 @@ public final class PatchbayLauncher {
         JButton b = nav.get("mods");
         if (b == null) return;
         b.putClientProperty("badge", updates);
+        b.getAccessibleContext().setAccessibleDescription(updates > 0 ? t("Aktualizacje: ", "Updates: ") + updates : null);
         b.revalidate();
         b.repaint();
     }
@@ -414,119 +414,205 @@ public final class PatchbayLauncher {
         return l;
     }
 
-    private JComponent sidebar() {
-        JPanel side = new JPanel();
-        side.setBackground(Theme.TITLE);
-        side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
-        side.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Theme.HAIR), new EmptyBorder(22, 14, 16, 14)));
-        side.setPreferredSize(new Dimension(214, 10));
-        JPanel brand = new JPanel(new BorderLayout(10, 0));
+    /** The bar across the top: the name, the sections as tabs, the active Patchbay and the button that starts it. */
+    private JComponent topBar() {
+        JPanel bar = new JPanel(new BorderLayout(16, 0));
+        bar.setBackground(Theme.TITLE);
+        bar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.HAIR), new EmptyBorder(11, 18, 11, 18)));
+
+        JLabel name = Theme.label("Patchbay Launcher", Theme.bold(14f), Theme.TEXT);
+        JLabel version = Theme.label(VERSION, Theme.mono(11f), Theme.MUTED);
+        JPanel brand = new JPanel(new GridBagLayout());
         brand.setOpaque(false);
-        brand.setBorder(new EmptyBorder(0, 4, 20, 0));
-        brand.add(appIcon(34), BorderLayout.WEST);
-        JPanel names = new JPanel();
-        names.setOpaque(false);
-        names.setLayout(new BoxLayout(names, BoxLayout.Y_AXIS));
-        names.add(Theme.label("Patchbay", Theme.bold(16f), Theme.TEXT));
-        names.add(Theme.label("Launcher " + VERSION, Theme.text(12f), Theme.MUTED));
-        brand.add(names, BorderLayout.CENTER);
-        brand.setAlignmentX(Component.LEFT_ALIGNMENT);
-        brand.setMaximumSize(new Dimension(Integer.MAX_VALUE, brand.getPreferredSize().height));
-        side.add(brand);
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(0, 0, 0, 10);
+        brand.add(appIcon(24), g);
+        brand.add(name, g);
+        g.insets = new Insets(0, 0, 0, 0);
+        brand.add(version, g);
+        bar.add(brand, BorderLayout.WEST);
+
+        JPanel tabs = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0)) {
+            @Override protected void paintComponent(Graphics gr) {
+                Graphics2D g2 = (Graphics2D) gr.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Theme.WELL);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.setColor(Theme.EDGE);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.dispose();
+            }
+        };
+        tabs.setOpaque(false);
+        tabs.setBorder(new EmptyBorder(3, 3, 3, 3));
+        tabs.getAccessibleContext().setAccessibleName(t("Sekcje", "Sections"));
         String[][] items = { { "patchbay", "Patchbay" }, { "mods", t("Mody", "Mods") }, { "devices", t("Urządzenia", "Devices") }, { "themes", t("Motywy", "Themes") }, { "sources", t("Źródła", "Sources") } };
         for (String[] it : items) {
             JButton b = Theme.button(it[1], "nav");
-            b.setAlignmentX(Component.LEFT_ALIGNMENT);
-            b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
             b.addActionListener(e -> select(it[0]));
             nav.put(it[0], b);
-            side.add(b);
-            side.add(Box.createVerticalStrut(4));
+            tabs.add(b);
         }
-        side.add(Box.createVerticalGlue());
-        JPanel active = new Theme.Card(new BorderLayout(0, 4), Theme.WELL);
-        active.setBorder(new EmptyBorder(12, 12, 12, 12));
-        active.add(Theme.label(t("Aktywny Patchbay", "Active Patchbay"), Theme.text(12f), Theme.MUTED), BorderLayout.NORTH);
-        active.add(activeLabel, BorderLayout.CENTER);
-        active.setAlignmentX(Component.LEFT_ALIGNMENT);
-        active.setMaximumSize(new Dimension(Integer.MAX_VALUE, active.getPreferredSize().height));
-        side.add(active);
-        side.add(Box.createVerticalStrut(10));
-        startButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        startButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        side.add(startButton);
-        return side;
+        JPanel middle = new JPanel(new GridBagLayout());
+        middle.setOpaque(false);
+        middle.add(tabs);
+        bar.add(middle, BorderLayout.CENTER);
+
+        activeLabel.setToolTipText(t("Aktywny Patchbay", "Active Patchbay"));
+        bar.add(Theme.row(12, activeLabel, startButton), BorderLayout.EAST);
+        ((JPanel) bar.getComponent(bar.getComponentCount() - 1)).setLayout(new GridBagLayout());
+        // narrow windows (and longer words in German or French) drop the extras first
+        bar.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override public void componentResized(java.awt.event.ComponentEvent e) {
+                int w = bar.getWidth();
+                activeLabel.setVisible(w >= 1120);
+                name.setVisible(w >= 1040);
+                version.setVisible(w >= 1040);
+            }
+        });
+        return bar;
     }
+
+    /** A framed part of the Patchbay page: an optional header line (title left, extra right) over the body. */
+    private static JPanel section(JComponent title, JComponent right, JComponent body) {
+        JPanel card = new Theme.Card(new BorderLayout(), Theme.FRAME);
+        if (title != null) {
+            JPanel head = new JPanel(new BorderLayout(12, 0));
+            head.setOpaque(false);
+            head.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.EDGE), new EmptyBorder(10, 14, 10, 14)));
+            head.add(title, BorderLayout.CENTER);
+            if (right != null) head.add(right, BorderLayout.EAST);
+            card.add(head, BorderLayout.NORTH);
+        }
+        body.setBorder(new EmptyBorder(12, 14, 12, 14));
+        card.add(body, BorderLayout.CENTER);
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return card;
+    }
+
+    /** A red count, as macOS marks updates. */
+    private static final class Count extends JLabel {
+        int value;
+        Count() { setPreferredSize(new Dimension(24, 20)); setVisible(false); }
+        void set(int n) {
+            value = n;
+            setVisible(n > 0);
+            getAccessibleContext().setAccessibleName(n > 0 ? t("Aktualizacje: ", "Updates: ") + n : null);
+            repaint();
+        }
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            String n = String.valueOf(value);
+            g2.setFont(Theme.bold(12f));
+            FontMetrics fm = g2.getFontMetrics();
+            int w = Math.max(20, fm.stringWidth(n) + 12), x = getWidth() - w, y = (getHeight() - 20) / 2;
+            g2.setColor(Theme.BADGE);
+            g2.fillRoundRect(x, y, w, 20, 20, 20);
+            g2.setColor(Color.WHITE);
+            g2.drawString(n, x + (w - fm.stringWidth(n)) / 2, y + (20 + fm.getAscent() - fm.getDescent()) / 2);
+            g2.dispose();
+        }
+    }
+
+    private final Count patchbayCount = new Count();
+    private final JLabel carryLabel = Theme.label(" ", Theme.text(13f), Theme.MUTED);
 
     private JComponent patchbayPage() {
         JPanel col = new JPanel();
         col.setOpaque(false);
         col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
 
-        JPanel versions = new Theme.Card(new BorderLayout(), Theme.FRAME);
-        versions.setBorder(new EmptyBorder(18, 18, 18, 18));
+        // 1. versions: "Update available · 0.36.0-dev.14 → 0.36.0-dev.16" with a red count, then the picker
         JPanel v = new JPanel();
         v.setOpaque(false);
         v.setLayout(new BoxLayout(v, BoxLayout.Y_AXIS));
-        for (JComponent c : new JComponent[] { latestLabel, sourceLabel }) { c.setAlignmentX(Component.LEFT_ALIGNMENT); v.add(c); v.add(Box.createVerticalStrut(4)); }
-        v.add(Box.createVerticalStrut(10));
-        versionBox.setPreferredSize(new Dimension(240, 34));
-        versionBox.setFont(Theme.mono(13f));
+        versionBox.setPreferredSize(new Dimension(240, 32));
+        versionBox.setFont(Theme.mono(12f));
         versionBox.getAccessibleContext().setAccessibleName(t("Wersja Patchbay", "Patchbay version"));
-        JPanel pick = Theme.row(10, versionBox, installButton);
+        JPanel pick = Theme.row(10, Theme.label(t("Wersja", "Version"), Theme.text(13f), Theme.MUTED), versionBox, installButton, carryLabel);
         pick.setAlignmentX(Component.LEFT_ALIGNMENT);
         v.add(pick);
-        v.add(Box.createVerticalStrut(14));
-        bar.setPreferredSize(new Dimension(10, 6));
-        bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 6));
+        bar.setPreferredSize(new Dimension(10, 4));
+        bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 4));
         bar.setAlignmentX(Component.LEFT_ALIGNMENT);
         bar.setVisible(false);
+        v.add(Box.createVerticalStrut(10));
         v.add(bar);
-        v.add(Box.createVerticalStrut(6));
+        v.add(Box.createVerticalStrut(4));
         statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // the line under the picker takes room only while it says something
+        statusLabel.setVisible(false);
+        statusLabel.addPropertyChangeListener("text", e -> statusLabel.setVisible(!statusLabel.getText().isBlank()));
         v.add(statusLabel);
-        versions.add(v, BorderLayout.CENTER);
-        versions.setAlignmentX(Component.LEFT_ALIGNMENT);
-        col.add(versions);
-        col.add(Box.createVerticalStrut(16));
+        latestLabel.setFont(Theme.text(13f));
+        col.add(section(latestLabel, patchbayCount, v));
+        col.add(Box.createVerticalStrut(12));
 
-        JPanel settings = new Theme.Card(new BorderLayout(), Theme.FRAME);
-        settings.setBorder(new EmptyBorder(18, 18, 18, 18));
-        JPanel s = new JPanel();
-        s.setOpaque(false);
-        s.setLayout(new BoxLayout(s, BoxLayout.Y_AXIS));
-        JLabel head = Theme.label(t("Ustawienia", "Settings"), Theme.bold(16f), Theme.TEXT);
-        head.setAlignmentX(Component.LEFT_ALIGNMENT);
-        s.add(head);
-        s.add(Box.createVerticalStrut(14));
+        // 2. after Bitwig starts: hide the Patchbay window
+        JPanel h = new JPanel();
+        h.setOpaque(false);
+        h.setLayout(new BoxLayout(h, BoxLayout.Y_AXIS));
+        JCheckBox hide = new JCheckBox(Hider.title(), Hider.enabled());
+        hide.setOpaque(false);
+        hide.setFont(Theme.medium(14f));
+        hide.setForeground(Theme.TEXT);
+        hide.setIconTextGap(12);
+        hide.setFocusPainted(false);
+        hide.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        hide.addActionListener(e -> Hider.setEnabled(hide.isSelected()));
+        hide.setAlignmentX(Component.LEFT_ALIGNMENT);
+        h.add(hide);
+        JLabel how = Theme.wrapped(Hider.explanation(), 620, Theme.MUTED, 13f);
+        how.setBorder(new EmptyBorder(4, 30, 0, 0));
+        how.setAlignmentX(Component.LEFT_ALIGNMENT);
+        h.add(how);
+        String note = Hider.note();
+        if (note != null) {
+            JPanel box = new Theme.Card(new BorderLayout(), Theme.WELL);
+            box.setBorder(new EmptyBorder(9, 12, 9, 12));
+            box.add(Theme.wrapped(note, 600, Theme.SOFT, 13f), BorderLayout.CENTER);
+            JPanel indent = new JPanel(new BorderLayout());
+            indent.setOpaque(false);
+            indent.setBorder(new EmptyBorder(10, 30, 0, 0));
+            indent.add(box, BorderLayout.CENTER);
+            indent.setAlignmentX(Component.LEFT_ALIGNMENT);
+            h.add(indent);
+        }
+        col.add(section(Theme.label(t("Po uruchomieniu Bitwiga", "After Bitwig starts"), Theme.bold(13f), Theme.TEXT), null, h));
+        col.add(Box.createVerticalStrut(12));
+
+        // 3. language and folders, one line
         languageBox.addItem(t("Język systemu", "System language"));
         for (String name : new String[] { "Polski", "English", "Deutsch", "Français" }) languageBox.addItem(name);
         languageBox.setSelectedIndex(I18n.CODES.indexOf(I18n.choice()) + 1);
         languageBox.addActionListener(e -> languageChosen()); // only after the list is filled: filling it fires events
-        languageBox.setPreferredSize(new Dimension(200, 34));
+        languageBox.setPreferredSize(new Dimension(190, 32));
         languageBox.getAccessibleContext().setAccessibleName(t("Język", "Language"));
         JButton folder = Theme.button(t("Pokaż folder z danymi", "Show the data folder"), "secondary");
         folder.addActionListener(e -> {
             try { Files.createDirectories(data()); } catch (Exception ignored) { }
             Platform.open(data().toString());
         });
-        JPanel lang = Theme.row(10, Theme.label(t("Język:", "Language:"), Theme.text(14f), Theme.MUTED), languageBox);
-        lang.setAlignmentX(Component.LEFT_ALIGNMENT);
-        s.add(lang);
-        s.add(Box.createVerticalStrut(12));
-        JPanel more = Theme.row(10, folder, dockButton);
-        more.setAlignmentX(Component.LEFT_ALIGNMENT);
-        s.add(more);
-        settings.add(s, BorderLayout.CENTER);
-        settings.setAlignmentX(Component.LEFT_ALIGNMENT);
-        col.add(settings);
-        col.add(Box.createVerticalStrut(16));
+        JPanel settings = new JPanel(new BorderLayout(12, 0));
+        settings.setOpaque(false);
+        settings.add(Theme.row(10, Theme.label(t("Język", "Language"), Theme.text(13f), Theme.MUTED), languageBox), BorderLayout.WEST);
+        settings.add(Theme.row(8, dockButton, folder), BorderLayout.EAST);
+        col.add(section(null, null, settings));
+        col.add(Box.createVerticalStrut(12));
         col.add(aboutCard());
 
-        JPanel top = new JPanel(new BorderLayout());
-        top.setOpaque(false);
-        top.add(col, BorderLayout.NORTH);
-        return Theme.page("Patchbay", installedLabel, null, top, null, null);
+        // the page follows the window's width, so the buttons on the right never fall off a narrow window
+        JPanel top = new Theme.Column();
+        col.setAlignmentX(Component.LEFT_ALIGNMENT);
+        top.add(col);
+        JScrollPane scroll = new JScrollPane(top, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setOpaque(false);
+        scroll.setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        return Theme.page("Patchbay", installedLabel, null, scroll, null, null);
     }
 
     /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */
@@ -534,32 +620,22 @@ public final class PatchbayLauncher {
 
     /** Who makes the launcher and where to report problems with it, so they don't go to Patchbay's authors. */
     private JPanel aboutCard() {
-        JPanel card = new Theme.Card(new BorderLayout(), Theme.FRAME);
-        card.setBorder(new EmptyBorder(18, 18, 18, 18));
-        JPanel a = new JPanel();
+        JPanel a = new JPanel(new BorderLayout(16, 0));
         a.setOpaque(false);
-        a.setLayout(new BoxLayout(a, BoxLayout.Y_AXIS));
-        JLabel head = Theme.label(t("O aplikacji", "About") + " · Patchbay Launcher " + VERSION, Theme.bold(16f), Theme.TEXT);
-        head.setAlignmentX(Component.LEFT_ALIGNMENT);
-        a.add(head);
-        a.add(Box.createVerticalStrut(10));
         JLabel who = Theme.wrapped(t(
             "Patchbay Launcher to nieoficjalny projekt, który tworzy i wspiera Marius R. Nie jest częścią Patchbay: problemy z Launcherem zgłaszaj na jego stronie na GitHubie, a nie autorom Patchbay.",
             "Patchbay Launcher is an unofficial project made and supported by Marius R. It is not part of Patchbay: please report problems with the launcher on its GitHub page, not to the authors of Patchbay."),
-            620, Theme.MUTED, 14f);
-        who.setAlignmentX(Component.LEFT_ALIGNMENT);
-        a.add(who);
-        a.add(Box.createVerticalStrut(12));
+            470, Theme.MUTED, 13f);
+        a.add(who, BorderLayout.CENTER);
         JButton report = Theme.button(t("Zgłoś problem", "Report a problem"), "secondary");
         report.addActionListener(e -> browse(PROJECT + "/issues"));
         JButton page = Theme.button(t("Strona projektu", "Project page"), "secondary");
         page.addActionListener(e -> browse(PROJECT));
-        JPanel links = Theme.row(10, report, page);
-        links.setAlignmentX(Component.LEFT_ALIGNMENT);
-        a.add(links);
-        card.add(a, BorderLayout.CENTER);
-        card.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return card;
+        JPanel links = new JPanel(new GridBagLayout());
+        links.setOpaque(false);
+        links.add(Theme.row(8, report, page));
+        a.add(links, BorderLayout.EAST);
+        return section(null, null, a);
     }
 
     private static void browse(String url) {
@@ -586,7 +662,7 @@ public final class PatchbayLauncher {
         content.add(sourcesPanel, "sources");
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(Theme.WELL);
-        root.add(sidebar(), BorderLayout.WEST);
+        root.add(topBar(), BorderLayout.NORTH);
         root.add(content, BorderLayout.CENTER);
         frame.setContentPane(root);
         java.net.URL iconUrl = PatchbayLauncher.class.getResource("/icon-128.png");
@@ -600,6 +676,9 @@ public final class PatchbayLauncher {
         String tab = System.getProperty("launcher.tab", currentVersion() == null ? "patchbay" : "mods");
         select(nav.containsKey(tab) ? tab : "patchbay");
         frame.setVisible(true);
+        // the first tab would take the keyboard focus and look selected; the page takes it instead
+        content.setFocusable(true);
+        content.requestFocusInWindow();
         checkReleases();
         modsPanel.reload();
     }
@@ -646,11 +725,11 @@ public final class PatchbayLauncher {
 
     private void refreshLocal() {
         String cur = currentVersion();
-        installedLabel.setText(cur == null
+        installedLabel.setText((cur == null
             ? t("Patchbay nie jest jeszcze zainstalowany.", "Patchbay isn't installed yet.")
-            : t("Zainstalowana wersja: ", "Installed version: ") + cur);
-        activeLabel.setText(cur == null ? "–" : cur);
-        sourceLabel.setText(t("Źródło: ", "Source: ") + Sources.patchbay().repo());
+            : t("Zainstalowana wersja: ", "Installed version: ") + cur)
+            + " · " + t("Źródło: ", "Source: ") + Sources.patchbay().repo());
+        activeLabel.setText(cur == null ? " " : "BML " + cur);
         refreshButtons();
     }
 
@@ -701,14 +780,8 @@ public final class PatchbayLauncher {
         for (Release r : list) versionBox.addItem(r.version());
         String newest = list.get(0).version(), cur = currentVersion();
         versionBox.setSelectedItem(newest);
-        if (cur == null) {
-            latestLabel.setText(t("Najnowsza wersja: ", "Latest version: ") + newest);
-        } else if (compareVersions(newest, cur) > 0) {
-            latestLabel.setText(t("Dostępna aktualizacja: ", "Update available: ") + newest);
+        if (showUpdate() && cur != null)
             notifyUser(t("Dostępna jest nowa wersja Patchbay: ", "A new Patchbay version is available: ") + newest);
-        } else {
-            latestLabel.setText(t("Masz najnowszą wersję.", "You have the latest version."));
-        }
         setBusy(false, "");
     }
 
@@ -759,11 +832,25 @@ public final class PatchbayLauncher {
     }
 
     private void releasesLoadedKeepStatus() {
-        if (releases.isEmpty()) return;
+        if (!releases.isEmpty()) showUpdate();
+    }
+
+    /** The head of the versions part, the red count beside it and on the Patchbay tab; true when an update is waiting. */
+    private boolean showUpdate() {
         String newest = releases.get(0).version(), cur = currentVersion();
-        latestLabel.setText(cur != null && compareVersions(newest, cur) > 0
-            ? t("Dostępna aktualizacja: ", "Update available: ") + newest
-            : t("Masz najnowszą wersję.", "You have the latest version."));
+        boolean update = cur != null && compareVersions(newest, cur) > 0;
+        if (cur == null) latestLabel.setText(t("Najnowsza wersja: ", "Latest version: ") + newest);
+        else if (update) latestLabel.setText("<html>" + Theme.UpdateBar.title(1) + " <font color='#9C9FA5'>· " + cur + " → " + newest + "</font></html>");
+        else latestLabel.setText(t("Masz najnowszą wersję.", "You have the latest version."));
+        patchbayCount.set(update ? 1 : 0);
+        carryLabel.setText(update ? t("Mody i motywy przejdą do nowej wersji.", "Mods and themes move to the new version.") : " ");
+        JButton tab = nav.get("patchbay");
+        if (tab != null) {
+            tab.putClientProperty("badge", update ? 1 : 0);
+            tab.revalidate();
+            tab.repaint();
+        }
+        return update;
     }
 
     private void start() {
@@ -774,6 +861,7 @@ public final class PatchbayLauncher {
                 return;
             }
             startPatchbay();
+            if (Hider.enabled() && Hider.available()) Hider.startWatcher();
             setBusy(true, t("Uruchamianie Patchbay…", "Starting Patchbay…"));
             javax.swing.Timer quit = new javax.swing.Timer(2500, e -> System.exit(0));
             quit.setRepeats(false);
@@ -785,12 +873,12 @@ public final class PatchbayLauncher {
 
     public static void main(String[] args) throws Exception {
         if (args.length > 0 && args[0].equals("--selftest")) { SelfTest.run(args); return; }
+        if (args.length > 0 && args[0].equals("--hide-watch")) { Hider.watch(); return; }
         if (Platform.MAC) {
             System.setProperty("apple.awt.application.name", "Patchbay Launcher");
             System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua");
         }
-        String cur = currentVersion();
-        if (cur != null) Theme.loadFonts(folderOf(cur).resolve("loader/app/bml-control.jar"));
+        Theme.loadFonts();
         SwingUtilities.invokeLater(() -> {
             Theme.install();
             new PatchbayLauncher().show();
@@ -885,6 +973,7 @@ public final class PatchbayLauncher {
             if (args.length >= 4) devicesTest(Path.of(args[3]));
             if (args.length >= 4 && Files.isRegularFile(Path.of(args[3], "csabacsaba_bw6themes.tree.json"))) themesTest(Path.of(args[3]));
             sourcesTest();
+            hiderTest();
             System.out.println("SELFTEST_OK");
         }
 
@@ -988,6 +1077,19 @@ public final class PatchbayLauncher {
             check(Themes.activeId() == null && Files.readString(settings.resolve("enabled-mods.properties")).contains("mod.bte-theme-loader=false"), "themes turned off");
             Themes.remove(Themes.target(components, neon));
             check(!Files.exists(components.resolve("Neon Glow")) && Themes.rank(components, neon) == 2, "theme removed");
+        }
+
+        static void hiderTest() {
+            check(Hider.enabled(), "hiding the Patchbay window is on by default");
+            Hider.setEnabled(false);
+            check(!Hider.enabled(), "and can be switched off");
+            Hider.setEnabled(true);
+            String cmd = String.join(" ", Hider.command(4242));
+            check(Platform.MAC ? cmd.contains("unix id is 4242") && cmd.contains("set visible")
+                : Platform.WINDOWS ? cmd.contains("Get-Process -Id 4242") && cmd.contains("ShowWindowAsync($h, 6)")
+                : cmd.equals("xdotool search --onlyvisible --class ^dev-bitwigre-bml-BmlControlApp$ windowminimize %@"), "hide command: " + cmd);
+            check(Hider.explanation().contains(Platform.MAC ? "Dock" : t("pasek zadań", "taskbar")), "explanation fits this system");
+            check(!Platform.patchbayPids().contains(ProcessHandle.current().pid()), "the launcher never counts itself as Patchbay");
         }
 
         static void sourcesTest() throws Exception {

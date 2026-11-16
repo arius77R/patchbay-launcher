@@ -323,8 +323,8 @@ final class Devices {
             table.getColumnModel().getColumn(0).setMaxWidth(40);
             table.getColumnModel().getColumn(1).setPreferredWidth(260);
             table.getColumnModel().getColumn(2).setPreferredWidth(140);
-            table.getColumnModel().getColumn(3).setMinWidth(116);
-            table.getColumnModel().getColumn(3).setMaxWidth(130);
+            table.getColumnModel().getColumn(3).setMinWidth(130);
+            table.getColumnModel().getColumn(3).setMaxWidth(140);
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.pillCells());
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
