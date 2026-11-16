@@ -646,7 +646,7 @@ public final class PatchbayLauncher {
     /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */
     static final String PROJECT = "https://github.com/arius77R/patchbay-launcher";
     /** The launcher's channel on the Bitwig Discord server. */
-    static final String DISCORD = "https://discord.com/channels/121395249003233280";
+    static final String DISCORD = "https://discord.com/channels/121395249003233280/1571878415781466153";
 
     /** Who makes the launcher and where to report problems with it, so they don't go to Patchbay's authors. */
     private JPanel aboutCard() {
