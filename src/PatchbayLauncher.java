@@ -693,8 +693,6 @@ public final class PatchbayLauncher {
         settings.add(Theme.row(10, Theme.label(t("Język", "Language"), Theme.text(13f), Theme.MUTED), languageBox), BorderLayout.WEST);
         settings.add(Theme.row(8, dockButton, folder), BorderLayout.EAST);
         col.add(section(null, null, settings));
-        col.add(Box.createVerticalStrut(12));
-        col.add(aboutCard());
 
         // the page follows the window's width, so the buttons on the right never fall off a narrow window
         JPanel top = new Theme.Column();
@@ -705,7 +703,12 @@ public final class PatchbayLauncher {
         scroll.getViewport().setOpaque(false);
         scroll.setOpaque(false);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
-        return Theme.page("Patchbay", installedLabel, null, scroll, null, null);
+        // who makes the launcher: kept at the very bottom of the page, under whatever fits above
+        JPanel body = new JPanel(new BorderLayout(0, 12));
+        body.setOpaque(false);
+        body.add(scroll, BorderLayout.CENTER);
+        body.add(aboutCard(), BorderLayout.SOUTH);
+        return Theme.page("Patchbay", installedLabel, null, body, null, null);
     }
 
     /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */
