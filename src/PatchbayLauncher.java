@@ -1084,6 +1084,19 @@ public final class PatchbayLauncher {
 
     /** Offline checks (the 4th argument is a folder of fixtures: two release lists and two mod ZIPs): java -Dlauncher.data=<empty temp folder> -jar launcher.jar --selftest <BML zip> <its version>. */
     static final class SelfTest {
+        /** ⌘V and friends paste in text fields on macOS (Swing's own look only knows Ctrl). */
+        static void editKeysTest() {
+            UIDefaults d = new UIDefaults();
+            InputMap im = new InputMap();
+            d.put("TextField.focusInputMap", im);
+            Theme.macEditKeys(d);
+            int cmd = java.awt.event.InputEvent.META_DOWN_MASK;
+            check(javax.swing.text.DefaultEditorKit.pasteAction.equals(im.get(KeyStroke.getKeyStroke('V', cmd))), "Cmd+V pastes");
+            check(javax.swing.text.DefaultEditorKit.copyAction.equals(im.get(KeyStroke.getKeyStroke('C', cmd))), "Cmd+C copies");
+            check(javax.swing.text.DefaultEditorKit.selectAllAction.equals(im.get(KeyStroke.getKeyStroke('A', cmd))), "Cmd+A selects all");
+            check("polarity/bitwig-mods".equals(Sources.normalizeRepo("https://github.com/polarity/bitwig-mods")), "a pasted github.com link becomes owner/name");
+        }
+
         static void check(boolean ok, String what) {
             System.out.println((ok ? "ok    " : "FAIL  ") + what);
             if (!ok) System.exit(1);
@@ -1171,6 +1184,7 @@ public final class PatchbayLauncher {
             if (args.length >= 4 && Files.isRegularFile(Path.of(args[3], "csabacsaba_bw6themes.tree.json"))) themesTest(Path.of(args[3]));
             sourcesTest();
             selfUpdateTest();
+            editKeysTest();
             System.out.println("SELFTEST_OK");
         }
 

@@ -94,6 +94,53 @@ public final class Theme {
     static Font bold(float size) { return semibold != null ? semibold.deriveFont(size) : new Font(Font.SANS_SERIF, Font.BOLD, Math.round(size)); }
     static Font mono(float size) { return mono != null ? mono.deriveFont(size) : new Font(Font.MONOSPACED, Font.PLAIN, Math.round(size)); }
 
+    /**
+     * The look is Swing's own, which copies and pastes with Ctrl; on macOS ⌘C, ⌘V, ⌘X, ⌘A and ⌘Z
+     * do it too, in every text field.
+     */
+    static void macEditKeys(UIDefaults d) {
+        int cmd = java.awt.event.InputEvent.META_DOWN_MASK;
+        String[][] keys = { { "C", javax.swing.text.DefaultEditorKit.copyAction }, { "V", javax.swing.text.DefaultEditorKit.pasteAction },
+            { "X", javax.swing.text.DefaultEditorKit.cutAction }, { "A", javax.swing.text.DefaultEditorKit.selectAllAction } };
+        for (String map : new String[] { "TextField.focusInputMap", "FormattedTextField.focusInputMap", "PasswordField.focusInputMap",
+            "TextArea.focusInputMap", "TextPane.focusInputMap", "EditorPane.focusInputMap" }) {
+            if (!(d.get(map) instanceof InputMap im)) continue;
+            for (String[] k : keys) im.put(KeyStroke.getKeyStroke(k[0].charAt(0), cmd), k[1]);
+            // ⌘← / ⌘→ to the start and end of the line, as everywhere else on a Mac
+            im.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_LEFT, cmd), javax.swing.text.DefaultEditorKit.beginLineAction);
+            im.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_RIGHT, cmd), javax.swing.text.DefaultEditorKit.endLineAction);
+        }
+    }
+
+    private static boolean editMenuOn;
+
+    /** Right-click in any text field: Cut, Copy, Paste, Select all. */
+    private static void editMenu() {
+        if (editMenuOn || GraphicsEnvironment.isHeadless()) return;
+        editMenuOn = true;
+        Toolkit.getDefaultToolkit().addAWTEventListener(e -> {
+            if (!(e instanceof java.awt.event.MouseEvent m) || !m.isPopupTrigger()
+                || !(m.getComponent() instanceof javax.swing.text.JTextComponent t) || !t.isShowing()) return;
+            JPopupMenu menu = new JPopupMenu();
+            boolean editable = t.isEditable() && t.isEnabled();
+            boolean selected = t.getSelectionStart() != t.getSelectionEnd();
+            JMenuItem cut = new JMenuItem(PatchbayLauncher.t("Wytnij", "Cut"));
+            cut.setEnabled(editable && selected);
+            cut.addActionListener(a -> t.cut());
+            JMenuItem copy = new JMenuItem(PatchbayLauncher.t("Kopiuj", "Copy"));
+            copy.setEnabled(selected);
+            copy.addActionListener(a -> t.copy());
+            JMenuItem paste = new JMenuItem(PatchbayLauncher.t("Wklej", "Paste"));
+            paste.setEnabled(editable);
+            paste.addActionListener(a -> t.paste());
+            JMenuItem all = new JMenuItem(PatchbayLauncher.t("Zaznacz wszystko", "Select all"));
+            all.addActionListener(a -> { t.requestFocusInWindow(); t.selectAll(); });
+            menu.add(cut); menu.add(copy); menu.add(paste); menu.addSeparator(); menu.add(all);
+            menu.show(t, m.getX(), m.getY());
+            m.consume();
+        }, AWTEvent.MOUSE_EVENT_MASK);
+    }
+
     /** Sets the look before any window is built. */
     static void install() {
         SPLITS.clear(); // panes of a window built before (language or appearance changed)
@@ -102,6 +149,24 @@ public final class Theme {
         } catch (Exception ignored) { }
         UIDefaults d = UIManager.getDefaults();
         d.put("ClassLoader", Theme.class.getClassLoader());
+        if (Platform.MAC) macEditKeys(d);
+        editMenu();
+        // the right-click menu in our colours, not Metal's light grey
+        d.put("PopupMenu.background", FRAME);
+        d.put("PopupMenu.border", new javax.swing.plaf.BorderUIResource(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(EDGE), new EmptyBorder(4, 0, 4, 0))));
+        d.put("MenuItem.background", FRAME);
+        d.put("MenuItem.foreground", TEXT);
+        d.put("MenuItem.selectionBackground", ACCENT_SEL);
+        d.put("MenuItem.selectionForeground", STRONG);
+        d.put("MenuItem.disabledForeground", DIM);
+        d.put("MenuItem.font", new FontUIResource(text(13f)));
+        d.put("MenuItem.border", new javax.swing.plaf.BorderUIResource(new EmptyBorder(5, 12, 5, 24)));
+        d.put("MenuItem.acceleratorForeground", MUTED);
+        d.put("Separator.foreground", HAIR);
+        d.put("Separator.background", FRAME);
+        d.put("PopupMenuSeparator.foreground", HAIR);
+        d.put("PopupMenuSeparator.background", FRAME);
         d.put("ButtonUI", FlatButtonUI.class.getName());
         d.put("ScrollBarUI", ThinScrollBarUI.class.getName());
         d.put("ComboBoxUI", FlatComboUI.class.getName());

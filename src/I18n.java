@@ -367,6 +367,10 @@ final class I18n {
         add("Open the launcher's Discord channel", "Discord-Kanal des Launchers öffnen", "Ouvrir le canal Discord du lanceur");
         add("Light appearance", "Helles Erscheinungsbild", "Apparence claire");
         add("Dark appearance", "Dunkles Erscheinungsbild", "Apparence sombre");
+        add("Cut", "Ausschneiden", "Couper");
+        add("Copy", "Kopieren", "Copier");
+        add("Paste", "Einfügen", "Coller");
+        add("Select all", "Alles auswählen", "Tout sélectionner");
         add("Wait until the launcher finishes what it is doing.", "Warte, bis der Launcher fertig ist.", "Attendez que le lanceur ait terminé.");
         add("Update the launcher", "Launcher aktualisieren", "Mettre à jour le lanceur");
         add("What's new", "Was ist neu", "Nouveautés");
