@@ -244,7 +244,7 @@ final class I18n {
         add("Device files found: ", "Gefundene Gerätedateien: ", "Fichiers de périphériques trouvés : ");
         add("There is no such repository, or it is private.", "Dieses Repository gibt es nicht, oder es ist privat.", "Ce dépôt n'existe pas ou il est privé.");
         add("Add source", "Quelle hinzufügen", "Ajouter une source");
-        add("GitHub repositories the launcher gets Patchbay, mods and devices from.", "GitHub-Repositories, aus denen der Launcher Patchbay, Mods und Geräte lädt.", "Dépôts GitHub d'où le lanceur récupère Patchbay, les mods et les périphériques.");
+        add("GitHub repositories the launcher gets Patchbay, mods, devices and themes from.", "GitHub-Repositories, aus denen der Launcher Patchbay, Mods, Geräte und Themes lädt.", "Dépôts GitHub d'où le lanceur récupère Patchbay, les mods, les périphériques et les thèmes.");
         add("one active source", "eine aktive Quelle", "une seule source active");
         add("mod ZIPs from releases", "Mod-ZIPs aus Releases", "ZIP de mods des versions publiées");
         add(".bwdevice and .bwmodulator files", ".bwdevice- und .bwmodulator-Dateien", "fichiers .bwdevice et .bwmodulator");
@@ -307,6 +307,48 @@ final class I18n {
         add("Done. Tick the mods in the Patchbay window and click Load.",
             "Fertig. Aktiviere die Mods im Patchbay-Fenster und klicke auf Load.",
             "Terminé. Cochez les mods dans la fenêtre Patchbay et cliquez sur Load.");
+
+        // Themes
+        add("Themes", "Themes", "Thèmes");
+        add("Theme", "Theme", "Thème");
+        add("active", "aktiv", "actif");
+        add("Loading the theme list…", "Theme-Liste wird geladen…", "Chargement de la liste des thèmes…");
+        add("Install Patchbay first.", "Installiere zuerst Patchbay.", "Installez d'abord Patchbay.");
+        add("no active theme", "kein aktives Theme", "aucun thème actif");
+        add("active: ", "aktiv: ", "actif : ");
+        add("A theme changes Bitwig's colours. Click a theme in the list to see a preview.",
+            "Ein Theme ändert die Farben von Bitwig. Klicke auf ein Theme in der Liste, um eine Vorschau zu sehen.",
+            "Un thème change les couleurs de Bitwig. Cliquez sur un thème de la liste pour voir un aperçu.");
+        add("Theme preview: ", "Theme-Vorschau: ", "Aperçu du thème : ");
+        add("active in Patchbay", "in Patchbay aktiv", "actif dans Patchbay");
+        add("not installed", "nicht installiert", "non installé");
+        add("a newer version is out", "eine neuere Version ist da", "une version plus récente existe");
+        add("After changing the theme, start Bitwig again from Patchbay (Load).",
+            "Starte Bitwig nach dem Theme-Wechsel erneut aus Patchbay (Load).",
+            "Après un changement de thème, relancez Bitwig depuis Patchbay (Load).");
+        add("Use this theme", "Dieses Theme verwenden", "Utiliser ce thème");
+        add("Turn themes off", "Themes ausschalten", "Désactiver les thèmes");
+        add("Remove", "Entfernen", "Supprimer");
+        add("Close the Patchbay window, then try again.", "Schließe das Patchbay-Fenster und versuche es erneut.", "Fermez la fenêtre Patchbay, puis réessayez.");
+        add("Theme set: \"", "Theme gesetzt: „", "Thème choisi : « ");
+        add("\". Start Patchbay and click Load.", "“. Starte Patchbay und klicke auf Load.", " ». Lancez Patchbay et cliquez sur Load.");
+        add("Themes are off. Bitwig gets its own colours back at the next start.",
+            "Themes sind aus. Bitwig bekommt beim nächsten Start seine eigenen Farben zurück.",
+            "Les thèmes sont désactivés. Bitwig retrouve ses couleurs au prochain démarrage.");
+        add("Remove the theme \"", "Das Theme „", "Supprimer le thème « ");
+        add("\" from Patchbay?", "“ aus Patchbay entfernen?", " » de Patchbay ?");
+        add("Removed: ", "Entfernt: ", "Supprimé : ");
+        add("Installed. Click \"Use this theme\" to turn it on.",
+            "Installiert. Klicke auf „Dieses Theme verwenden“, um es einzuschalten.",
+            "Installé. Cliquez sur « Utiliser ce thème » pour l'activer.");
+        add("Installed. Pick a theme and click \"Use this theme\".",
+            "Installiert. Wähle ein Theme und klicke auf „Dieses Theme verwenden“.",
+            "Installé. Choisissez un thème et cliquez sur « Utiliser ce thème ».");
+        add("The repository exists, but it holds no .bte theme files.",
+            "Das Repository existiert, enthält aber keine .bte-Theme-Dateien.",
+            "Le dépôt existe, mais ne contient aucun fichier de thème .bte.");
+        add("Themes found: ", "Gefundene Themes: ", "Thèmes trouvés : ");
+        add(".bte theme files", ".bte-Theme-Dateien", "fichiers de thème .bte");
     }
 
     /** "<mod> needs <id> [min version]" in the language in use; installedVersion is null when the needed mod is absent. */

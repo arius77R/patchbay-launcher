@@ -352,6 +352,7 @@ public final class PatchbayLauncher {
     private final Map<String, JButton> nav = new LinkedHashMap<>();
     private final Mods.Panel modsPanel = new Mods.Panel(this::modUpdatesFound);
     private final Devices.Panel devicesPanel = new Devices.Panel();
+    private final Themes.Panel themesPanel = new Themes.Panel();
     private final Sources.Panel sourcesPanel = new Sources.Panel(this::sourcesChanged);
     private List<Release> releases = List.of();
     private boolean busy;
@@ -369,6 +370,7 @@ public final class PatchbayLauncher {
         checkReleases();
         modsPanel.reload();
         devicesPanel.sourcesChanged();
+        themesPanel.sourcesChanged();
     }
 
     private void select(String key) {
@@ -378,6 +380,7 @@ public final class PatchbayLauncher {
             e.getValue().repaint();
         }
         if (key.equals("devices")) devicesPanel.shown();
+        if (key.equals("themes")) themesPanel.shown();
     }
 
     /** The mark beside the name: a socket with two jacks and a cable, drawn in the accent. */
@@ -430,7 +433,7 @@ public final class PatchbayLauncher {
         brand.setAlignmentX(Component.LEFT_ALIGNMENT);
         brand.setMaximumSize(new Dimension(Integer.MAX_VALUE, brand.getPreferredSize().height));
         side.add(brand);
-        String[][] items = { { "patchbay", "Patchbay" }, { "mods", t("Mody", "Mods") }, { "devices", t("Urządzenia", "Devices") }, { "sources", t("Źródła", "Sources") } };
+        String[][] items = { { "patchbay", "Patchbay" }, { "mods", t("Mody", "Mods") }, { "devices", t("Urządzenia", "Devices") }, { "themes", t("Motywy", "Themes") }, { "sources", t("Źródła", "Sources") } };
         for (String[] it : items) {
             JButton b = Theme.button(it[1], "nav");
             b.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -579,6 +582,7 @@ public final class PatchbayLauncher {
         content.add(patchbayPage(), "patchbay");
         content.add(modsPanel, "mods");
         content.add(devicesPanel, "devices");
+        content.add(themesPanel, "themes");
         content.add(sourcesPanel, "sources");
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(Theme.WELL);
@@ -741,6 +745,7 @@ public final class PatchbayLauncher {
                     refreshLocal();
                     releasesLoadedKeepStatus();
                     modsPanel.patchbayChanged();
+                    themesPanel.patchbayChanged();
                     offerDock();
                 });
             } catch (Exception ex) {
@@ -878,6 +883,7 @@ public final class PatchbayLauncher {
             check(installedVersions().get(0).equals(version), "newest listed first");
             if (args.length >= 4) modsTest(Path.of(args[3]), folderOf(version).resolve("mods"));
             if (args.length >= 4) devicesTest(Path.of(args[3]));
+            if (args.length >= 4 && Files.isRegularFile(Path.of(args[3], "csabacsaba_bw6themes.tree.json"))) themesTest(Path.of(args[3]));
             sourcesTest();
             System.out.println("SELFTEST_OK");
         }
@@ -933,8 +939,59 @@ public final class PatchbayLauncher {
             check(!Devices.register(wanted), "registering again changes nothing");
         }
 
+        static void themesTest(Path fixtures) throws Exception {
+            List<Themes.Item> bw6 = Themes.parseTree(Files.readString(fixtures.resolve("csabacsaba_bw6themes.tree.json")), "csabacsaba/bw6themes", "");
+            check(bw6.stream().map(Themes.Item::name).toList().equals(List.of("black", "blackfire", "live12", "s1")), "four theme folders in bw6themes: " + bw6.stream().map(Themes.Item::name).toList());
+            Themes.Item live = bw6.get(2);
+            check(live.isFolder() && live.files().size() == 1 && live.files().get(0).path().equals("bw6b4/live12/theme.bte")
+                && "bw6b4/live12/live_screenshot.png".equals(live.preview()), "a theme folder brings its .bte; the screenshot is only a preview");
+            List<Themes.Item> mixed = Themes.parseTree(Files.readString(fixtures.resolve("test_lone-themes.tree.json")), "test/lone-themes", "");
+            check(mixed.stream().map(Themes.Item::name).toList().equals(List.of("Midnight", "Neon Glow", "Sand", "Sea")), "lone .bte files and folders: " + mixed.stream().map(Themes.Item::name).toList());
+            Themes.Item midnight = mixed.get(0), neon = mixed.get(1);
+            check(!midnight.isFolder() && "Midnight.png".equals(midnight.preview()), "lone file with a picture of the same name");
+            check(neon.files().stream().map(Themes.File::path).sorted().toList().equals(List.of("Neon Glow/mod.json", "Neon Glow/overlays/knob.svg", "Neon Glow/theme.bte"))
+                && "Neon Glow/preview.png".equals(neon.preview()), "folder theme keeps overlays and mod.json, not its preview");
+            check(Themes.parseTree(Files.readString(fixtures.resolve("test_lone-themes.tree.json")), "test/lone-themes", "pair").size() == 2, "folder filter");
+            check(Themes.derivedId("Neon Glow").equals("neon-glow") && Themes.derivedId("Café  Noir!").equals("cafe-noir")
+                && Themes.derivedId("2024 dark").equals("c-2024-dark") && Themes.derivedId("--live12--").equals("live12"), "theme IDs as Patchbay makes them");
+
+            if (System.getProperty("launcher.bmlsettings") == null) System.setProperty("launcher.bmlsettings", data().resolve("bml-settings").toString());
+            Path components = Themes.components();
+            check(components != null && components.startsWith(folderOf(currentVersion())), "themes go into the active Patchbay's components/");
+            Themes.Fetcher local = (repo, path, target) -> Files.copy(fixtures.resolve(repo.replace('/', '_')).resolve(path), target, StandardCopyOption.REPLACE_EXISTING);
+            check(Themes.rank(components, live) == 2, "not installed yet");
+            Themes.install(components, live, local);
+            check(Files.isRegularFile(components.resolve("live12/theme.bte")) && !Files.exists(components.resolve("live12/live_screenshot.png")), "installed as components/live12/theme.bte");
+            check(Themes.rank(components, live) == 1, "installed and up to date");
+            Themes.install(components, midnight, local);
+            Themes.install(components, neon, local);
+            check(Files.isRegularFile(components.resolve("Midnight.bte")) && Files.isRegularFile(components.resolve("Neon Glow/overlays/knob.svg")), "lone file and folder with overlays installed");
+            Files.writeString(components.resolve("live12/theme.bte"), "older");
+            check(Themes.rank(components, live) == 0, "changed theme shows as update");
+            boolean refused = false;
+            try { Themes.install(components, live, (repo, path, target) -> Files.writeString(target, "tampered")); } catch (IOException e) { refused = true; }
+            check(refused && Files.readString(components.resolve("live12/theme.bte")).equals("older"), "wrong hash refused, installed theme kept");
+            try (Stream<Path> st = Files.list(components)) { check(st.noneMatch(x -> x.getFileName().toString().startsWith(".theme-")), "no staging folder left"); }
+
+            check(Themes.idOf(components, neon).equals("neon-glow-theme") && Themes.idOf(components, live).equals("live12") && Themes.idOf(components, midnight).equals("midnight"), "ID from mod.json, else from the name");
+            Path settings = Devices.patchbaySettings();
+            Files.createDirectories(settings);
+            Files.writeString(settings.resolve("enabled-mods.properties"), "mod.other-mod=true\n");
+            Files.writeString(settings.resolve("selected-components.properties"), "component.x.group.y.ids=z\n");
+            check(Themes.activeId() == null, "no theme chosen yet");
+            Themes.choose("live12");
+            check("live12".equals(Themes.activeId()), "theme chosen");
+            String enabled = Files.readString(settings.resolve("enabled-mods.properties")), selected = Files.readString(settings.resolve("selected-components.properties"));
+            check(enabled.contains("mod.other-mod=true") && enabled.contains("mod.bte-theme-loader=true") && selected.contains("component.x.group.y.ids=z")
+                && selected.contains("component.bte-theme-loader.group.themes.ids=live12"), "Patchbay's other settings kept");
+            Themes.choose(null);
+            check(Themes.activeId() == null && Files.readString(settings.resolve("enabled-mods.properties")).contains("mod.bte-theme-loader=false"), "themes turned off");
+            Themes.remove(Themes.target(components, neon));
+            check(!Files.exists(components.resolve("Neon Glow")) && Themes.rank(components, neon) == 2, "theme removed");
+        }
+
         static void sourcesTest() throws Exception {
-            check(Sources.all().size() == 4 && Sources.patchbay().repo().equals("shaboogen-dev/Patchbay"), "four built-in sources, Patchbay from shaboogen-dev");
+            check(Sources.all().size() == 5 && Sources.patchbay().repo().equals("shaboogen-dev/Patchbay"), "five built-in sources, Patchbay from shaboogen-dev");
             check(Sources.patchbay().filter().equals(Platform.releasePattern()), "built-in Patchbay source takes this system's file");
             check("o/r".equals(Sources.normalizeRepo(" https://github.com/o/r.git ")) && "o/r".equals(Sources.normalizeRepo("o/r/tree/main")), "repository from a pasted link");
             check(Sources.normalizeRepo("not a repo") == null && Sources.normalizeRepo("../x") == null, "bad repository refused");
@@ -948,7 +1005,7 @@ public final class PatchbayLauncher {
             next.add(new Sources.Source("own-2", Sources.PATCHBAY, "me/patchbay-fork", "BML-*-macos.zip", false, false));
             Sources.save(next);
             List<Sources.Source> back = Sources.all();
-            check(back.size() == 6 && !back.get(2).enabled() && back.get(4).repo().equals("me/my-mods"), "sources saved and read back");
+            check(back.size() == 7 && !back.get(2).enabled() && back.get(5).repo().equals("me/my-mods"), "sources saved and read back");
             check(Sources.enabled(Sources.MODS).stream().map(Sources.Source::repo).toList().equals(List.of("shaboogen-dev/Mods", "me/my-mods")), "a switched-off source is left out");
             check(Sources.patchbay().repo().equals("shaboogen-dev/Patchbay"), "Patchbay keeps the source that's on");
             String json = "[{\"tag_name\":\"v2\",\"assets\":[{\"name\":\"BML-2.0.0-macos.zip\",\"browser_download_url\":\"https://x/BML-2.0.0-macos.zip\"},{\"name\":\"BML-2.0.0-linux.zip\",\"browser_download_url\":\"https://x/BML-2.0.0-linux.zip\"}]}]";

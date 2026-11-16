@@ -7,6 +7,7 @@
 - **Mods work on your Bitwig?** The launcher checks each mod's `built_against` against the map packs in the installed Patchbay, the way Patchbay does: mods that can't run are marked "incompatible", can't be ticked, sit at the end of the list and say why; mods built for another Bitwig say Patchbay translates them. A **Show** filter: All, Compatible, Installed, Updates, Incompatible. "Install anyway" for a mod that won't run.
 - The Bitwig chosen in Patchbay's settings is the one the launcher reads the version of (macOS and Windows); when the version can't be read, the Mods section asks for it.
 - "Start Patchbay" is orange.
+- **Themes section:** `.bte` themes for Patchbay's Framework: Themes, from [csabacsaba/bw6themes](https://github.com/csabacsaba/bw6themes) and any repository you add under Sources → Themes. Preview, install (checked against GitHub's file hashes) into `components/` of the active Patchbay, update, remove, and "Use this theme", which picks it in Patchbay's settings and switches Framework: Themes on. The active theme is shown at the top of the list.
 
 ## 0.9.2
 

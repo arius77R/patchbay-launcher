@@ -2,7 +2,7 @@
 
 # Patchbay Launcher
 
-A small desktop app for macOS, Windows and Linux that installs, updates and starts [Patchbay](https://github.com/shaboogen-dev/Patchbay), the mod loader for Bitwig Studio, without Terminal or a console window. It also downloads and updates mods and devices from GitHub.
+A small desktop app for macOS, Windows and Linux that installs, updates and starts [Patchbay](https://github.com/shaboogen-dev/Patchbay), the mod loader for Bitwig Studio, without Terminal or a console window. It also downloads and updates mods, devices and themes from GitHub.
 
 > **Unofficial, made and supported by [Marius R (arius77R)](https://github.com/arius77R).** Patchbay Launcher is a separate project from Patchbay: it is not made by the authors of Patchbay, the mods or the devices it downloads, nor by Bitwig GmbH. **Questions and problems with the launcher go to this repository's [Issues](../../issues)**, not to Patchbay. Bitwig and Bitwig Studio are trademarks of Bitwig GmbH.
 >
@@ -29,14 +29,17 @@ The app is not signed (no Apple Developer ID, no Windows code-signing certificat
 - **Patchbay:** lists Patchbay releases, downloads and unpacks the one for your system, carries your mods and themes over to the new version, keeps the previous version, and starts Patchbay. It notifies you when a new version is out.
 - **Mods:** a catalogue from the mod repositories with checkboxes, "Select all", "Update all" and details. It checks each mod against your Bitwig the way Patchbay does (with the map packs in the installed Patchbay), shows which mods won't run on your Bitwig and why, and lets you show only the ones that work. Mods are installed the same way as Patchbay's own **Add Mod…**, with a SHA-256 check and their required mods.
 - **Devices:** `.bwdevice`, `.bwmodulator` and `.bwmodule` files, picked for your Bitwig version, checked against GitHub and added to Patchbay's Device Folders.
-- **Sources:** built-in and your own GitHub repositories for Patchbay, mods and devices; switch them on and off, add, edit, remove.
+- **Themes:** `.bte` colour themes for Patchbay's **Framework: Themes**, with a preview, installed into the active Patchbay's `components/` folder. "Use this theme" picks it in Patchbay's settings (Patchbay must be closed); restart Bitwig from Patchbay to see it.
+- **Sources:** built-in and your own GitHub repositories for Patchbay, mods, devices and themes; switch them on and off, add, edit, remove.
 - **Languages:** English, Polski, Deutsch, Français. Other system languages use English.
 
-| Patchbay | Devices | Sources |
-|---|---|---|
-| ![Patchbay section](docs/screenshots/patchbay.png) | ![Devices section](docs/screenshots/devices.png) | ![Sources section](docs/screenshots/sources.png) |
+| Patchbay | Devices |
+|---|---|
+| ![Patchbay section](docs/screenshots/patchbay.png) | ![Devices section](docs/screenshots/devices.png) |
+| **Themes** | **Sources** |
+| ![Themes section](docs/screenshots/themes.png) | ![Sources section](docs/screenshots/sources.png) |
 
-Built-in sources: [shaboogen-dev/Patchbay](https://github.com/shaboogen-dev/Patchbay), [shaboogen-dev/Mods](https://github.com/shaboogen-dev/Mods), [polarity/bitwig-mods](https://github.com/polarity/bitwig-mods), [polarity/bitwig-devices](https://github.com/polarity/bitwig-devices).
+Built-in sources: [shaboogen-dev/Patchbay](https://github.com/shaboogen-dev/Patchbay), [shaboogen-dev/Mods](https://github.com/shaboogen-dev/Mods), [polarity/bitwig-mods](https://github.com/polarity/bitwig-mods), [polarity/bitwig-devices](https://github.com/polarity/bitwig-devices), [csabacsaba/bw6themes](https://github.com/csabacsaba/bw6themes).
 
 GitHub allows 60 requests an hour without signing in; the launcher caches what it can.
 

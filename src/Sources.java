@@ -19,10 +19,10 @@ import java.util.regex.Pattern;
 final class Sources {
     private Sources() { }
 
-    static final String PATCHBAY = "patchbay", MODS = "mods", DEVICES = "devices";
-    static final List<String> GROUPS = List.of(PATCHBAY, MODS, DEVICES);
+    static final String PATCHBAY = "patchbay", MODS = "mods", DEVICES = "devices", THEMES = "themes";
+    static final List<String> GROUPS = List.of(PATCHBAY, MODS, DEVICES, THEMES);
 
-    /** filter: a file pattern for releases (* = any text; for Patchbay it marks the version), a folder for devices. */
+    /** filter: a file pattern for releases (* = any text; for Patchbay it marks the version), a folder for devices and themes. */
     record Source(String id, String group, String repo, String filter, boolean builtin, boolean enabled) {
         Source withEnabled(boolean on) { return new Source(id, group, repo, filter, builtin, on); }
     }
@@ -31,7 +31,8 @@ final class Sources {
         new Source("patchbay", PATCHBAY, "shaboogen-dev/Patchbay", Platform.releasePattern(), true, true),
         new Source("mods-shaboogen", MODS, "shaboogen-dev/Mods", "*.zip", true, true),
         new Source("mods-polarity", MODS, "polarity/bitwig-mods", "*.zip", true, true),
-        new Source("devices-polarity", DEVICES, "polarity/bitwig-devices", "", true, true));
+        new Source("devices-polarity", DEVICES, "polarity/bitwig-devices", "", true, true),
+        new Source("themes-csabacsaba", THEMES, "csabacsaba/bw6themes", "", true, true));
 
     static Path file() { return PatchbayLauncher.data().resolve("sources.json"); }
 
@@ -125,17 +126,21 @@ final class Sources {
         return switch (group) {
             case PATCHBAY -> "Patchbay";
             case MODS -> PatchbayLauncher.t("Mody", "Mods");
+            case THEMES -> PatchbayLauncher.t("Motywy", "Themes");
             default -> PatchbayLauncher.t("Urządzenia", "Devices");
         };
     }
 
     static String describe(Source s) {
-        String where = s.group().equals(DEVICES)
+        String where = inRepository(s.group())
             ? PatchbayLauncher.t("Pliki w repozytorium", "Files in the repository")
                 + (s.filter().isBlank() ? "" : " · " + s.filter())
             : PatchbayLauncher.t("Wydania", "Releases") + " · " + s.filter();
         return (s.builtin() ? "" : PatchbayLauncher.t("Dodane przez Ciebie · ", "Added by you · ")) + where;
     }
+
+    /** Devices and themes are files in the repository itself; Patchbay and mods come from releases. */
+    static boolean inRepository(String group) { return group.equals(DEVICES) || group.equals(THEMES); }
 
     /** What the repository holds for this group, in a sentence for the user. */
     static String check(Source s) {
@@ -155,6 +160,12 @@ final class Sources {
                     return n == 0
                         ? PatchbayLauncher.t("Repozytorium istnieje, ale w jego wydaniach nie ma ZIP-ów modów (nazwa-wersja.zip).", "The repository exists, but its releases have no mod ZIPs (name-version.zip).")
                         : PatchbayLauncher.t("Znaleziono mody: ", "Mods found: ") + n;
+                }
+                case THEMES -> {
+                    int n = Themes.fetchRepo(s.repo(), s.filter()).size();
+                    return n == 0
+                        ? PatchbayLauncher.t("Repozytorium istnieje, ale nie ma w nim plików motywów .bte.", "The repository exists, but it holds no .bte theme files.")
+                        : PatchbayLauncher.t("Znaleziono motywy: ", "Themes found: ") + n;
                 }
                 default -> {
                     List<Devices.Item> items = Devices.fetchRepo(s.repo(), s.filter());
@@ -207,8 +218,8 @@ final class Sources {
             JButton add = Theme.button(PatchbayLauncher.t("Dodaj źródło", "Add source"), "secondary");
             add.addActionListener(e -> startNew(MODS));
             add(Theme.page(PatchbayLauncher.t("Źródła", "Sources"),
-                Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody i urządzenia.",
-                    "GitHub repositories the launcher gets Patchbay, mods and devices from."), Theme.text(14f), Theme.MUTED),
+                Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody, urządzenia i motywy.",
+                    "GitHub repositories the launcher gets Patchbay, mods, devices and themes from."), Theme.text(14f), Theme.MUTED),
                 add, body, null, null), BorderLayout.CENTER);
             repoField.setFont(Theme.mono(13f));
             filterField.setFont(Theme.mono(13f));
@@ -239,6 +250,7 @@ final class Sources {
             String hint = switch (group) {
                 case PATCHBAY -> PatchbayLauncher.t("jedno aktywne źródło", "one active source");
                 case MODS -> PatchbayLauncher.t("ZIP-y modów z wydań", "mod ZIPs from releases");
+                case THEMES -> PatchbayLauncher.t("pliki motywów .bte", ".bte theme files");
                 default -> PatchbayLauncher.t("pliki .bwdevice i .bwmodulator", ".bwdevice and .bwmodulator files");
             };
             head.add(Theme.row(10, Theme.label(groupName(group), Theme.bold(15f), Theme.TEXT), Theme.label(hint, Theme.text(12f), Theme.MUTED)), BorderLayout.WEST);
@@ -341,7 +353,7 @@ final class Sources {
             add(col, Theme.label(isNew ? PatchbayLauncher.t("Nowe źródło: ", "New source: ") + groupName(draftGroup) : PatchbayLauncher.t("Edytuj źródło", "Edit source"), Theme.bold(18f), Theme.TEXT), 14);
 
             add(col, Theme.label(PatchbayLauncher.t("Grupa", "Group"), Theme.text(12f), Theme.MUTED), 6);
-            JPanel picks = new JPanel(new GridLayout(1, 3, 2, 0));
+            JPanel picks = new JPanel(new GridLayout(2, 2, 2, 2));
             picks.setBackground(Theme.WELL);
             picks.setBorder(new EmptyBorder(3, 3, 3, 3));
             for (String g : GROUPS) {
@@ -370,7 +382,7 @@ final class Sources {
             }
 
             add(col, Theme.label(PatchbayLauncher.t("Skąd brać pliki", "Where files come from"), Theme.text(12f), Theme.MUTED), 6);
-            add(col, Theme.label(draftGroup.equals(DEVICES)
+            add(col, Theme.label(inRepository(draftGroup)
                 ? PatchbayLauncher.t("Pliki w repozytorium", "Files in the repository")
                 : PatchbayLauncher.t("Wydania (pliki ZIP)", "Releases (ZIP files)"), Theme.text(14f), Theme.TEXT), 14);
 
@@ -442,7 +454,7 @@ final class Sources {
                 return null;
             }
             String filter = filterField.getText().strip();
-            if (filter.isEmpty() && !draftGroup.equals(DEVICES)) filter = draftGroup.equals(PATCHBAY) ? Platform.releasePattern() : "*.zip";
+            if (filter.isEmpty() && !inRepository(draftGroup)) filter = draftGroup.equals(PATCHBAY) ? Platform.releasePattern() : "*.zip";
             String id = draft != null ? draft.id() : "own-" + System.currentTimeMillis() + "-" + (nextId++);
             return new Source(id, draftGroup, repo, filter, false, draft == null || draft.enabled());
         }
