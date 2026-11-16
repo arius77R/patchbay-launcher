@@ -517,6 +517,7 @@ public final class PatchbayLauncher {
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
         left.add(mode);
+        left.add(languageBox);
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
         for (JComponent b : aboutButtons()) right.add(b);
@@ -722,7 +723,7 @@ public final class PatchbayLauncher {
         JPanel pick = new JPanel(new BorderLayout(12, 0));
         pick.setOpaque(false);
         pick.add(Theme.row(10, Theme.label(t("Wersja", "Version"), Theme.text(13f), Theme.MUTED), versionBox, installButton, carryLabel), BorderLayout.WEST);
-        pick.add(Theme.row(8, folder), BorderLayout.EAST);
+        pick.add(Theme.row(8, dockButton, folder), BorderLayout.EAST);
         pick.setAlignmentX(Component.LEFT_ALIGNMENT);
         pick.setMaximumSize(new Dimension(Integer.MAX_VALUE, pick.getPreferredSize().height));
         v.add(pick);
@@ -741,20 +742,16 @@ public final class PatchbayLauncher {
         latestLabel.setFont(Theme.text(13f));
         col.add(launcherSection());
         col.add(section(latestLabel, patchbayCount, v));
-        col.add(Box.createVerticalStrut(12));
 
-        // 2. language and folders, one line
+        // the language choice: filled here, shown in the bottom bar beside the dark / light switch
         languageBox.addItem(t("Język systemu", "System language"));
         for (String name : new String[] { "Polski", "English", "Deutsch", "Français" }) languageBox.addItem(name);
         languageBox.setSelectedIndex(I18n.CODES.indexOf(I18n.choice()) + 1);
         languageBox.addActionListener(e -> languageChosen()); // only after the list is filled: filling it fires events
-        languageBox.setPreferredSize(new Dimension(190, 32));
+        languageBox.setPreferredSize(new Dimension(170, 28));
+        languageBox.setFont(Theme.text(12f));
+        languageBox.setToolTipText(t("Język", "Language"));
         languageBox.getAccessibleContext().setAccessibleName(t("Język", "Language"));
-        JPanel settings = new JPanel(new BorderLayout(12, 0));
-        settings.setOpaque(false);
-        settings.add(Theme.row(10, Theme.label(t("Język", "Language"), Theme.text(13f), Theme.MUTED), languageBox), BorderLayout.WEST);
-        settings.add(Theme.row(8, dockButton), BorderLayout.EAST);
-        col.add(section(null, null, settings));
 
         // the page follows the window's width, so the buttons on the right never fall off a narrow window
         JPanel top = new Theme.Column();
