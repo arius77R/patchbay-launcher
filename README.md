@@ -40,7 +40,7 @@ The app is not signed (no Apple Developer ID, no Windows code-signing certificat
 | **Themes** | **Sources** |
 | ![Themes section](docs/screenshots/themes.png) | ![Sources section](docs/screenshots/sources.png) |
 
-Built-in sources: [shaboogen-dev/Patchbay](https://github.com/shaboogen-dev/Patchbay), [shaboogen-dev/Mods](https://github.com/shaboogen-dev/Mods), [polarity/bitwig-mods](https://github.com/polarity/bitwig-mods), [polarity/bitwig-devices](https://github.com/polarity/bitwig-devices), [csabacsaba/bw6themes](https://github.com/csabacsaba/bw6themes).
+Built-in sources: [shaboogen-dev/Patchbay](https://github.com/shaboogen-dev/Patchbay), [shaboogen-dev/Mods](https://github.com/shaboogen-dev/Mods), [polarity/bitwig-mods](https://github.com/polarity/bitwig-mods), [polarity/bitwig-devices](https://github.com/polarity/bitwig-devices), [csabacsaba/bw6themes](https://github.com/csabacsaba/bw6themes). The theme source is borrowed for now, mainly to test the Themes section (MIT licence; its author hasn't been asked yet, so thanks to csabacsaba), and may change.
 
 GitHub allows 60 requests an hour without signing in; the launcher caches what it can.
 
