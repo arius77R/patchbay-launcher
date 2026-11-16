@@ -4,7 +4,9 @@
 
 A small desktop app for macOS and Windows that installs, updates and starts [Patchbay](https://github.com/shaboogen-dev/Patchbay), the mod loader for Bitwig Studio, without Terminal or a console window. It also downloads and updates mods and devices from GitHub.
 
-> **Unofficial.** Patchbay Launcher is not affiliated with Bitwig GmbH or with the authors of Patchbay, the mods or the devices it downloads. Bitwig and Bitwig Studio are trademarks of Bitwig GmbH.
+> **Unofficial, made and supported by [Marius R (arius77R)](https://github.com/arius77R).** Patchbay Launcher is a separate project from Patchbay: it is not made by the authors of Patchbay, the mods or the devices it downloads, nor by Bitwig GmbH. **Questions and problems with the launcher go to this repository's [Issues](../../issues)**, not to Patchbay. Bitwig and Bitwig Studio are trademarks of Bitwig GmbH.
+>
+> **Beta.** Patchbay itself is not at 1.0 yet and some of what the launcher relies on (release file names, the mods folder layout) may still change. The launcher will follow those changes.
 
 <p align="center"><img src="docs/screenshots/mods.png" width="820" alt="The Mods section: catalogue with checkboxes, status and details"></p>
 
