@@ -404,12 +404,31 @@ public final class PatchbayLauncher {
         }
     }
 
+    /** The picture at size x size, halved step by step so it stays smooth (the source is already loaded by ImageIcon). */
+    private static java.awt.image.BufferedImage scaled(Image raw, int size) {
+        Image cur = raw;
+        int w = raw.getWidth(null);
+        do {
+            w = Math.max(size, w / 2);
+            java.awt.image.BufferedImage next = new java.awt.image.BufferedImage(w, w, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = next.createGraphics();
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2.drawImage(cur, 0, 0, w, w, null);
+            g2.dispose();
+            cur = next;
+        } while (w > size);
+        return (java.awt.image.BufferedImage) cur;
+    }
+
     /** The app's picture (the Patchbay character) at the given size; the drawn mark when the picture is missing. */
     static JComponent appIcon(int size) {
         java.net.URL url = PatchbayLauncher.class.getResource("/icon-128.png");
         if (url == null) return new Logo();
-        ImageIcon raw = new ImageIcon(url);
-        JLabel l = new JLabel(new ImageIcon(raw.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH)));
+        Image raw = new ImageIcon(url).getImage();
+        // a sharp picture on Retina screens too: the 2x version is picked there
+        Image sharp = new java.awt.image.BaseMultiResolutionImage(scaled(raw, size), scaled(raw, size * 2));
+        JLabel l = new JLabel(new ImageIcon(sharp));
         l.setPreferredSize(new Dimension(size, size));
         l.getAccessibleContext().setAccessibleName("Patchbay Launcher");
         return l;
@@ -426,10 +445,16 @@ public final class PatchbayLauncher {
         JPanel brand = new JPanel(new GridBagLayout());
         brand.setOpaque(false);
         GridBagConstraints g = new GridBagConstraints();
+        g.gridheight = 2;
         g.insets = new Insets(0, 0, 0, 10);
-        brand.add(appIcon(24), g);
-        brand.add(name, g);
+        brand.add(appIcon(36), g);
+        g.gridheight = 1;
+        g.gridx = 1;
+        g.anchor = GridBagConstraints.WEST;
         g.insets = new Insets(0, 0, 0, 0);
+        brand.add(name, g);
+        g.gridy = 1;
+        g.insets = new Insets(1, 0, 0, 0);
         brand.add(version, g);
         bar.add(brand, BorderLayout.WEST);
 
