@@ -1323,6 +1323,21 @@ public final class PatchbayLauncher {
 
             String tree = "{\"tree\":[{\"path\":\"nord.json\",\"type\":\"blob\",\"sha\":\"a\",\"size\":1},{\"path\":\"Frost.bte\",\"type\":\"blob\",\"sha\":\"c\",\"size\":1}]}";
             check(Themes.parseTree(tree, "o/r", "").stream().map(Themes.Item::name).toList().equals(List.of("Frost")), "only .bte files are themes (.json files are not listed)");
+            String six = "// x\nGradient: true\nGrey 0: #101010\nAccent (default): #ff6a1a\n" + java.util.stream.IntStream.range(0, 12).mapToObj(n -> "Colour " + n + ": #10203" + (n % 10)).collect(java.util.stream.Collectors.joining("\n"));
+            check(Themes.refusal(six) == null && Themes.refusal(six.replace("Grey 0", "Panel body")) != null && Themes.refusal("hello") != null, "a .bte file is added only when it has Bitwig 6's main colours");
+            Path comps = Files.createTempDirectory("themes-local");
+            Path picked = Files.createTempDirectory("themes-pick").resolve("My Theme.bte");
+            Files.writeString(picked, six);
+            Themes.addFile(comps, picked);
+            Path old = picked.resolveSibling("Old.bte");
+            Files.writeString(old, six.replace("Grey 0", "Panel body"));
+            boolean oldRefused = false;
+            try { Themes.addFile(comps, old); } catch (IOException e) { oldRefused = true; }
+            boolean wrongType = false;
+            try { Themes.addFile(comps, Files.writeString(picked.resolveSibling("x.json"), six)); } catch (IOException e) { wrongType = true; }
+            List<Themes.Item> mine = Themes.localThemes(comps, List.of());
+            check(oldRefused && wrongType && mine.size() == 1 && mine.get(0).name().equals("My Theme") && mine.get(0).isLocal()
+                && Themes.rank(comps, mine.get(0)) == 1 && Themes.idOf(comps, mine.get(0)).equals("my-theme"), "a theme added from a file is listed as a local one; old and non-.bte files are refused");
             check(Themes.linkedRepos("[a](https://github.com/lenninst/Macchiato_BitwigTheme.git) [b](https://github.com/o/r) https://github.com/Berikai/awesome-bitwig-themes https://github.com/o/r", "Berikai/awesome-bitwig-themes")
                 .equals(List.of("lenninst/Macchiato_BitwigTheme", "o/r")), "a list repository's links: each once, without itself");
 

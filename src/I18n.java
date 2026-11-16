@@ -348,6 +348,15 @@ final class I18n {
         add("Couldn't read the source ", "Quelle konnte nicht gelesen werden: ", "Impossible de lire la source ");
         add("Couldn't read these sources: ", "Diese Quellen konnten nicht gelesen werden: ", "Impossible de lire ces sources : ");
         add("Divider between the list and the details", "Trennlinie zwischen Liste und Details", "Séparateur entre la liste et les détails");
+        add("local file", "lokale Datei", "fichier local");
+        add("Add a file…", "Datei hinzufügen…", "Ajouter un fichier…");
+        add("Add a theme from a .bte file on this computer (themes for Bitwig 6 only)", "Theme aus einer .bte-Datei auf diesem Computer hinzufügen (nur Themes für Bitwig 6)", "Ajouter un thème depuis un fichier .bte de cet ordinateur (thèmes pour Bitwig 6 uniquement)");
+        add("Choose a theme file (.bte)", "Theme-Datei wählen (.bte)", "Choisir un fichier de thème (.bte)");
+        add("A theme must be a .bte file.", "Ein Theme muss eine .bte-Datei sein.", "Un thème doit être un fichier .bte.");
+        add("This isn't a theme: the file holds no colours in the .bte format.", "Das ist kein Theme: Die Datei enthält keine Farben im .bte-Format.", "Ce n'est pas un thème : le fichier ne contient aucune couleur au format .bte.");
+        add("This theme is for an older Bitwig: it lacks Bitwig 6's main colours, so it would change very little. It wasn't added.", "Dieses Theme ist für ein älteres Bitwig: Ihm fehlen die Hauptfarben von Bitwig 6, es würde also kaum etwas ändern. Es wurde nicht hinzugefügt.", "Ce thème est destiné à un ancien Bitwig : il lui manque les couleurs principales de Bitwig 6, il changerait donc très peu de choses. Il n'a pas été ajouté.");
+        add("A theme with this name is already in Patchbay. Replace it?", "Ein Theme mit diesem Namen ist bereits in Patchbay. Ersetzen?", "Un thème portant ce nom est déjà dans Patchbay. Le remplacer ?");
+        add("Added. Click \"Use this theme\" to turn it on.", "Hinzugefügt. Klicke auf „Dieses Theme verwenden“, um es einzuschalten.", "Ajouté. Cliquez sur « Utiliser ce thème » pour l'activer.");
         add("Cut", "Ausschneiden", "Couper");
         add("Copy", "Kopieren", "Copier");
         add("Paste", "Einfügen", "Coller");

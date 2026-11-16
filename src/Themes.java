@@ -32,6 +32,9 @@ final class Themes {
      */
     record Item(String repo, String name, String folder, File bte, List<File> files, String preview) {
         boolean isFolder() { return !folder.isEmpty(); }
+        /** Added from a file on this computer, not from a repository: repo is empty. */
+        boolean isLocal() { return repo.isEmpty(); }
+        String source() { return isLocal() ? PatchbayLauncher.t("plik lokalny", "local file") : repo; }
         long size() { return files.stream().mapToLong(File::size).sum(); }
     }
 
@@ -175,6 +178,85 @@ final class Themes {
             : PatchbayLauncher.t("Nie udało się wczytać źródeł: ", "Couldn't read these sources: ")) + String.join(" · ", failed);
     }
 
+    // ---------- themes added from a file ----------
+
+    private static final java.util.regex.Pattern COLOUR_LINE = java.util.regex.Pattern.compile("^\\s*([^/:][^:]*?)\\s*:\\s*#[0-9A-Fa-f]{3,8}\\s*(//.*)?$");
+
+    /**
+     * Why a .bte file's text can't be added, or null when it is a theme for Bitwig 6. Bitwig 6 paints most of
+     * its window from "Grey 0"… and "Accent…": a theme without them (one made for Bitwig 5) changes very little.
+     */
+    static String refusal(String text) {
+        Set<String> names = new HashSet<>();
+        for (String line : text.split("\\R")) {
+            java.util.regex.Matcher m = COLOUR_LINE.matcher(line);
+            if (m.matches()) names.add(m.group(1));
+        }
+        if (names.size() < 10) return PatchbayLauncher.t("To nie jest motyw: w pliku nie ma kolorów w formacie .bte.",
+            "This isn't a theme: the file holds no colours in the .bte format.");
+        boolean six = names.contains("Grey 0") && names.stream().anyMatch(n -> n.startsWith("Accent"));
+        return six ? null : PatchbayLauncher.t("Ten motyw jest dla starszego Bitwiga: nie ma głównych kolorów Bitwiga 6, więc zmieniłby niewiele. Nie został dodany.",
+            "This theme is for an older Bitwig: it lacks Bitwig 6's main colours, so it would change very little. It wasn't added.");
+    }
+
+    /** Where a .bte file picked on this computer would go in components/. */
+    static Path localTarget(Path components, Path file) {
+        return components.resolve(stem(file.getFileName().toString()) + ".bte");
+    }
+
+    /** Copies a .bte file picked on this computer into components/ after checking it; an IOException says why not. */
+    static Path addFile(Path components, Path file) throws IOException {
+        String name = file.getFileName().toString();
+        if (!name.toLowerCase(Locale.ROOT).endsWith(".bte") || stem(name).isBlank())
+            throw new IOException(PatchbayLauncher.t("Motyw musi być plikiem .bte.", "A theme must be a .bte file."));
+        if (!Files.isRegularFile(file) || Files.size(file) > 1024 * 1024)
+            throw new IOException(PatchbayLauncher.t("To nie jest motyw: w pliku nie ma kolorów w formacie .bte.",
+                "This isn't a theme: the file holds no colours in the .bte format."));
+        String text;
+        try { text = Files.readString(file, StandardCharsets.UTF_8); }
+        catch (java.nio.charset.CharacterCodingException e) { text = Files.readString(file, StandardCharsets.ISO_8859_1); }
+        String why = refusal(text);
+        if (why != null) throw new IOException(why);
+        Files.createDirectories(components);
+        Path target = localTarget(components, file);
+        Path staging = Files.createTempFile(components, ".theme-", ".bte");
+        try {
+            Files.copy(file, staging, StandardCopyOption.REPLACE_EXISTING);
+            remove(target);
+            Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);
+        } finally {
+            Files.deleteIfExists(staging);
+        }
+        return target;
+    }
+
+    /** Themes in components/ that no listed repository theme accounts for: added from a file, or put there by hand. */
+    static List<Item> localThemes(Path components, List<Item> listed) {
+        if (components == null || !Files.isDirectory(components)) return List.of();
+        Set<Path> known = new HashSet<>();
+        for (Item i : listed) known.add(target(components, i));
+        List<Item> out = new ArrayList<>();
+        try (var entries = Files.list(components)) {
+            for (Path p : entries.sorted().toList()) {
+                String name = p.getFileName().toString();
+                if (name.startsWith(".") || known.contains(p)) continue;
+                if (Files.isRegularFile(p) && name.toLowerCase(Locale.ROOT).endsWith(".bte")) {
+                    File f = new File(name, "", Files.size(p));
+                    out.add(new Item("", stem(name), "", f, List.of(f), null));
+                } else if (Files.isDirectory(p)) {
+                    List<Path> btes;
+                    try (var inside = Files.list(p)) { btes = inside.filter(q -> q.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".bte")).toList(); }
+                    if (btes.size() != 1) continue;
+                    File f = new File(name + "/" + btes.get(0).getFileName(), "", Files.size(btes.get(0)));
+                    out.add(new Item("", name, name, f, List.of(f), null));
+                }
+            }
+        } catch (IOException ignored) {
+            // an unreadable folder: only the repository themes are listed
+        }
+        return out;
+    }
+
     // ---------- where they go ----------
 
     /** components/ of the active Patchbay, or null before Patchbay is installed. */
@@ -196,6 +278,7 @@ final class Themes {
     /** 2 = not installed, 0 = installed but the repository has another version, 1 = up to date. */
     static int rank(Path components, Item item) {
         if (components == null) return 2;
+        if (item.isLocal()) return 1; // only ever listed because it is there
         Path bte = installedBte(components, item);
         if (!Files.isRegularFile(bte)) return 2;
         try {
@@ -330,7 +413,7 @@ final class Themes {
                 return switch (c) {
                     case 0 -> checked.contains(key(row.item()));
                     case 1 -> row.item().name();
-                    case 2 -> row.item().repo();
+                    case 2 -> row.item().source();
                     default -> row.active() ? "active|" + PatchbayLauncher.t("aktywny", "active") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("zainstalowany", "installed");
@@ -346,12 +429,15 @@ final class Themes {
         private final JButton installButton = Theme.button(" ", "primary");
         private final JButton folderButton = Theme.button(PatchbayLauncher.t("Pokaż folder", "Show folder"), "secondary");
         private final JButton refreshButton = Theme.button(PatchbayLauncher.t("Odśwież", "Refresh"), "secondary");
+        private final JButton addFileButton = Theme.button(PatchbayLauncher.t("Dodaj plik…", "Add a file…"), "secondary");
         private final JLabel status = Theme.label(" ", Theme.text(14f), Theme.MUTED);
         private final JProgressBar bar = new JProgressBar();
         private final Map<String, BufferedImage> previews = new HashMap<>();
         private List<Item> items = List.of();
         private boolean busy, loaded;
         private String shownPreview;
+        /** A theme to select at the next rebuild (the one just added from a file). */
+        private String selectNext;
 
         private static String key(Item i) { return i.repo() + "/" + i.bte().path(); }
 
@@ -377,12 +463,15 @@ final class Themes {
             left.setOpaque(false);
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
-            add(Theme.page(PatchbayLauncher.t("Motywy", "Themes"), subtitle, Theme.row(8, checkAllButton, refreshButton), body,
+            add(Theme.page(PatchbayLauncher.t("Motywy", "Themes"), subtitle, Theme.row(8, addFileButton, checkAllButton, refreshButton), body,
                 left, Theme.row(8, folderButton, installButton)), BorderLayout.CENTER);
 
             checkAllButton.addActionListener(e -> checkAll());
             installButton.addActionListener(e -> installChecked());
             refreshButton.addActionListener(e -> reload());
+            addFileButton.setToolTipText(PatchbayLauncher.t("Dodaj motyw z pliku .bte na tym komputerze (tylko motywy dla Bitwiga 6)",
+                "Add a theme from a .bte file on this computer (themes for Bitwig 6 only)"));
+            addFileButton.addActionListener(e -> addFile());
             folderButton.addActionListener(e -> {
                 Path c = components();
                 if (c == null) return;
@@ -420,7 +509,9 @@ final class Themes {
             new Thread(() -> {
                 String active = activeId();
                 List<Row> fresh = new ArrayList<>();
-                for (Item i : shown) {
+                List<Item> every = new ArrayList<>(shown);
+                every.addAll(localThemes(components, shown));
+                for (Item i : every) {
                     int rank = rank(components, i);
                     fresh.add(new Row(i, rank, rank != 2 && active != null && active.equals(idOf(components, i))));
                 }
@@ -442,7 +533,8 @@ final class Themes {
                             + " · " + (activeName == null ? PatchbayLauncher.t("brak aktywnego motywu", "no active theme")
                                 : PatchbayLauncher.t("aktywny: ", "active: ") + activeName));
                     String select = System.getProperty("launcher.select"); // offline test: show this theme's details
-                    if (select == null) select = keep;
+                    if (select == null) select = selectNext != null ? selectNext : keep;
+                    selectNext = null;
                     int pick = rows.isEmpty() ? -1 : 0;
                     for (int r = 0; select != null && r < rows.size(); r++)
                         if (key(rows.get(r).item()).equals(select) || rows.get(r).item().name().equals(select)) pick = r;
@@ -475,6 +567,7 @@ final class Themes {
             installButton.setText(PatchbayLauncher.t("Zainstaluj zaznaczone (", "Install ticked (") + ticked + ")");
             installButton.setEnabled(ready && ticked > 0);
             folderButton.setEnabled(components() != null);
+            addFileButton.setEnabled(ready);
             refreshButton.setEnabled(!busy);
         }
 
@@ -517,7 +610,7 @@ final class Themes {
                     : row.rank() == 2 ? PatchbayLauncher.t("nie zainstalowany", "not installed")
                     : row.rank() == 0 ? PatchbayLauncher.t("jest nowsza wersja", "a newer version is out") : PatchbayLauncher.t("zainstalowany", "installed") },
                 { PatchbayLauncher.t("Rozmiar", "Size"), Math.max(1, item.size() / 1024) + " KB" },
-                { PatchbayLauncher.t("Źródło", "Source"), item.repo() } });
+                { PatchbayLauncher.t("Źródło", "Source"), item.source() } });
             facts.setAlignmentX(LEFT_ALIGNMENT);
             facts.setMaximumSize(new Dimension(Integer.MAX_VALUE, facts.getPreferredSize().height));
             col.add(facts);
@@ -550,10 +643,12 @@ final class Themes {
                 delete.addActionListener(e -> removeTheme(item, components, row.active()));
                 south.add(delete);
             }
-            JButton page = Theme.button(PatchbayLauncher.t("Strona projektu", "Project page"), "secondary");
-            page.addActionListener(e -> Platform.open("https://github.com/" + item.repo()
-                + (item.isFolder() ? "/tree/HEAD/" + item.folder().replace(" ", "%20") : "")));
-            south.add(page);
+            if (!item.isLocal()) {
+                JButton page = Theme.button(PatchbayLauncher.t("Strona projektu", "Project page"), "secondary");
+                page.addActionListener(e -> Platform.open("https://github.com/" + item.repo()
+                    + (item.isFolder() ? "/tree/HEAD/" + item.folder().replace(" ", "%20") : "")));
+                south.add(page);
+            }
             details.add(south, BorderLayout.SOUTH);
             details.revalidate();
             details.repaint();
@@ -640,6 +735,34 @@ final class Themes {
                 status.setText(PatchbayLauncher.t("Usunięto: ", "Removed: ") + item.name());
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+            }
+            rebuild();
+        }
+
+        /** Picks a .bte file on this computer and adds it, if it is a theme for Bitwig 6. */
+        private void addFile() {
+            Path components = components();
+            if (busy || components == null) return;
+            FileDialog pick = new FileDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                PatchbayLauncher.t("Wybierz plik motywu (.bte)", "Choose a theme file (.bte)"), FileDialog.LOAD);
+            pick.setFilenameFilter((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".bte"));
+            if (Platform.WINDOWS) pick.setFile("*.bte");
+            pick.setVisible(true);
+            if (pick.getFile() == null) return;
+            Path file = Path.of(pick.getDirectory(), pick.getFile());
+            try {
+                Path target = localTarget(components, file);
+                if (Files.exists(target)) {
+                    int answer = JOptionPane.showConfirmDialog(this,
+                        PatchbayLauncher.t("Motyw o tej nazwie już jest w Patchbay. Zastąpić go?", "A theme with this name is already in Patchbay. Replace it?"),
+                        "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if (answer != JOptionPane.OK_OPTION) return;
+                }
+                Themes.addFile(components, file);
+                status.setText(PatchbayLauncher.t("Dodano. Kliknij „Ustaw jako motyw”, żeby go włączyć.", "Added. Click \"Use this theme\" to turn it on."));
+                selectNext = stem(file.getFileName().toString());
+            } catch (IOException | RuntimeException ex) {
+                JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
             }
             rebuild();
         }
