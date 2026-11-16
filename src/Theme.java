@@ -24,18 +24,49 @@ import java.util.function.Consumer;
 public final class Theme {
     private Theme() { }
 
-    // Patchbay's PatchbayStyle palette.
-    static final Color TITLE = new Color(0x17181A), FRAME = new Color(0x26282B), HEAD = new Color(0x313337);
-    static final Color WELL = new Color(0x1C1D20), LINE = new Color(0x3B3D42), HAIR = new Color(0x25262A);
-    static final Color TEXT = new Color(0xE4E5E7), SOFT = new Color(0xC9CBCF), MUTED = new Color(0x9C9FA5), DIM = new Color(0x63666C);
-    static final Color FAULT = new Color(0xF0524A), FAULT_TEXT = new Color(0xF48A84);
+    // The palette: dark is Patchbay's PatchbayStyle; light is the same layout on warm off-white. Set by palette() before any window is built.
+    static Color TITLE, FRAME, HEAD, WELL, LINE, HAIR, TEXT, STRONG, SOFT, MUTED, DIM, FAULT, FAULT_TEXT, DANGER_HOVER, DISABLED;
     /** Bitwig's orange: the accent for everything you can do (ticks, the main button of a section, selection). */
-    static final Color ACCENT = new Color(0xFF6A1A), ACCENT_INK = new Color(0x17181A), ACCENT_SEL = new Color(0x33241B), ACCENT_SOFT = new Color(0xFFA36B);
+    static Color ACCENT, ACCENT_INK, ACCENT_SEL, ACCENT_SOFT;
     /** The button that starts Patchbay. */
-    static final Color START = new Color(0x2EC4B6), START_INK = new Color(0x06201D);
+    static Color START, START_INK;
     /** Something waiting for you: the count on a tab, "update" in a list (as macOS marks updates). */
-    static final Color BADGE = new Color(0xE5372E), UPDATE = new Color(0xFF6B62);
-    static final Color CONTROL = new Color(0x2E3034), CONTROL_HOVER = new Color(0x36383D), EDGE = new Color(0x2E3034), NAV_ON = new Color(0x3A2619);
+    static Color BADGE, UPDATE;
+    static Color CONTROL, CONTROL_HOVER, EDGE, NAV_ON;
+    private static boolean light;
+
+    static { palette(false); }
+
+    static boolean light() { return light; }
+
+    /** The user's choice, kept in the launcher's settings: "light" or dark (the default). */
+    static boolean lightChosen() { return "light".equals(I18n.setting("appearance")); }
+
+    static void palette(boolean lightMode) {
+        light = lightMode;
+        if (!lightMode) {
+            TITLE = new Color(0x17181A); FRAME = new Color(0x26282B); HEAD = new Color(0x313337);
+            WELL = new Color(0x1C1D20); LINE = new Color(0x3B3D42); HAIR = new Color(0x25262A);
+            TEXT = new Color(0xE4E5E7); STRONG = Color.WHITE; SOFT = new Color(0xC9CBCF); MUTED = new Color(0x9C9FA5); DIM = new Color(0x63666C);
+            FAULT = new Color(0xF0524A); FAULT_TEXT = new Color(0xF48A84); DANGER_HOVER = new Color(0x2E1A19); DISABLED = new Color(0x26282B);
+            ACCENT = new Color(0xFF6A1A); ACCENT_INK = new Color(0x17181A); ACCENT_SEL = new Color(0x33241B); ACCENT_SOFT = new Color(0xFFA36B);
+            START = new Color(0x2EC4B6); START_INK = new Color(0x06201D);
+            BADGE = new Color(0xE5372E); UPDATE = new Color(0xFF6B62);
+            CONTROL = new Color(0x2E3034); CONTROL_HOVER = new Color(0x36383D); EDGE = new Color(0x2E3034); NAV_ON = new Color(0x3A2619);
+        } else {
+            TITLE = new Color(0xFBFBF9); FRAME = new Color(0xFFFFFF); HEAD = new Color(0xF1F1EE);
+            WELL = new Color(0xF4F4F1); LINE = new Color(0xCFCFC9); HAIR = new Color(0xE6E6E1);
+            TEXT = new Color(0x1D1E20); STRONG = new Color(0x0F1011); SOFT = new Color(0x33353A); MUTED = new Color(0x5C5F64); DIM = new Color(0x9A9CA1);
+            FAULT = new Color(0xD93A30); FAULT_TEXT = new Color(0xB3261E); DANGER_HOVER = new Color(0xFCE8E6); DISABLED = new Color(0xECECE8);
+            ACCENT = new Color(0xF2600F); ACCENT_INK = new Color(0x17181A); ACCENT_SEL = new Color(0xFCE6D8); ACCENT_SOFT = new Color(0xC2470A);
+            START = new Color(0x2EC4B6); START_INK = new Color(0x06201D);
+            BADGE = new Color(0xE5372E); UPDATE = new Color(0xC7362E);
+            CONTROL = new Color(0xECECE7); CONTROL_HOVER = new Color(0xE2E2DC); EDGE = new Color(0xDEDED9); NAV_ON = new Color(0xFCE3D2);
+        }
+    }
+
+    /** A colour for HTML in labels. */
+    static String hex(Color c) { return String.format("#%06X", c.getRGB() & 0xFFFFFF); }
 
     private static Font regular, medium, semibold, mono;
 
@@ -65,6 +96,7 @@ public final class Theme {
 
     /** Sets the look before any window is built. */
     static void install() {
+        SPLITS.clear(); // panes of a window built before (language or appearance changed)
         try {
             UIManager.setLookAndFeel(new MetalLookAndFeel());
         } catch (Exception ignored) { }
@@ -156,8 +188,8 @@ public final class Theme {
                 case "primary" -> !b.isEnabled() ? CONTROL : m.isPressed() ? ACCENT.darker() : m.isRollover() ? ACCENT.brighter() : ACCENT;
                 case "start" -> !b.isEnabled() ? CONTROL : m.isPressed() ? START.darker() : m.isRollover() ? START.brighter() : START;
                 case "nav" -> on ? NAV_ON : m.isRollover() ? FRAME : null;
-                case "danger" -> m.isRollover() ? new Color(0x2E1A19) : null;
-                default -> !b.isEnabled() ? new Color(0x26282B) : m.isPressed() ? LINE : m.isRollover() ? CONTROL_HOVER : CONTROL;
+                case "danger" -> m.isRollover() ? DANGER_HOVER : null;
+                default -> !b.isEnabled() ? DISABLED : m.isPressed() ? LINE : m.isRollover() ? CONTROL_HOVER : CONTROL;
             };
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -198,7 +230,7 @@ public final class Theme {
             Color fg = !b.isEnabled() ? DIM : switch (k) {
                 case "primary" -> ACCENT_INK;
                 case "start" -> START_INK;
-                case "nav" -> on ? Color.WHITE : SOFT;
+                case "nav" -> on ? STRONG : SOFT;
                 case "danger" -> FAULT_TEXT;
                 default -> TEXT;
             };
@@ -282,7 +314,7 @@ public final class Theme {
             p.getList().setBackground(FRAME);
             p.getList().setForeground(TEXT);
             p.getList().setSelectionBackground(ACCENT_SEL);
-            p.getList().setSelectionForeground(Color.WHITE);
+            p.getList().setSelectionForeground(STRONG);
             p.getList().setFont(comboBox.getFont());
             return p;
         }
@@ -707,7 +739,7 @@ public final class Theme {
         int colon = name.indexOf(':');
         String safe = name.replace("&", "&amp;").replace("<", "&lt;");
         if (colon < 0 || colon > 30) return "<html><nobr>" + safe + "</nobr></html>";
-        return "<html><nobr><font color='#9C9FA5'>" + safe.substring(0, colon + 1) + "</font>" + safe.substring(colon + 1) + "</nobr></html>";
+        return "<html><nobr><font color='" + hex(MUTED) + "'>" + safe.substring(0, colon + 1) + "</font>" + safe.substring(colon + 1) + "</nobr></html>";
     }
 
     static JPanel row(int gap, Component... parts) {
@@ -920,6 +952,19 @@ public final class Theme {
             g2.drawString(shown, x + 16, cy + (fm.getAscent() - fm.getDescent()) / 2);
             g2.dispose();
         }
+    }
+
+    /** A column of details that scrolls when it is taller than its place, without a frame and following the width. */
+    static JScrollPane scrolling(JComponent col) {
+        Column holder = new Column();
+        col.setAlignmentX(Component.LEFT_ALIGNMENT);
+        holder.add(col);
+        JScrollPane s = new JScrollPane(holder, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        s.setBorder(BorderFactory.createEmptyBorder());
+        s.setOpaque(false);
+        s.getViewport().setOpaque(false);
+        s.getVerticalScrollBar().setUnitIncrement(16);
+        return s;
     }
 
     /** A scroll pane with a hairline frame, for tables and lists. */

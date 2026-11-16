@@ -363,6 +363,12 @@ final class I18n {
         add("Updates: ", "Updates: ", "Mises à jour : ");
         add("Sections", "Bereiche", "Sections");
         add("Version", "Version", "Version");
+        add("The launcher's channel on the Bitwig Discord", "Kanal des Launchers auf dem Bitwig-Discord", "Le canal du lanceur sur le Discord de Bitwig");
+        add("Open the launcher's Discord channel", "Discord-Kanal des Launchers öffnen", "Ouvrir le canal Discord du lanceur");
+        add("Light appearance", "Helles Erscheinungsbild", "Apparence claire");
+        add("Dark", "Dunkel", "Sombre");
+        add("Light", "Hell", "Clair");
+        add("Wait until the launcher finishes what it is doing.", "Warte, bis der Launcher fertig ist.", "Attendez que le lanceur ait terminé.");
         add("Update the launcher", "Launcher aktualisieren", "Mettre à jour le lanceur");
         add("What's new", "Was ist neu", "Nouveautés");
         add("New launcher version", "Neue Launcher-Version", "Nouvelle version du lanceur");

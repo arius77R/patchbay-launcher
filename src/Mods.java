@@ -714,7 +714,7 @@ final class Mods {
                 box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(ok ? Theme.LINE : Theme.FAULT_TEXT, 1, true), new EmptyBorder(10, 10, 10, 10)));
                 String verdictText = ok ? PatchbayLauncher.t("Zgodny z Twoim Bitwigiem", "Compatible with your Bitwig")
                     : PatchbayLauncher.t("Niezgodny z Twoim Bitwigiem", "Not compatible with your Bitwig");
-                JLabel head = Theme.label(ok ? "<html><font color='#FF6A1A'>✓</font>&nbsp; " + verdictText + "</html>" : "×  " + verdictText,
+                JLabel head = Theme.label(ok ? "<html><font color='" + Theme.hex(Theme.ACCENT) + "'>✓</font>&nbsp; " + verdictText + "</html>" : "×  " + verdictText,
                     Theme.bold(13f), ok ? Theme.TEXT : Theme.FAULT_TEXT);
                 box.add(head, BorderLayout.NORTH);
                 String why = v.state() == Compat.State.NATIVE ? PatchbayLauncher.t("Zbudowany dokładnie dla Twojego Bitwiga.", "Built for exactly your Bitwig.") : v.reason();

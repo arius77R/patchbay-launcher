@@ -473,6 +473,66 @@ public final class PatchbayLauncher {
         return bar;
     }
 
+    /** The thin bar along the bottom: on the left, the launcher's Discord channel and the dark / light switch. */
+    private JComponent bottomBar() {
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBackground(Theme.TITLE);
+        bar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(5, 14, 5, 14)));
+        JButton discord = Theme.button("Discord", "secondary");
+        discord.putClientProperty("small", true);
+        discord.setFont(Theme.text(12f));
+        discord.setIcon(new ChatIcon());
+        discord.setIconTextGap(7);
+        discord.setToolTipText(t("Kanał Launchera na Discordzie Bitwiga", "The launcher's channel on the Bitwig Discord"));
+        discord.getAccessibleContext().setAccessibleName(t("Otwórz kanał Launchera na Discordzie", "Open the launcher's Discord channel"));
+        discord.addActionListener(e -> browse(DISCORD));
+        boolean light = Theme.light();
+        Theme.Switch mode = new Theme.Switch(light, t("Jasny wygląd", "Light appearance"), this::appearanceChosen);
+        JLabel dark = Theme.label(t("Ciemny", "Dark"), Theme.text(12f), light ? Theme.MUTED : Theme.TEXT);
+        JLabel bright = Theme.label(t("Jasny", "Light"), Theme.text(12f), light ? Theme.TEXT : Theme.MUTED);
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.setOpaque(false);
+        left.add(discord);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(dark);
+        left.add(mode);
+        left.add(bright);
+        bar.add(left, BorderLayout.WEST);
+        return bar;
+    }
+
+    /** Dark or light: kept in the settings; the window is built again in the new colours, like after a language change. */
+    private void appearanceChosen(boolean light) {
+        if (busy) {
+            JOptionPane.showMessageDialog(frame, t("Poczekaj, aż Launcher skończy bieżące zadanie.", "Wait until the launcher finishes what it is doing."),
+                "Patchbay Launcher", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        I18n.remember("appearance", light ? "light" : "dark");
+        Theme.palette(light);
+        Theme.install();
+        frame.dispose();
+        new PatchbayLauncher().show();
+    }
+
+    /** A speech bubble, for the Discord link (drawn, not Discord's own logo). */
+    private static final class ChatIcon implements Icon {
+        @Override public int getIconWidth() { return 16; }
+        @Override public int getIconHeight() { return 14; }
+        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(Theme.ACCENT);
+            g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawRoundRect(x + 1, y + 1, 14, 9, 5, 5);
+            g2.drawPolyline(new int[] { x + 4, x + 4, x + 8 }, new int[] { y + 10, y + 13, y + 10 }, 3);
+            g2.fillOval(x + 4, y + 5, 2, 2);
+            g2.fillOval(x + 7, y + 5, 2, 2);
+            g2.fillOval(x + 10, y + 5, 2, 2);
+            g2.dispose();
+        }
+    }
+
     /** A framed part of the Patchbay page: an optional header line (title left, extra right) over the body. */
     private static JPanel section(JComponent title, JComponent right, JComponent body) {
         JPanel card = new Theme.Card(new BorderLayout(), Theme.FRAME);
@@ -585,6 +645,8 @@ public final class PatchbayLauncher {
 
     /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */
     static final String PROJECT = "https://github.com/arius77R/patchbay-launcher";
+    /** The launcher's channel on the Bitwig Discord server. */
+    static final String DISCORD = "https://discord.com/channels/121395249003233280";
 
     /** Who makes the launcher and where to report problems with it, so they don't go to Patchbay's authors. */
     private JPanel aboutCard() {
@@ -631,6 +693,7 @@ public final class PatchbayLauncher {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(Theme.WELL);
         root.add(topBar(), BorderLayout.NORTH);
+        root.add(bottomBar(), BorderLayout.SOUTH);
         root.add(content, BorderLayout.CENTER);
         frame.setContentPane(root);
         java.net.URL iconUrl = PatchbayLauncher.class.getResource("/icon-128.png");
@@ -809,7 +872,7 @@ public final class PatchbayLauncher {
         String newest = releases.get(0).version(), cur = currentVersion();
         boolean update = cur != null && compareVersions(newest, cur) > 0;
         if (cur == null) latestLabel.setText(t("Najnowsza wersja: ", "Latest version: ") + newest);
-        else if (update) latestLabel.setText("<html>" + Theme.UpdateBar.title(1) + " <font color='#9C9FA5'>· " + cur + " → " + newest + "</font></html>");
+        else if (update) latestLabel.setText("<html>" + Theme.UpdateBar.title(1) + " <font color='" + Theme.hex(Theme.MUTED) + "'>· " + cur + " → " + newest + "</font></html>");
         else latestLabel.setText(t("Masz najnowszą wersję.", "You have the latest version."));
         patchbayCount.set(update ? 1 : 0);
         carryLabel.setText(update ? t("Mody i motywy przejdą do nowej wersji.", "Mods and themes move to the new version.") : " ");
@@ -870,7 +933,7 @@ public final class PatchbayLauncher {
 
     private void launcherFound(SelfUpdate.Release r) {
         launcherUpdate = r;
-        launcherHead.setText("<html>" + t("Nowa wersja Launchera", "New launcher version") + " <font color='#9C9FA5'>· " + VERSION + " → " + r.version() + "</font></html>");
+        launcherHead.setText("<html>" + t("Nowa wersja Launchera", "New launcher version") + " <font color='" + Theme.hex(Theme.MUTED) + "'>· " + VERSION + " → " + r.version() + "</font></html>");
         launcherCount.set(1);
         if (SelfUpdate.installRoot() == null) {
             launcherButton.setText(t("Pobierz ze strony", "Download from the page"));
@@ -937,9 +1000,10 @@ public final class PatchbayLauncher {
         if (args.length > 0 && args[0].equals("--selftest")) { SelfTest.run(args); return; }
         if (Platform.MAC) {
             System.setProperty("apple.awt.application.name", "Patchbay Launcher");
-            System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua");
+            System.setProperty("apple.awt.application.appearance", Theme.lightChosen() ? "NSAppearanceNameAqua" : "NSAppearanceNameDarkAqua");
         }
         Theme.loadFonts();
+        Theme.palette(Theme.lightChosen());
         SwingUtilities.invokeLater(() -> {
             Theme.install();
             new PatchbayLauncher().show();

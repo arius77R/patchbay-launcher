@@ -584,7 +584,7 @@ final class Themes {
             }
             Row row = rows.get(r);
             Item item = row.item();
-            Theme.Picture preview = new Theme.Picture(282, 360);
+            Theme.Picture preview = new Theme.Picture(282, 280);
             preview.setAlignmentX(LEFT_ALIGNMENT);
             preview.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Podgląd motywu: ", "Theme preview: ") + item.name());
             col.add(preview);
@@ -612,7 +612,7 @@ final class Themes {
                 "After changing the theme, start Bitwig again from Patchbay (Load)."), 226, Theme.MUTED, 12f);
             how.setAlignmentX(LEFT_ALIGNMENT);
             col.add(how);
-            details.add(col, BorderLayout.NORTH);
+            details.add(Theme.scrolling(col), BorderLayout.CENTER); // a tall preview or a short window: the details scroll, the buttons stay
 
             JPanel south = new JPanel(new GridLayout(0, 1, 0, 8));
             south.setOpaque(false);

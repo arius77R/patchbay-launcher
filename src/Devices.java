@@ -471,7 +471,7 @@ final class Devices {
                 return;
             }
             Item item = rows.get(r).item();
-            Theme.Picture preview = new Theme.Picture(282, 360);
+            Theme.Picture preview = new Theme.Picture(282, 280);
             preview.setAlignmentX(LEFT_ALIGNMENT);
             preview.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Podgląd panelu: ", "Panel preview: ") + item.name());
             col.add(preview);
@@ -497,7 +497,7 @@ final class Devices {
             facts.setAlignmentX(LEFT_ALIGNMENT);
             facts.setMaximumSize(new Dimension(Integer.MAX_VALUE, facts.getPreferredSize().height));
             col.add(facts);
-            details.add(col, BorderLayout.NORTH);
+            details.add(Theme.scrolling(col), BorderLayout.CENTER); // a tall preview or a short window: the details scroll, the buttons stay
             JButton page = Theme.button(PatchbayLauncher.t("Strona projektu", "Project page"), "secondary");
             page.addActionListener(e -> {
                 Platform.open("https://github.com/" + item.repo());

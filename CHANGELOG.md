@@ -5,6 +5,8 @@
 - **Themes in the older `.json` format** from the Bitwig Theme Editor (most of the "awesome-bitwig-themes" list: Nord, GruvBit, Dracula, Macchiato, Cubitwig, Ghosty…) are listed too and turned into `.bte` when installed. A `.json` beside a `.bte` of the same name is left out (it's the same theme, older); other `.json` files (palettes, catalogues) are not listed.
 - **List repositories:** a theme source whose repository has no themes but links to theme repositories in its README (like `Berikai/awesome-bitwig-themes`) brings in the themes of every repository it links to.
 - Theme details show the format.
+- **Bottom bar:** a link to the launcher's channel on the Bitwig Discord and a **Dark / Light** switch (light colours on warm off-white; the window is built again in the new colours).
+- Theme and device details scroll when they are taller than the window, so the buttons stay in view.
 
 ## 0.9.3
 
