@@ -436,6 +436,11 @@ public final class Theme {
             getAccessibleContext().setAccessibleName(label);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(0, 0, 0, 0));
+            // only our own drawing: the system look (Aqua on macOS) would paint a white button behind it
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
             addActionListener(e -> changed.accept(isSelected()));
         }
         @Override protected void paintComponent(Graphics g) {
@@ -472,6 +477,11 @@ public final class Theme {
             setMinimumSize(new Dimension(60, 28));
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(0, 0, 0, 0));
+            // only our own drawing: the system look (Aqua on macOS) would paint a white button behind it
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
             setRolloverEnabled(true);
             describe();
             addActionListener(e -> { describe(); repaint(); changed.accept(isSelected()); });
