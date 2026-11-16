@@ -748,6 +748,8 @@ final class Themes {
             pick.setFilenameFilter((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".bte"));
             if (Platform.WINDOWS) pick.setFile("*.bte");
             pick.setVisible(true);
+            // when the system's file window closes, the keyboard focus would land on the first tab; it stays in this list
+            SwingUtilities.invokeLater(table::requestFocusInWindow);
             if (pick.getFile() == null) return;
             Path file = Path.of(pick.getDirectory(), pick.getFile());
             try {
