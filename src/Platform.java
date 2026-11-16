@@ -454,16 +454,18 @@ final class Platform {
         run("/usr/bin/killall", "Dock");
     }
 
-    /** macOS, once per launcher version: tells Finder to read the app's icon again (it keeps old icons of a replaced app). */
+    /** macOS, once per launcher version and copy of the app: tells Finder to read the app's icon again (it keeps old icons of a replaced app). */
     static void refreshIcon(String version) {
         if (!MAC) return;
         Path app = appBundle();
-        if (app == null || version.equals(I18n.setting("iconRefreshed"))) return;
+        if (app == null) return;
+        String stamp = version + "@" + app.toAbsolutePath().normalize(); // each copy of the app, once per version
+        if (stamp.equals(I18n.setting("iconRefreshed"))) return;
         try {
             run("/usr/bin/touch", app.toString());
             String ls = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
             if (Files.isExecutable(Path.of(ls))) run(ls, "-f", app.toString());
-            I18n.remember("iconRefreshed", version);
+            I18n.remember("iconRefreshed", stamp);
         } catch (IOException | InterruptedException ignored) {
             // the icon then refreshes the next time macOS rescans the app
         }
