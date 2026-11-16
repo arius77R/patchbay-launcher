@@ -30,7 +30,14 @@ final class Mods {
     static final String STAGING_PREFIX = ".patchbay-add-";
     private static final long MAX_UNPACKED = 2_000_000_000L;
 
-    record Available(String id, String version, String url, String sha256, String repo, String page) { }
+    /** published: when this version's file was put in the release (GitHub's ISO time), or "" when unknown. */
+    record Available(String id, String version, String url, String sha256, String repo, String page, String published) { }
+
+    /** A mod's category: what stands before the colon in its name ("Arranger: Add Automation Points"), or "" without one. */
+    static String category(String name) {
+        int colon = name == null ? -1 : name.indexOf(": ");
+        return colon > 0 ? name.substring(0, colon).strip() : "";
+    }
     /** What a mod's manifest says about it. */
     record Info(String name, String author, String description, List<Requirement> requires, String builtFor, String builtPlatform, String builtArch) { }
 
@@ -247,7 +254,7 @@ final class Mods {
         for (Object r : Json.array(Json.parse(json))) {
             Map<String, Object> release = Json.object(r);
             if (Boolean.TRUE.equals(release.get("draft"))) continue;
-            String page = Json.text(release, "html_url");
+            String page = Json.text(release, "html_url"), released = Json.text(release, "published_at");
             readNames(Json.text(release, "body"));
             for (Object a : Json.array(release.get("assets"))) {
                 Map<String, Object> asset = Json.object(a);
@@ -258,7 +265,9 @@ final class Mods {
                 if (!m.matches()) continue;
                 String digest = Json.text(asset, "digest");
                 String sha = digest != null && digest.startsWith("sha256:") ? digest.substring(7).toLowerCase(Locale.ROOT) : null;
-                Available found = new Available(m.group(1), m.group(2), url, sha, repo, page);
+                String at = Json.text(asset, "created_at");
+                if (at == null) at = released;
+                Available found = new Available(m.group(1), m.group(2), url, sha, repo, page, at == null ? "" : at);
                 merge(out, found);
             }
         }
@@ -499,6 +508,8 @@ final class Mods {
         private final List<Row> rows = new ArrayList<>();
         /** Show: 0 all, 1 works on my Bitwig, 2 installed, 3 updates, 4 not available. */
         private final JComboBox<String> showBox = new JComboBox<>();
+        /** Sort: 0 by status (updates, installed, new), 1 by category then name, 2 newest version first. */
+        private final JComboBox<String> sortBox = new JComboBox<>();
         /** "Update available" above the list; a click shows only the mods with updates. */
         private final Theme.UpdateBar updateBar = new Theme.UpdateBar(() -> showBox.setSelectedIndex(3));
         /** The Bitwig version when it can't be read from the system: chosen from the versions Patchbay has maps for. */
@@ -604,6 +615,12 @@ final class Mods {
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
             showBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Pokaż", "Show"));
             showBox.setPreferredSize(new Dimension(200, 32));
+            for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Kategoria", "Category"), PatchbayLauncher.t("Najnowsze", "Newest") })
+                sortBox.addItem(o);
+            try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
+            sortBox.addActionListener(e -> { I18n.remember("modsSort", String.valueOf(sortBox.getSelectedIndex())); refilter(); });
+            sortBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Sortuj", "Sort"));
+            sortBox.setPreferredSize(new Dimension(150, 32));
             bitwigBox.setPreferredSize(new Dimension(150, 32));
             bitwigBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Twój Bitwig", "Your Bitwig"));
             bitwigBox.addActionListener(e -> {
@@ -614,6 +631,7 @@ final class Mods {
             bitwigLabel.setVisible(false);
             bitwigBox.setVisible(false);
             JPanel filters = Theme.row(8, Theme.label(PatchbayLauncher.t("Pokaż", "Show"), Theme.text(13f), Theme.MUTED), showBox,
+                Box.createHorizontalStrut(10), Theme.label(PatchbayLauncher.t("Sortuj", "Sort"), Theme.text(13f), Theme.MUTED), sortBox,
                 Box.createHorizontalStrut(10), bitwigLabel, bitwigBox);
             JPanel center = new JPanel(new BorderLayout(0, 12));
             center.setOpaque(false);
@@ -737,6 +755,8 @@ final class Mods {
             if (row.installed() != null) facts.add(new String[] { PatchbayLauncher.t("Zainstalowana", "Installed"), row.installed(), "mono" });
             if (row.available() != null) {
                 facts.add(new String[] { PatchbayLauncher.t("Dostępna", "Available"), row.available().version(), "mono" });
+                if (row.available().published().length() >= 10)
+                    facts.add(new String[] { PatchbayLauncher.t("Wydano", "Released"), row.available().published().substring(0, 10), "mono" });
                 facts.add(new String[] { PatchbayLauncher.t("Źródło", "Source"), row.available().repo() });
             }
             JPanel f = Theme.facts(facts.toArray(new String[0][]));
@@ -898,6 +918,18 @@ final class Mods {
             bitwigBox.setVisible(ask);
         }
 
+        /** The list's order for a Sort choice; mods that can't run on this Bitwig always come last. */
+        private Comparator<Row> order(int sort) {
+            Comparator<Row> usable = Comparator.comparing(this::unavailable);
+            Comparator<Row> byName = Comparator.comparing(this::nameOf, String.CASE_INSENSITIVE_ORDER);
+            return switch (sort) {
+                // a mod without a category goes after the named ones
+                case 1 -> usable.thenComparing((Row r) -> category(nameOf(r)).isEmpty()).thenComparing(r -> category(nameOf(r)), String.CASE_INSENSITIVE_ORDER).thenComparing(byName);
+                case 2 -> usable.thenComparing((Row r) -> r.available() == null ? "" : r.available().published(), Comparator.reverseOrder()).thenComparing(byName);
+                default -> usable.thenComparingInt(Row::rank).thenComparing(Row::id);
+            };
+        }
+
         /** The rows the Show filter lets through, mods that can run first, then updates, installed, new; and the counts. */
         private void refilter() {
             String keep = table.getSelectedRow() >= 0 && table.getSelectedRow() < rows.size() ? rows.get(table.getSelectedRow()).id() : null;
@@ -914,7 +946,7 @@ final class Mods {
                 };
                 if (pass) rows.add(r);
             }
-            rows.sort(Comparator.comparing(this::unavailable).thenComparingInt(Row::rank).thenComparing(Row::id));
+            rows.sort(order(sortBox.getSelectedIndex()));
             Set<String> canTick = new HashSet<>();
             for (Row r : checkable()) canTick.add(r.id());
             checked.retainAll(canTick);

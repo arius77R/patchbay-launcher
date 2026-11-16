@@ -1338,6 +1338,11 @@ public final class PatchbayLauncher {
             List<Themes.Item> mine = Themes.localThemes(comps, List.of());
             check(oldRefused && wrongType && mine.size() == 1 && mine.get(0).name().equals("My Theme") && mine.get(0).isLocal()
                 && Themes.rank(comps, mine.get(0)) == 1 && Themes.idOf(comps, mine.get(0)).equals("my-theme"), "a theme added from a file is listed as a local one; old and non-.bte files are refused");
+            check(Mods.category("Arranger: Add Automation Points").equals("Arranger") && Mods.category("Scale Fold").isEmpty() && Mods.category(null).isEmpty(), "a mod's category is what stands before the colon in its name");
+            Mods.Available dated = Mods.parseCatalog("[{\"html_url\":\"https://x\",\"published_at\":\"2026-01-02T00:00:00Z\",\"assets\":[{\"name\":\"a-mod-1.0.0.zip\",\"browser_download_url\":\"https://x/a-mod-1.0.0.zip\",\"created_at\":\"2026-03-04T05:06:07Z\"},"
+                + "{\"name\":\"b-mod-1.0.0.zip\",\"browser_download_url\":\"https://x/b-mod-1.0.0.zip\"}]}]", "o/r").get("a-mod");
+            check(dated.published().startsWith("2026-03-04") && Mods.parseCatalog("[{\"published_at\":\"2026-01-02T00:00:00Z\",\"assets\":[{\"name\":\"b-mod-1.0.0.zip\",\"browser_download_url\":\"https://x/b-mod-1.0.0.zip\"}]}]", "o/r").get("b-mod").published().startsWith("2026-01-02"),
+                "a mod version's date: its file's, else its release's");
             check(Themes.linkedRepos("[a](https://github.com/lenninst/Macchiato_BitwigTheme.git) [b](https://github.com/o/r) https://github.com/Berikai/awesome-bitwig-themes https://github.com/o/r", "Berikai/awesome-bitwig-themes")
                 .equals(List.of("lenninst/Macchiato_BitwigTheme", "o/r")), "a list repository's links: each once, without itself");
 
@@ -1476,7 +1481,7 @@ public final class PatchbayLauncher {
             Mods.installAll(List.of(catalog.get("scale-fold")), catalog, mods, downloads, local, s -> { });
             check(!Files.exists(mods.resolve("scale-fold/MARK")), "reinstall replaces the old copy");
 
-            Mods.Available wrong = new Mods.Available("scale-fold", "0.1.0-dev.4", "https://x", "0".repeat(64), "t", null);
+            Mods.Available wrong = new Mods.Available("scale-fold", "0.1.0-dev.4", "https://x", "0".repeat(64), "t", null, "");
             boolean refused = false;
             try { Mods.installAll(List.of(wrong), catalog, mods, downloads, local, s -> { }); } catch (IOException e) { refused = true; }
             check(refused && Files.isRegularFile(mods.resolve("scale-fold/mod.json")), "wrong SHA-256 refused, installed copy untouched");

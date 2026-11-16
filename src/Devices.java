@@ -299,6 +299,8 @@ final class Devices {
         };
         private final JTable table = new JTable(model);
         private final JComboBox<String> buildBox = new JComboBox<>();
+        /** Sort: 0 by status (updates, new, downloaded), 1 by type then name, 2 by name. */
+        private final JComboBox<String> sortBox = new JComboBox<>();
         private final JLabel subtitle = Theme.label(" ", Theme.text(14f), Theme.MUTED);
         private final JPanel details = new Theme.Card(new BorderLayout(), Theme.FRAME);
         private final JButton checkAllButton = Theme.button(" ", "secondary");
@@ -334,7 +336,14 @@ final class Devices {
             buildBox.setPreferredSize(new Dimension(170, 34));
             buildBox.setFont(Theme.mono(13f));
             buildBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Wersja plików", "Build"));
-            JPanel actions = Theme.row(8, Theme.label(PatchbayLauncher.t("Wersja plików:", "Build:"), Theme.text(13f), Theme.MUTED), buildBox, checkAllButton, refreshButton);
+            JPanel actions = Theme.row(8, Theme.label(PatchbayLauncher.t("Wersja plików:", "Build:"), Theme.text(13f), Theme.MUTED), buildBox,
+                Theme.label(PatchbayLauncher.t("Sortuj", "Sort"), Theme.text(13f), Theme.MUTED), sortBox, checkAllButton, refreshButton);
+            for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Nazwa", "Name") })
+                sortBox.addItem(o);
+            try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("devicesSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
+            sortBox.addActionListener(e -> { I18n.remember("devicesSort", String.valueOf(sortBox.getSelectedIndex())); if (loaded) rebuild(); });
+            sortBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Sortuj", "Sort"));
+            sortBox.setPreferredSize(new Dimension(130, 34));
             bar.setPreferredSize(new Dimension(10, 4));
             bar.setVisible(false);
             JPanel left = new JPanel(new BorderLayout(0, 6));
@@ -396,13 +405,24 @@ final class Devices {
             }, "devices-list").start();
         }
 
+        /** The list's order for a Sort choice. */
+        private static Comparator<Row> order(int sort) {
+            Comparator<Row> byName = Comparator.comparing(r -> r.item().name(), String.CASE_INSENSITIVE_ORDER);
+            return switch (sort) {
+                case 1 -> Comparator.comparing((Row r) -> r.item().type(), String.CASE_INSENSITIVE_ORDER).thenComparing(byName);
+                case 2 -> byName;
+                default -> Comparator.comparingInt(Row::rank).thenComparing(byName);
+            };
+        }
+
         /** Rebuilds the rows for the chosen build; hashing the downloaded files happens off the event thread. */
         private void rebuild() {
             List<Item> shown = visible(items, build());
+            int sort = sortBox.getSelectedIndex();
             new Thread(() -> {
                 List<Row> fresh = new ArrayList<>();
                 for (Item i : shown) fresh.add(new Row(i, rank(i)));
-                fresh.sort(Comparator.comparingInt(Row::rank).thenComparing(r -> r.item().name(), String.CASE_INSENSITIVE_ORDER));
+                fresh.sort(order(sort));
                 SwingUtilities.invokeLater(() -> {
                     rows.clear();
                     rows.addAll(fresh);
