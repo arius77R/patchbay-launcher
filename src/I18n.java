@@ -342,6 +342,9 @@ final class I18n {
         add("Version", "Version", "Version");
         add("The launcher's channel on the Bitwig Discord", "Kanal des Launchers auf dem Bitwig-Discord", "Le canal du lanceur sur le Discord de Bitwig");
         add("Open the launcher's Discord channel", "Discord-Kanal des Launchers öffnen", "Ouvrir le canal Discord du lanceur");
+        add("Support", "Unterstützen", "Soutenir");
+        add("Buy me a coffee on Ko-fi", "Spendier mir einen Kaffee auf Ko-fi", "Offrez-moi un café sur Ko-fi");
+        add("Support the project on Ko-fi", "Das Projekt auf Ko-fi unterstützen", "Soutenir le projet sur Ko-fi");
         add("Light appearance", "Helles Erscheinungsbild", "Apparence claire");
         add("Dark appearance", "Dunkles Erscheinungsbild", "Apparence sombre");
         add("Couldn't read the source ", "Quelle konnte nicht gelesen werden: ", "Impossible de lire la source ");
