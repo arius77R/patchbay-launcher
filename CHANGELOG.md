@@ -1,11 +1,11 @@
 # Changelog
 
-## 0.9.5 (not released)
+## 0.9.5
 
 - **Search in Mods and Devices:** type part of a name to narrow the list; the type and the author are searched too ("audio fx", "polarity").
 - **Settings:** a Settings button in the bottom bar (where the language choice was) opens a page with the language, the settings backup, the data folder and whose project this is. The Patchbay section keeps only Patchbay's versions.
 - **Settings backup:** in Settings, "Save a backup…" writes the mods switched on, the chosen theme with the theme files, and the sources into one file; "Restore from a backup…" brings them back, for example on another computer.
-- **Type column:** Mods and Devices both start with a Type column, then the name. A mod's type is the part of its name before the colon ("Arranger"), shown apart from the name. Each type has its own colour; neighbouring types never share one.
+- **Type column:** Mods and Devices both start with a Type column, then the name. A mod's type is the part of its name before the colon ("Arranger"), shown apart from the name. Each type has its own colour; neighbouring types never share one. In Mods the sort by category is now called Type, as in Devices.
 - **Device author:** a device's details name its author (the owner of its repository).
 - **Themes without a screenshot** (such as one added from a file) show a picture of their own colours.
 - **After updating, Mods goes back to the list:** when Show was on Updates and nothing is left to update, it returns to the choice before (All by default) instead of an empty list.

@@ -22,7 +22,7 @@ import java.util.zip.ZipEntry;
  * Not affiliated with Patchbay's author or with Bitwig GmbH.
  */
 public final class PatchbayLauncher {
-    static final String VERSION = "0.9.4";
+    static final String VERSION = "0.9.5";
     /** The release list of the Patchbay source in use (the built-in one unless the user picked another). */
     static String api() { return "https://api.github.com/repos/" + Sources.patchbay().repo() + "/releases?per_page=100"; }
     static String t(String pl, String en) { return I18n.t(pl, en); }
