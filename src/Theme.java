@@ -1255,7 +1255,52 @@ public final class Theme {
     }
 
     /** Key/value lines (Author, Available, Source…) between two hairlines. */
-    static JPanel facts(String[][] rows) {
+    /** A GitHub user's picture in a circle; their initial until the picture has loaded or when there is none. */
+    static final class Avatar implements Icon {
+        private static final int SIZE = 22;
+        private final String owner;
+        private Image picture;
+
+        Avatar(String owner) { this.owner = owner; }
+
+        void setPicture(Image picture) { this.picture = picture; }
+
+        /** The owner's name beside their picture, as one line. */
+        JLabel withName() {
+            JLabel l = new JLabel(owner, this, SwingConstants.LEFT);
+            l.setIconTextGap(8);
+            l.setFont(text(13f));
+            l.setForeground(TEXT);
+            l.setToolTipText(owner);
+            return l;
+        }
+
+        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            java.awt.geom.Ellipse2D circle = new java.awt.geom.Ellipse2D.Float(x, y, SIZE, SIZE);
+            if (picture != null) {
+                g2.clip(circle);
+                g2.drawImage(picture, x, y, SIZE, SIZE, null);
+            } else {
+                g2.setColor(CONTROL);
+                g2.fill(circle);
+                g2.setColor(MUTED);
+                g2.setFont(bold(11f));
+                String initial = owner.isEmpty() ? "?" : owner.substring(0, 1).toUpperCase(Locale.ROOT);
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(initial, x + (SIZE - fm.stringWidth(initial)) / 2f, y + (SIZE - fm.getHeight()) / 2f + fm.getAscent());
+            }
+            g2.dispose();
+        }
+
+        @Override public int getIconWidth() { return SIZE; }
+        @Override public int getIconHeight() { return SIZE; }
+    }
+
+    /** A value may be text, or a component such as an author with their picture. */
+    static JPanel facts(Object[][] rows) {
         JPanel p = new JPanel(new GridBagLayout());
         p.setOpaque(false);
         p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, LINE), new EmptyBorder(10, 0, 10, 0)));
@@ -1265,13 +1310,14 @@ public final class Theme {
         for (int i = 0; i < rows.length; i++) {
             g.gridy = i;
             g.gridx = 0; g.weightx = 0;
-            p.add(label(rows[i][0], text(13f), MUTED), g);
+            p.add(label(String.valueOf(rows[i][0]), text(13f), MUTED), g);
             g.gridx = 1; g.weightx = 1;
             boolean monoValue = rows[i].length > 2;
+            String text = String.valueOf(rows[i][1]);
             // long values ("Bitwig 6.1.7 · Windows", "owner/repository") wrap instead of ending in "…"
-            JLabel value = monoValue ? label(rows[i][1], mono(12f), TEXT)
-                : wrapped(rows[i][1].replace("/", "/\u200B"), 104, TEXT, 13f);
-            value.setToolTipText(rows[i][1]);
+            JComponent value = rows[i][1] instanceof JComponent given ? given
+                : monoValue ? label(text, mono(12f), TEXT) : wrapped(text.replace("/", "/\u200B"), 104, TEXT, 13f);
+            if (!(rows[i][1] instanceof JComponent)) value.setToolTipText(text);
             g.fill = GridBagConstraints.HORIZONTAL;
             p.add(value, g);
             g.fill = GridBagConstraints.NONE;
