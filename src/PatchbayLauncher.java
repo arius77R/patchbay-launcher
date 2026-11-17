@@ -674,6 +674,61 @@ public final class PatchbayLauncher {
         return card;
     }
 
+    /** Saving what the user set up into one file, and bringing it back. */
+    private JPanel backupSection() {
+        JButton save = Theme.button(t("Zapisz kopię…", "Save a backup…"), "secondary");
+        save.addActionListener(e -> saveBackup());
+        JButton restore = Theme.button(t("Przywróć z kopii…", "Restore from a backup…"), "secondary");
+        restore.addActionListener(e -> restoreBackup());
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setOpaque(false);
+        row.add(Theme.wrapped(t("Kopia ustawień: włączone mody, wybrany motyw z plikami motywów i źródła w jednym pliku, np. do przeniesienia na inny komputer.",
+            "A backup of your settings: the mods switched on, the chosen theme with the theme files, and the sources in one file, for example to move to another computer."),
+            420, Theme.MUTED, 13f), BorderLayout.CENTER);
+        row.add(Theme.row(8, save, restore), BorderLayout.EAST);
+        return section(null, null, row);
+    }
+
+    private void saveBackup() {
+        FileDialog pick = new FileDialog(frame, t("Zapisz kopię ustawień", "Save the settings backup"), FileDialog.SAVE);
+        pick.setFile(Backup.defaultName());
+        pick.setVisible(true);
+        if (pick.getFile() == null) return;
+        String name = pick.getFile().toLowerCase(java.util.Locale.ROOT).endsWith(".zip") ? pick.getFile() : pick.getFile() + ".zip";
+        try {
+            int files = Backup.save(Path.of(pick.getDirectory(), name), Devices.patchbaySettings(), Themes.components(), Sources.file());
+            statusLabel.setText(files == 0 ? t("Nie ma jeszcze czego zapisać: Patchbay nie był uruchamiany i nie ma własnych źródeł.",
+                "There is nothing to save yet: Patchbay hasn't been started and there are no sources of your own.")
+                : t("Kopia zapisana: ", "Backup saved: ") + name);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, t("Nie udało się zapisać kopii: ", "Couldn't save the backup: ") + ex.getMessage(), "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void restoreBackup() {
+        if (bitwigRunning() || patchbayRunning()) {
+            JOptionPane.showMessageDialog(frame, t("Zamknij Patchbay i Bitwiga, a potem przywróć kopię.", "Close Patchbay and Bitwig, then restore the backup."),
+                "Patchbay Launcher", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        FileDialog pick = new FileDialog(frame, t("Wybierz kopię ustawień", "Choose a settings backup"), FileDialog.LOAD);
+        pick.setFilenameFilter((dir, n) -> n.toLowerCase(java.util.Locale.ROOT).endsWith(".zip"));
+        if (Platform.WINDOWS) pick.setFile("*.zip");
+        pick.setVisible(true);
+        if (pick.getFile() == null) return;
+        int answer = JOptionPane.showConfirmDialog(frame,
+            t("Przywrócenie zastąpi obecną listę włączonych modów, wybrany motyw i źródła. Kontynuować?",
+                "Restoring replaces the current list of mods switched on, the chosen theme and the sources. Continue?"),
+            "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (answer != JOptionPane.OK_OPTION) return;
+        try {
+            Backup.restore(Path.of(pick.getDirectory(), pick.getFile()), Devices.patchbaySettings(), Themes.components(), Sources.file());
+            rebuild(); // the lists and sources are read again
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, t("Nie udało się przywrócić kopii: ", "Couldn't restore the backup: ") + ex.getMessage(), "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
     /** A red count, as macOS marks updates. */
     private static final class Count extends JLabel {
         int value;
@@ -742,6 +797,8 @@ public final class PatchbayLauncher {
         latestLabel.setFont(Theme.text(13f));
         col.add(launcherSection());
         col.add(section(latestLabel, patchbayCount, v));
+        col.add(Box.createVerticalStrut(12));
+        col.add(backupSection());
 
         // the language choice: filled here, shown in the bottom bar beside the dark / light switch
         languageBox.addItem(t("Język systemu", "System language"));
@@ -1135,12 +1192,60 @@ public final class PatchbayLauncher {
             System.setProperty("apple.awt.application.name", "Patchbay Launcher");
             System.setProperty("apple.awt.application.appearance", Theme.lightChosen() ? "NSAppearanceNameAqua" : "NSAppearanceNameDarkAqua");
         }
-        Theme.loadFonts();
-        Theme.palette(Theme.lightChosen());
+        try {
+            Theme.loadFonts();
+            Theme.palette(Theme.lightChosen());
+        } catch (Throwable t) {
+            startFailed(t);
+            return;
+        }
         SwingUtilities.invokeLater(() -> {
-            Theme.install();
-            new PatchbayLauncher().show();
+            try {
+                Theme.install();
+                new PatchbayLauncher().show();
+            } catch (Throwable t) {
+                startFailed(t);
+            }
         });
+    }
+
+    /** What went wrong at start, for the window and for a report: the versions first, then Java's own account. */
+    static String failureText(Throwable t) {
+        java.io.StringWriter trace = new java.io.StringWriter();
+        t.printStackTrace(new java.io.PrintWriter(trace));
+        return "Patchbay Launcher " + VERSION + "\n"
+            + System.getProperty("os.name") + " " + System.getProperty("os.version") + " (" + System.getProperty("os.arch") + ")\n"
+            + "Java " + System.getProperty("java.version") + " — " + System.getProperty("java.home") + "\n\n" + trace;
+    }
+
+    /**
+     * The launcher couldn't open its window: says so instead of closing without a word, keeps the details in
+     * logs/start-error.log, and offers to copy them or to show the folder. Plain Swing, since the look may be the thing that failed.
+     */
+    private static void startFailed(Throwable t) {
+        String text = failureText(t);
+        System.err.println(text);
+        Path log = data().resolve("logs").resolve("start-error.log");
+        try {
+            Files.createDirectories(log.getParent());
+            Files.writeString(log, text);
+        } catch (Exception ignored) {
+            // the window below still shows the details
+        }
+        if (GraphicsEnvironment.isHeadless()) { System.exit(1); return; }
+        String copy = t("Skopiuj szczegóły", "Copy the details"), folder = t("Pokaż folder z logami", "Show the log folder"), close = t("Zamknij", "Close");
+        String first = t.toString();
+        String message = t("Patchbay Launcher nie mógł się uruchomić.", "Patchbay Launcher couldn't start.") + "\n\n"
+            + (first.length() > 300 ? first.substring(0, 300) + "…" : first) + "\n\n"
+            + t("Szczegóły są w pliku: ", "The details are in the file: ") + log;
+        while (true) {
+            int pick = JOptionPane.showOptionDialog(null, message, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE,
+                null, new String[] { copy, folder, close }, close);
+            if (pick == 0) Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(text), null);
+            else if (pick == 1) Platform.open(log.getParent().toString());
+            else break;
+        }
+        System.exit(1);
     }
 
     /** Offline checks (the 4th argument is a folder of fixtures: two release lists and two mod ZIPs): java -Dlauncher.data=<empty temp folder> -jar launcher.jar --selftest <BML zip> <its version>. */
@@ -1340,6 +1445,26 @@ public final class PatchbayLauncher {
                 + "{\"name\":\"b-mod-1.0.0.zip\",\"browser_download_url\":\"https://x/b-mod-1.0.0.zip\"}]}]", "o/r").get("a-mod");
             check(dated.published().startsWith("2026-03-04") && Mods.parseCatalog("[{\"published_at\":\"2026-01-02T00:00:00Z\",\"assets\":[{\"name\":\"b-mod-1.0.0.zip\",\"browser_download_url\":\"https://x/b-mod-1.0.0.zip\"}]}]", "o/r").get("b-mod").published().startsWith("2026-01-02"),
                 "a mod version's date: its file's, else its release's");
+            check(Mods.matches("", "Arranger: Add Automation Points", "add-automation-points") && Mods.matches("  ARR  points ", "Arranger: Add Automation Points", "x")
+                && Mods.matches("automation-points", "Arranger", "add-automation-points") && !Mods.matches("piano", "Arranger: Add Automation Points", "add-automation-points"), "Search finds mods by every typed word, in the name or the id");
+            check(failureText(new IllegalStateException("boom")).startsWith("Patchbay Launcher " + VERSION) && failureText(new IllegalStateException("boom")).contains("IllegalStateException: boom"), "a start failure is described with the versions and Java's account");
+            Map<String, Color> parsed = Themes.colours("// c\nGrey 0: #101010\nAccent (default): #ff6a1a80\nShort: #abc\nBad: #12\nNot a colour\n");
+            check(parsed.size() == 3 && parsed.get("Grey 0").equals(new Color(0x101010)) && parsed.get("Accent (default)").getAlpha() == 0x80 && parsed.get("Short").equals(new Color(0xAABBCC)), "a theme's colours are read by name");
+            check(Themes.drawnPreview(six) != null && Themes.drawnPreview(six).getWidth() == 560 && Themes.drawnPreview("hello") == null
+                && comps.resolve("My Theme.bte").equals(Themes.bteOnDisk(comps, mine.get(0))), "a theme without a screenshot gets a picture of its own colours");
+            Path bset = Files.createTempDirectory("backup-settings"), bsrc = Files.createTempDirectory("backup-src").resolve("sources.json"), bzip = Files.createTempDirectory("backup-zip").resolve("b.zip");
+            Files.writeString(bset.resolve("enabled-mods.properties"), "mod.a=true\n");
+            Files.writeString(bset.resolve("selected-components.properties"), "component.x=my-theme\n");
+            Files.writeString(bset.resolve("bml.properties"), "bitwig=/Applications/Bitwig Studio.app\n");
+            Files.writeString(bsrc, "{\"sources\":[]}");
+            check(Backup.save(bzip, bset, comps, bsrc) == 4, "a backup holds the two Patchbay settings files, the sources and the theme files");
+            Path rset = Files.createTempDirectory("restore-settings"), rcomp = Files.createTempDirectory("restore-comp"), rsrc = Files.createTempDirectory("restore-src").resolve("sources.json");
+            check(Backup.restore(bzip, rset, rcomp, rsrc) == 4 && Files.readString(rset.resolve("enabled-mods.properties")).equals("mod.a=true\n")
+                && Files.exists(rcomp.resolve("My Theme.bte")) && Files.exists(rsrc) && !Files.exists(rset.resolve("bml.properties")), "restoring puts them back, and nothing else");
+            check(Backup.restore(bzip, rset, null, rsrc) == 3 && Backup.target("components/../../x", rset, rcomp, rsrc) == null && Backup.target("patchbay/bml.properties", rset, rcomp, rsrc) == null, "without Patchbay the theme files are left out; unsafe or unknown entries are skipped");
+            boolean notBackup = false;
+            try { Backup.restore(picked, rset, rcomp, rsrc); } catch (IOException e) { notBackup = true; }
+            check(notBackup, "a file that isn't a backup is refused");
             check(Themes.linkedRepos("[a](https://github.com/lenninst/Macchiato_BitwigTheme.git) [b](https://github.com/o/r) https://github.com/Berikai/awesome-bitwig-themes https://github.com/o/r", "Berikai/awesome-bitwig-themes")
                 .equals(List.of("lenninst/Macchiato_BitwigTheme", "o/r")), "a list repository's links: each once, without itself");
 

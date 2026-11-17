@@ -33,6 +33,14 @@ final class Mods {
     /** published: when this version's file was put in the release (GitHub's ISO time), or "" when unknown. */
     record Available(String id, String version, String url, String sha256, String repo, String page, String published) { }
 
+    /** True when every word typed in Search is somewhere in the mod's name or id (case ignored); an empty search finds all. */
+    static boolean matches(String typed, String name, String id) {
+        String where = (name + " " + id).toLowerCase(Locale.ROOT);
+        for (String word : typed.toLowerCase(Locale.ROOT).trim().split("\\s+"))
+            if (!word.isEmpty() && !where.contains(word)) return false;
+        return true;
+    }
+
     /** A mod's category: what stands before the colon in its name ("Arranger: Add Automation Points"), or "" without one. */
     static String category(String name) {
         int colon = name == null ? -1 : name.indexOf(": ");
@@ -510,6 +518,7 @@ final class Mods {
         private final JComboBox<String> showBox = new JComboBox<>();
         /** Sort: 0 by status (updates, installed, new), 1 by category then name, 2 newest version first. */
         private final JComboBox<String> sortBox = new JComboBox<>();
+        private final Theme.HintField searchField = new Theme.HintField(PatchbayLauncher.t("Szukaj", "Search"));
         /** "Update available" above the list; a click shows only the mods with updates. */
         private final Theme.UpdateBar updateBar = new Theme.UpdateBar(() -> showBox.setSelectedIndex(3));
         /** The Bitwig version when it can't be read from the system: chosen from the versions Patchbay has maps for. */
@@ -612,12 +621,12 @@ final class Mods {
                 showBox.addItem(o);
             try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(1); } // first time: only the mods that can run
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
-            showBox.setPreferredSize(new Dimension(160, 32));
+            showBox.setPreferredSize(new Dimension(140, 32));
             for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Kategoria", "Category"), PatchbayLauncher.t("Najnowsze", "Newest") })
                 sortBox.addItem(o);
             try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
             sortBox.addActionListener(e -> { I18n.remember("modsSort", String.valueOf(sortBox.getSelectedIndex())); refilter(); });
-            sortBox.setPreferredSize(new Dimension(140, 32));
+            sortBox.setPreferredSize(new Dimension(120, 32));
             bitwigBox.setPreferredSize(new Dimension(120, 32));
             bitwigBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Twój Bitwig", "Your Bitwig"));
             bitwigBox.addActionListener(e -> {
@@ -631,7 +640,13 @@ final class Mods {
             showBox.setToolTipText(PatchbayLauncher.t("Pokaż", "Show"));
             sortBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Sortuj", "Sort"));
             sortBox.setToolTipText(PatchbayLauncher.t("Sortuj", "Sort"));
-            JPanel tools = Theme.row(8, showBox, sortBox);
+            searchField.setPreferredSize(new Dimension(140, 32));
+            searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+                @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { refilter(); }
+                @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { refilter(); }
+                @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { refilter(); }
+            });
+            JPanel tools = Theme.row(8, showBox, sortBox, searchField);
             JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), Theme.row(8, bitwigLabel, bitwigBox), refreshButton, details);
             add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, updateBar, body,
                 left, Theme.row(8, updateAllButton, installButton)), BorderLayout.CENTER);
@@ -936,7 +951,7 @@ final class Mods {
                     case 4 -> off;
                     default -> true;
                 };
-                if (pass) rows.add(r);
+                if (pass && matches(searchField.getText(), nameOf(r), r.id())) rows.add(r);
             }
             rows.sort(order(sortBox.getSelectedIndex()));
             Set<String> canTick = new HashSet<>();

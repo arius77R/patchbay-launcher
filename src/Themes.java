@@ -199,6 +199,76 @@ final class Themes {
             "This theme is for an older Bitwig: it lacks Bitwig 6's main colours, so it would change very little. It wasn't added.");
     }
 
+    /** The colours of a .bte file's text by name, in the file's order; lines that aren't "Name: #colour" are skipped. */
+    static Map<String, Color> colours(String text) {
+        Map<String, Color> out = new LinkedHashMap<>();
+        for (String line : text.split("\\R")) {
+            java.util.regex.Matcher m = COLOUR_LINE.matcher(line);
+            if (!m.matches()) continue;
+            String hex = line.substring(line.indexOf('#') + 1).replaceAll("[^0-9A-Fa-f].*", "");
+            if (hex.length() == 3) hex = "" + hex.charAt(0) + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2) + hex.charAt(2);
+            if (hex.length() != 6 && hex.length() != 8) continue;
+            int rgb = Integer.parseInt(hex.substring(0, 6), 16);
+            int alpha = hex.length() == 8 ? Integer.parseInt(hex.substring(6), 16) : 255;
+            out.put(m.group(1), new Color((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, alpha));
+        }
+        return out;
+    }
+
+    /**
+     * A picture of a theme made from its own colours, for a theme that brings no screenshot: the greys Bitwig 6
+     * builds its window from, the accents, then the other colours. Null when the file has too few colours.
+     */
+    static BufferedImage drawnPreview(String text) {
+        Map<String, Color> all = colours(text);
+        if (all.size() < 10) return null;
+        List<Color> greys = new ArrayList<>(), accents = new ArrayList<>(), rest = new ArrayList<>();
+        for (Map.Entry<String, Color> e : all.entrySet()) {
+            Color c = new Color(e.getValue().getRGB()); // opaque: a swatch shows the colour itself
+            if (e.getKey().matches("Grey \\d+")) greys.add(c);
+            else if (e.getKey().startsWith("Accent")) { if (!accents.contains(c)) accents.add(c); }
+            else if (!rest.contains(c) && !greys.contains(c)) rest.add(c);
+        }
+        int w = 560, pad = 14, gap = 6;
+        Color ground = Theme.WELL; // the launcher's own ground, so the theme's darkest grey still shows as a swatch
+        BufferedImage img = new BufferedImage(w, 300, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setColor(ground);
+        g.fillRect(0, 0, w, 300);
+        int y = pad;
+        y = band(g, greys, pad, y, w - 2 * pad, 84, 0) + gap;
+        y = band(g, accents.subList(0, Math.min(accents.size(), 8)), pad, y, w - 2 * pad, 40, 0) + gap;
+        List<Color> shown = rest.subList(0, Math.min(rest.size(), 48));
+        int perRow = 16, rowsOf = (shown.size() + perRow - 1) / perRow;
+        for (int r = 0; r < rowsOf; r++)
+            y = band(g, shown.subList(r * perRow, Math.min(shown.size(), (r + 1) * perRow)), pad, y, w - 2 * pad, 30, perRow) + gap;
+        g.dispose();
+        return img.getSubimage(0, 0, w, Math.min(300, y + pad - gap));
+    }
+
+    /** One row of swatches across width; slots > 0 keeps every swatch as wide as in a full row. Returns the row's bottom. */
+    private static int band(Graphics2D g, List<Color> colours, int x, int y, int width, int height, int slots) {
+        if (colours.isEmpty()) return y - 6;
+        int n = slots > 0 ? slots : colours.size();
+        double each = (width + 2.0) / n;
+        for (int i = 0; i < colours.size(); i++) {
+            java.awt.geom.RoundRectangle2D swatch = new java.awt.geom.RoundRectangle2D.Double(x + i * each, y, each - 2, height, 6, 6);
+            g.setColor(colours.get(i));
+            g.fill(swatch);
+            g.setColor(Theme.EDGE);
+            g.draw(swatch);
+        }
+        return y + height;
+    }
+
+    /** The .bte file of a theme that is on this computer, or null when it isn't. */
+    static Path bteOnDisk(Path components, Item item) {
+        if (components == null) return null;
+        Path file = item.isLocal() ? components.resolve(item.bte().path()) : installedBte(components, item);
+        return Files.isRegularFile(file) ? file : null;
+    }
+
     /** Where a .bte file picked on this computer would go in components/. */
     static Path localTarget(Path components, Path file) {
         return components.resolve(stem(file.getFileName().toString()) + ".bte");
@@ -653,7 +723,15 @@ final class Themes {
             details.revalidate();
             details.repaint();
 
-            if (item.preview() == null) return;
+            if (item.preview() == null) {
+                // no screenshot with the theme: a picture of its own colours, when the theme is on this computer
+                Path file = bteOnDisk(components(), item);
+                if (file != null) {
+                    try { preview.setImage(drawnPreview(Files.readString(file, StandardCharsets.ISO_8859_1))); }
+                    catch (IOException | RuntimeException ignored) { /* no picture then */ }
+                }
+                return;
+            }
             String k = item.repo() + "/" + item.preview();
             shownPreview = k;
             BufferedImage have = previews.get(k);

@@ -938,6 +938,29 @@ public final class Theme {
         return p;
     }
 
+    /** A text field that says what it is for while it is empty ("Search"), in a quieter colour. */
+    static final class HintField extends JTextField {
+        private final String hint;
+
+        HintField(String hint) {
+            this.hint = hint;
+            getAccessibleContext().setAccessibleName(hint);
+        }
+
+        @Override protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (!getText().isEmpty()) return;
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2.setFont(getFont());
+            g2.setColor(DIM);
+            Insets in = getInsets();
+            FontMetrics fm = g2.getFontMetrics();
+            g2.drawString(hint, in.left, in.top + (getHeight() - in.top - in.bottom + fm.getAscent() - fm.getDescent()) / 2);
+            g2.dispose();
+        }
+    }
+
     /**
      * The list beside its details with a row of controls over each, so the controls follow the divider:
      * tools at the list's left, atListEdge (Tick all) at the list's right edge, atEdge (Refresh) at the window's.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.5 (not released)
+
+- **Search in Mods:** type part of a mod's name to narrow the list.
+- **Settings backup:** in the Patchbay section, "Save a backup…" writes the mods switched on, the chosen theme with the theme files, and the sources into one file; "Restore from a backup…" brings them back, for example on another computer.
+- **Themes without a screenshot** (such as one added from a file) show a picture of their own colours.
+- **When the launcher can't open its window** it says so, keeps the details in `logs/start-error.log`, and offers to copy them or show the folder, instead of closing without a word.
+
 ## 0.9.4
 
 - **List repositories:** a theme source whose repository has no `.bte` themes but links to theme repositories in its README (like `Berikai/awesome-bitwig-themes`) brings in the `.bte` themes of every repository it links to. Only `.bte` files are themes: older Theme Editor `.json` themes were made for Bitwig 5 and change little in Bitwig 6, so they are not listed.
