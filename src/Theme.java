@@ -890,11 +890,36 @@ public final class Theme {
     }
 
     /** "Track: Hibernate Tracks" as a grey prefix and a light name. */
-    static String twoTone(String name) {
+    static String twoTone(String name) { return twoTone(name, MUTED); }
+
+    /** "Category: Name" with the category part in the given colour. */
+    static String twoTone(String name, Color category) {
         int colon = name.indexOf(':');
         String safe = name.replace("&", "&amp;").replace("<", "&lt;");
         if (colon < 0 || colon > 30) return "<html><nobr>" + safe + "</nobr></html>";
-        return "<html><nobr><font color='" + hex(MUTED) + "'>" + safe.substring(0, colon + 1) + "</font>" + safe.substring(colon + 1) + "</nobr></html>";
+        return "<html><nobr><font color='" + hex(category) + "'>" + safe.substring(0, colon + 1) + "</font>" + safe.substring(colon + 1) + "</nobr></html>";
+    }
+
+    // Category colours after Bitwig's track colours; the light set is darker so it reads on the pale background.
+    private static final Color[] CATEGORY_DARK = { new Color(0xFF5A6E), new Color(0xFF8F3A), new Color(0xF2D34A), new Color(0xBBDD21), new Color(0x4FC42A),
+        new Color(0x26D098), new Color(0x1FD0E0), new Color(0x5CA8EE), new Color(0xC36EFF), new Color(0xFF6EC0) };
+    private static final Color[] CATEGORY_LIGHT = { new Color(0xC2283E), new Color(0xC45F0A), new Color(0x9A7B00), new Color(0x6E8A00), new Color(0x2F8A12),
+        new Color(0x12876A), new Color(0x0A8592), new Color(0x2F6FB8), new Color(0x8A3FC7), new Color(0xC23A86) };
+
+    /** A colour for each category of a list: the categories in alphabetical order take the palette in turn, so neighbours never share one. */
+    static final class Categories {
+        private final java.util.Map<String, Integer> order = new java.util.HashMap<>();
+
+        void reset(java.util.stream.Stream<String> categories) {
+            order.clear();
+            categories.filter(c -> !c.isEmpty()).map(c -> c.toLowerCase(Locale.ROOT)).distinct().sorted().forEach(c -> order.put(c, order.size()));
+        }
+
+        Color colour(String category) {
+            Integer i = order.get(category.toLowerCase(Locale.ROOT));
+            Color[] palette = light ? CATEGORY_LIGHT : CATEGORY_DARK;
+            return i == null ? MUTED : palette[i % palette.length];
+        }
     }
 
     static JPanel row(int gap, Component... parts) {
@@ -1101,17 +1126,34 @@ public final class Theme {
     }
 
     /** Names with a grey "Group:" prefix; a name starting with "~" is dimmed (a mod that can't run here). */
-    static DefaultTableCellRenderer nameCells() {
+    static DefaultTableCellRenderer nameCells(Categories categories) {
         return new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 String name = v == null ? "" : v.toString();
                 boolean dim = name.startsWith("~");
                 if (dim) name = name.substring(1);
-                JLabel l = (JLabel) super.getTableCellRendererComponent(t, dim ? "<html><nobr>" + name.replace("&", "&amp;").replace("<", "&lt;") + "</nobr></html>" : twoTone(name), s, false, r, c);
+                int colon = name.indexOf(':');
+                String shown = dim ? "<html><nobr>" + name.replace("&", "&amp;").replace("<", "&lt;") + "</nobr></html>"
+                    : twoTone(name, colon > 0 ? categories.colour(name.substring(0, colon).strip()) : MUTED);
+                JLabel l = (JLabel) super.getTableCellRendererComponent(t, shown, s, false, r, c);
                 l.setToolTipText(name.isEmpty() ? null : name);
                 l.setBorder(new EmptyBorder(0, 10, 0, 6));
                 l.setFont(medium(13f));
                 l.setForeground(dim ? MUTED : TEXT);
+                return l;
+            }
+        };
+    }
+
+    /** A category column (a device's type) in its category colour. */
+    static DefaultTableCellRenderer categoryCells(Categories categories) {
+        return new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+                String category = v == null ? "" : v.toString();
+                JLabel l = (JLabel) super.getTableCellRendererComponent(t, category, s, false, r, c);
+                l.setBorder(new EmptyBorder(0, 10, 0, 6));
+                l.setFont(text(13f));
+                l.setForeground(categories.colour(category));
                 return l;
             }
         };

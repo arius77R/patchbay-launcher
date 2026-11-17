@@ -268,6 +268,7 @@ final class Devices {
         private record Row(Item item, int rank) { }
 
         private final List<Row> rows = new ArrayList<>();
+        private final Theme.Categories categories = new Theme.Categories();
         private final Set<String> checked = new HashSet<>();
         private final AbstractTableModel model = new AbstractTableModel() {
             private final String[] columns = { "",
@@ -327,6 +328,7 @@ final class Devices {
             table.getColumnModel().getColumn(2).setPreferredWidth(140);
             table.getColumnModel().getColumn(3).setMinWidth(130);
             table.getColumnModel().getColumn(3).setMaxWidth(140);
+            table.getColumnModel().getColumn(2).setCellRenderer(Theme.categoryCells(categories));
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.pillCells());
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
@@ -427,6 +429,7 @@ final class Devices {
                 SwingUtilities.invokeLater(() -> {
                     rows.clear();
                     rows.addAll(fresh);
+                    categories.reset(items.stream().map(Item::type));
                     Set<String> canTick = new HashSet<>();
                     for (Row r : rows) if (r.rank() != 1) canTick.add(key(r.item()));
                     checked.retainAll(canTick);

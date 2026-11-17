@@ -514,6 +514,7 @@ final class Mods {
         /** Every catalogue row; rows holds the ones the Show filter lets through, in display order. */
         private final List<Row> all = new ArrayList<>();
         private final List<Row> rows = new ArrayList<>();
+        private final Theme.Categories categories = new Theme.Categories();
         /** Show: 0 all, 1 works on my Bitwig, 2 installed, 3 updates, 4 not available. */
         private final JComboBox<String> showBox = new JComboBox<>();
         /** Sort: 0 by status (updates, installed, new), 1 by category then name, 2 newest version first. */
@@ -594,7 +595,7 @@ final class Mods {
             table.getColumnModel().getColumn(0).setMinWidth(40);
             table.getColumnModel().getColumn(0).setMaxWidth(40);
             table.getColumnModel().getColumn(1).setPreferredWidth(320);
-            table.getColumnModel().getColumn(1).setCellRenderer(Theme.nameCells());
+            table.getColumnModel().getColumn(1).setCellRenderer(Theme.nameCells(categories));
             table.getColumnModel().getColumn(2).setCellRenderer(Theme.monoCells(Theme.MUTED));
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.monoCells(Theme.SOFT));
             table.getColumnModel().getColumn(4).setCellRenderer(Theme.pillCells());
@@ -942,6 +943,7 @@ final class Mods {
             String keep = table.getSelectedRow() >= 0 && table.getSelectedRow() < rows.size() ? rows.get(table.getSelectedRow()).id() : null;
             int show = showBox.getSelectedIndex();
             rows.clear();
+            categories.reset(all.stream().map(r -> category(nameOf(r))));
             for (Row r : all) {
                 boolean off = unavailable(r);
                 boolean pass = switch (show) {
