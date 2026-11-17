@@ -312,8 +312,6 @@ final class Devices {
         private final JLabel status = Theme.label(" ", Theme.text(14f), Theme.MUTED);
         private final JProgressBar bar = new JProgressBar();
         private final Map<String, BufferedImage> previews = new HashMap<>();
-        /** GitHub pictures by owner, loaded once; an owner without one maps to null. */
-        private final Map<String, Optional<BufferedImage>> avatars = new HashMap<>();
         private List<Item> items = List.of();
         private String bitwig;
         private boolean busy, loaded, filling;
@@ -523,11 +521,8 @@ final class Devices {
                 col.add(d);
                 col.add(Box.createVerticalStrut(12));
             }
-            String owner = item.repo().substring(0, item.repo().indexOf('/'));
-            Theme.Avatar avatar = new Theme.Avatar(owner);
-            JLabel author = avatar.withName();
-            JPanel facts = Theme.facts(new Object[][] {
-                { PatchbayLauncher.t("Autor", "Author"), author },
+            JPanel facts = Theme.facts(new String[][] {
+                { PatchbayLauncher.t("Autor", "Author"), item.repo().substring(0, item.repo().indexOf('/')) },
                 { PatchbayLauncher.t("Rozmiar", "Size"), Math.max(1, item.size() / 1024) + " KB" },
                 { PatchbayLauncher.t("Wersja plików", "Build"), item.build().isEmpty() ? PatchbayLauncher.t("wszystkie", "all") : item.build(), "mono" },
                 { PatchbayLauncher.t("Źródło", "Source"), item.repo() } });
@@ -543,15 +538,6 @@ final class Devices {
             details.revalidate();
             details.repaint();
 
-            if (avatars.containsKey(owner)) avatars.get(owner).ifPresent(avatar::setPicture);
-            else new Thread(() -> {
-                BufferedImage picture = loadAvatar(owner);
-                SwingUtilities.invokeLater(() -> {
-                    avatars.put(owner, Optional.ofNullable(picture));
-                    if (picture != null) { avatar.setPicture(picture); author.repaint(); }
-                });
-            }, "devices-avatar").start();
-
             String key = item.repo() + "/" + item.previewPath();
             shownPreview = key;
             BufferedImage have = previews.get(key);
@@ -563,25 +549,6 @@ final class Devices {
                     if (key.equals(shownPreview)) { preview.setImage(icon); details.revalidate(); }
                 });
             }, "devices-preview").start();
-        }
-
-        /** The owner's GitHub picture, small; from fixtures/avatars/<owner>.png in an offline test. */
-        private BufferedImage loadAvatar(String owner) {
-            try {
-                if (fixtures() != null) {
-                    Path f = fixtures().resolve("avatars/" + owner + ".png");
-                    return Files.isRegularFile(f) ? ImageIO.read(f.toFile()) : null;
-                }
-                Path temp = Files.createTempFile("patchbay-avatar", ".png");
-                try {
-                    PatchbayLauncher.download("https://github.com/" + URLEncoder.encode(owner, StandardCharsets.UTF_8) + ".png?size=64", temp, null);
-                    return ImageIO.read(temp.toFile());
-                } finally {
-                    Files.deleteIfExists(temp);
-                }
-            } catch (IOException | RuntimeException e) {
-                return null;
-            }
         }
 
         private BufferedImage loadPreview(Item item) {
