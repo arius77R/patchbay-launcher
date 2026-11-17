@@ -519,7 +519,7 @@ public final class PatchbayLauncher {
         JButton support = Theme.button(t("Wesprzyj", "Support"), "secondary");
         support.putClientProperty("small", true);
         support.setFont(Theme.text(12f));
-        support.setIcon(new CupIcon());
+        support.setIcon(suppliedIcon("kofi.png", new CupIcon()));
         support.setIconTextGap(6);
         support.setToolTipText(t("Postaw mi kawę na Ko-fi", "Buy me a coffee on Ko-fi"));
         support.getAccessibleContext().setAccessibleName(t("Wesprzyj projekt na Ko-fi", "Support the project on Ko-fi"));
@@ -696,7 +696,7 @@ public final class PatchbayLauncher {
         }
     }
 
-    /** A cup of coffee, for the Support link (drawn, not Ko-fi's own logo). */
+    /** A cup of coffee, for the Support link (drawn; res/kofi.png, the official Ko-fi logo Mario supplies, replaces it). */
     private static final class CupIcon implements Icon {
         @Override public int getIconWidth() { return 16; }
         @Override public int getIconHeight() { return 16; }
