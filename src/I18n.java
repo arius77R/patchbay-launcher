@@ -362,6 +362,8 @@ final class I18n {
         add("Released", "Veröffentlicht", "Publié");
         add("Name", "Name", "Nom");
         add("Search", "Suchen", "Rechercher");
+        add("Settings", "Einstellungen", "Réglages");
+        add("The launcher's data folder: the installed Patchbay versions, settings and logs.", "Der Datenordner des Launchers: die installierten Patchbay-Versionen, Einstellungen und Protokolle.", "Le dossier de données du launcher : les versions de Patchbay installées, les réglages et les journaux.");
         add("Close", "Schließen", "Fermer");
         add("Patchbay Launcher couldn't start.", "Patchbay Launcher konnte nicht gestartet werden.", "Patchbay Launcher n'a pas pu démarrer.");
         add("Copy the details", "Details kopieren", "Copier les détails");

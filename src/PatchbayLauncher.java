@@ -346,6 +346,8 @@ public final class PatchbayLauncher {
     private final JLabel statusLabel = Theme.label(" ", Theme.text(13f), Theme.MUTED);
     private final JComboBox<String> languageBox = new JComboBox<>();
     private final JButton dockButton = Theme.button(Platform.pinLabel(), "secondary");
+    /** Opens the launcher's settings; it sits in the bottom bar, beside the dark / light switch. */
+    private final JButton settingsButton = Theme.button(t("Ustawienia", "Settings"), "secondary");
     private final CardLayout cards = new CardLayout();
     private final JPanel content = new JPanel(cards);
     private final Map<String, JButton> nav = new LinkedHashMap<>();
@@ -380,6 +382,8 @@ public final class PatchbayLauncher {
             e.getValue().putClientProperty("current", e.getKey().equals(key));
             e.getValue().repaint();
         }
+        settingsButton.putClientProperty("current", key.equals("settings"));
+        settingsButton.repaint();
         if (key.equals("devices")) devicesPanel.shown();
         if (key.equals("themes")) themesPanel.shown();
     }
@@ -517,7 +521,12 @@ public final class PatchbayLauncher {
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
         left.add(mode);
-        left.add(languageBox);
+        settingsButton.putClientProperty("small", true);
+        settingsButton.setFont(Theme.text(12f));
+        settingsButton.setIcon(new GearIcon());
+        settingsButton.setIconTextGap(6);
+        settingsButton.addActionListener(e -> select("settings"));
+        left.add(settingsButton);
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
         for (JComponent b : aboutButtons()) right.add(b);
@@ -603,6 +612,27 @@ public final class PatchbayLauncher {
             g2.draw(left);
             g2.draw(right);
             g2.draw(new java.awt.geom.Line2D.Float(9.2f, 3.5f, 6.8f, 12.5f));
+            g2.dispose();
+        }
+    }
+
+    /** A cog, for Settings (drawn). */
+    private static final class GearIcon implements Icon {
+        @Override public int getIconWidth() { return 16; }
+        @Override public int getIconHeight() { return 16; }
+        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            g2.translate(x + 8, y + 8);
+            g2.setColor(Theme.ACCENT);
+            java.awt.geom.Area cog = new java.awt.geom.Area(new java.awt.geom.Ellipse2D.Float(-5.2f, -5.2f, 10.4f, 10.4f));
+            for (int i = 0; i < 8; i++) {
+                java.awt.geom.AffineTransform turn = java.awt.geom.AffineTransform.getRotateInstance(Math.PI / 4 * i);
+                cog.add(new java.awt.geom.Area(turn.createTransformedShape(new java.awt.geom.RoundRectangle2D.Float(-1.5f, -7.6f, 3f, 3.4f, 1f, 1f))));
+            }
+            cog.subtract(new java.awt.geom.Area(new java.awt.geom.Ellipse2D.Float(-2.2f, -2.2f, 4.4f, 4.4f)));
+            g2.fill(cog);
             g2.dispose();
         }
     }
@@ -770,17 +800,8 @@ public final class PatchbayLauncher {
         versionBox.setPreferredSize(new Dimension(240, 32));
         versionBox.setFont(Theme.mono(12f));
         versionBox.getAccessibleContext().setAccessibleName(t("Wersja Patchbay", "Patchbay version"));
-        JButton folder = Theme.button(t("Pokaż folder z danymi", "Show the data folder"), "secondary");
-        folder.addActionListener(e -> {
-            try { Files.createDirectories(data()); } catch (Exception ignored) { }
-            Platform.open(data().toString());
-        });
-        JPanel pick = new JPanel(new BorderLayout(12, 0));
-        pick.setOpaque(false);
-        pick.add(Theme.row(10, Theme.label(t("Wersja", "Version"), Theme.text(13f), Theme.MUTED), versionBox, installButton, carryLabel), BorderLayout.WEST);
-        pick.add(Theme.row(8, dockButton, folder), BorderLayout.EAST);
+        JPanel pick = Theme.row(10, Theme.label(t("Wersja", "Version"), Theme.text(13f), Theme.MUTED), versionBox, installButton, carryLabel);
         pick.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pick.setMaximumSize(new Dimension(Integer.MAX_VALUE, pick.getPreferredSize().height));
         v.add(pick);
         bar.setPreferredSize(new Dimension(10, 4));
         bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 4));
@@ -797,18 +818,6 @@ public final class PatchbayLauncher {
         latestLabel.setFont(Theme.text(13f));
         col.add(launcherSection());
         col.add(section(latestLabel, patchbayCount, v));
-        col.add(Box.createVerticalStrut(12));
-        col.add(backupSection());
-
-        // the language choice: filled here, shown in the bottom bar beside the dark / light switch
-        languageBox.addItem(t("Język systemu", "System language"));
-        for (String name : new String[] { "Polski", "English", "Deutsch", "Français" }) languageBox.addItem(name);
-        languageBox.setSelectedIndex(I18n.CODES.indexOf(I18n.choice()) + 1);
-        languageBox.addActionListener(e -> languageChosen()); // only after the list is filled: filling it fires events
-        languageBox.setPreferredSize(new Dimension(170, 28));
-        languageBox.setFont(Theme.text(12f));
-        languageBox.setToolTipText(t("Język", "Language"));
-        languageBox.getAccessibleContext().setAccessibleName(t("Język", "Language"));
 
         // the page follows the window's width, so the buttons on the right never fall off a narrow window
         JPanel top = new Theme.Column();
@@ -820,6 +829,54 @@ public final class PatchbayLauncher {
         scroll.setOpaque(false);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         return Theme.page("Patchbay", installedLabel, null, scroll, null, null);
+    }
+
+    /** The launcher's own settings, opened from the bottom bar: language, the settings backup, the data folder, and whose project this is. */
+    private JComponent settingsPage() {
+        JPanel col = new JPanel();
+        col.setOpaque(false);
+        col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
+
+        languageBox.addItem(t("Język systemu", "System language"));
+        for (String name : new String[] { "Polski", "English", "Deutsch", "Français" }) languageBox.addItem(name);
+        languageBox.setSelectedIndex(I18n.CODES.indexOf(I18n.choice()) + 1);
+        languageBox.addActionListener(e -> languageChosen()); // only after the list is filled: filling it fires events
+        languageBox.setPreferredSize(new Dimension(190, 32));
+        languageBox.getAccessibleContext().setAccessibleName(t("Język", "Language"));
+        JPanel language = Theme.row(10, Theme.label(t("Język", "Language"), Theme.text(13f), Theme.MUTED), languageBox);
+        col.add(section(null, null, language));
+        col.add(Box.createVerticalStrut(12));
+
+        col.add(backupSection());
+        col.add(Box.createVerticalStrut(12));
+
+        JButton folder = Theme.button(t("Pokaż folder z danymi", "Show the data folder"), "secondary");
+        folder.addActionListener(e -> {
+            try { Files.createDirectories(data()); } catch (Exception ignored) { }
+            Platform.open(data().toString());
+        });
+        JPanel files = new JPanel(new BorderLayout(12, 0));
+        files.setOpaque(false);
+        files.add(Theme.wrapped(t("Folder z danymi Launchera: zainstalowane wersje Patchbay, ustawienia i logi.",
+            "The launcher's data folder: the installed Patchbay versions, settings and logs."), 420, Theme.MUTED, 13f), BorderLayout.CENTER);
+        files.add(Theme.row(8, dockButton, folder), BorderLayout.EAST);
+        col.add(section(null, null, files));
+        col.add(Box.createVerticalStrut(12));
+
+        JPanel about = new JPanel(new BorderLayout());
+        about.setOpaque(false);
+        about.add(Theme.wrapped(aboutText(), 620, Theme.MUTED, 13f), BorderLayout.CENTER);
+        col.add(section(null, null, about));
+
+        JPanel top = new Theme.Column();
+        col.setAlignmentX(Component.LEFT_ALIGNMENT);
+        top.add(col);
+        JScrollPane scroll = new JScrollPane(top, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setOpaque(false);
+        scroll.setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        return Theme.page(t("Ustawienia", "Settings"), Theme.label("Patchbay Launcher " + VERSION, Theme.mono(12f), Theme.MUTED), null, scroll, null, null);
     }
 
     /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */
@@ -876,6 +933,7 @@ public final class PatchbayLauncher {
         content.add(devicesPanel, "devices");
         content.add(themesPanel, "themes");
         content.add(sourcesPanel, "sources");
+        content.add(settingsPage(), "settings");
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(Theme.WELL);
         root.add(topBar(), BorderLayout.NORTH);
