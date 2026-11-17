@@ -516,14 +516,6 @@ public final class PatchbayLauncher {
         discord.setToolTipText(t("Kanał Launchera na Discordzie Bitwiga", "The launcher's channel on the Bitwig Discord"));
         discord.getAccessibleContext().setAccessibleName(t("Otwórz kanał Launchera na Discordzie", "Open the launcher's Discord channel"));
         discord.addActionListener(e -> browse(DISCORD));
-        JButton support = Theme.button(t("Wesprzyj", "Support"), "secondary");
-        support.putClientProperty("small", true);
-        support.setFont(Theme.text(12f));
-        support.setIcon(new CupIcon());
-        support.setIconTextGap(6);
-        support.setToolTipText(t("Postaw mi kawę na Ko-fi", "Buy me a coffee on Ko-fi"));
-        support.getAccessibleContext().setAccessibleName(t("Wesprzyj projekt na Ko-fi", "Support the project on Ko-fi"));
-        support.addActionListener(e -> browse(SUPPORT));
         Theme.ModeSwitch mode = new Theme.ModeSwitch(Theme.light(), t("Jasny wygląd", "Light appearance"),
             t("Ciemny wygląd", "Dark appearance"), this::appearanceChosen);
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -539,7 +531,6 @@ public final class PatchbayLauncher {
         right.setOpaque(false);
         for (JComponent b : aboutButtons()) right.add(b);
         right.add(discord);
-        right.add(support);
         bar.add(left, BorderLayout.WEST);
         bar.add(right, BorderLayout.EAST);
         return bar;
@@ -692,24 +683,6 @@ public final class PatchbayLauncher {
             g2.fillOval(x + 4, y + 5, 2, 2);
             g2.fillOval(x + 7, y + 5, 2, 2);
             g2.fillOval(x + 10, y + 5, 2, 2);
-            g2.dispose();
-        }
-    }
-
-    /** A cup of coffee, for the Support link (drawn, in the style of the other icons on the bar). */
-    private static final class CupIcon implements Icon {
-        @Override public int getIconWidth() { return 16; }
-        @Override public int getIconHeight() { return 16; }
-        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.translate(x, y);
-            g2.setColor(Theme.ACCENT);
-            g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.drawRoundRect(2, 6, 9, 8, 3, 3);          // the cup
-            g2.drawArc(9, 7, 5, 5, -90, 180);             // the handle
-            g2.drawLine(5, 2, 5, 4);                      // steam
-            g2.drawLine(8, 1, 8, 4);
             g2.dispose();
         }
     }
@@ -908,8 +881,6 @@ public final class PatchbayLauncher {
 
     /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */
     static final String PROJECT = "https://github.com/arius77R/patchbay-launcher";
-    /** Where people can buy the author a coffee. */
-    static final String SUPPORT = "https://ko-fi.com/marisr";
     /** The launcher's channel on the Bitwig Discord server. */
     static final String DISCORD = "https://discord.com/channels/121395249003233280/1571878415781466153";
 
