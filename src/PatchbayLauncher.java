@@ -943,7 +943,6 @@ public final class PatchbayLauncher {
         java.net.URL iconUrl = PatchbayLauncher.class.getResource("/icon-128.png");
         if (iconUrl != null) frame.setIconImage(new ImageIcon(iconUrl).getImage());
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.getRootPane().setDefaultButton(startButton);
         frame.setMinimumSize(new Dimension(980, 640));
         if (keptBounds != null) {
             frame.setBounds(keptBounds);
