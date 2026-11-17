@@ -19,7 +19,7 @@ echo "Patchbay Launcher $VERSION"
 # 1. launcher.jar
 javac --release 21 -d "$OUT/classes" src/*.java
 cp res/icon-128.png res/icon-256.png "$OUT/classes/"
-for f in discord.png github.png kofi.png; do [ -f "res/$f" ] && cp "res/$f" "$OUT/classes/"; done
+for f in discord.png github.png; do [ -f "res/$f" ] && cp "res/$f" "$OUT/classes/"; done
 mkdir -p "$OUT/classes/fonts" && cp res/fonts/* "$OUT/classes/fonts/"
 jar cfm "$OUT/launcher.jar" manifest.txt -C "$OUT/classes" .
 echo "  launcher.jar"
