@@ -2,7 +2,7 @@
 
 ## 0.9.5 (not released)
 
-- **Search in Mods:** type part of a mod's name to narrow the list.
+- **Search in Mods and Devices:** type part of a name to narrow the list; in Devices the type is searched too ("audio fx").
 - **Settings:** a Settings button in the bottom bar (where the language choice was) opens a page with the language, the settings backup, the data folder and whose project this is. The Patchbay section keeps only Patchbay's versions.
 - **Settings backup:** in Settings, "Save a backup…" writes the mods switched on, the chosen theme with the theme files, and the sources into one file; "Restore from a backup…" brings them back, for example on another computer.
 - **Category colours:** in Mods each category (the part of a name before the colon) has its own colour, and in Devices each type; neighbouring categories never share a colour.

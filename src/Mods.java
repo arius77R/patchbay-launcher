@@ -33,7 +33,7 @@ final class Mods {
     /** published: when this version's file was put in the release (GitHub's ISO time), or "" when unknown. */
     record Available(String id, String version, String url, String sha256, String repo, String page, String published) { }
 
-    /** True when every word typed in Search is somewhere in the mod's name or id (case ignored); an empty search finds all. */
+    /** True when every word typed in Search is somewhere in the name or the id (for a device, its type; case ignored); an empty search finds all. */
     static boolean matches(String typed, String name, String id) {
         String where = (name + " " + id).toLowerCase(Locale.ROOT);
         for (String word : typed.toLowerCase(Locale.ROOT).trim().split("\\s+"))

@@ -302,6 +302,7 @@ final class Devices {
         private final JComboBox<String> buildBox = new JComboBox<>();
         /** Sort: 0 by status (updates, new, downloaded), 1 by type then name, 2 by name. */
         private final JComboBox<String> sortBox = new JComboBox<>();
+        private final Theme.HintField searchField = new Theme.HintField(PatchbayLauncher.t("Szukaj", "Search"));
         private final JLabel subtitle = Theme.label(" ", Theme.text(14f), Theme.MUTED);
         private final JPanel details = new Theme.Card(new BorderLayout(), Theme.FRAME);
         private final JButton checkAllButton = Theme.button(" ", "secondary");
@@ -340,7 +341,13 @@ final class Devices {
             buildBox.setToolTipText(PatchbayLauncher.t("Wersja plików", "Build"));
             sortBox.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Sortuj", "Sort"));
             sortBox.setToolTipText(PatchbayLauncher.t("Sortuj", "Sort"));
-            JPanel tools = Theme.row(8, buildBox, sortBox);
+            searchField.setPreferredSize(new Dimension(140, 32));
+            searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+                @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { if (loaded) rebuild(); }
+                @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { if (loaded) rebuild(); }
+                @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { }
+            });
+            JPanel tools = Theme.row(8, buildBox, sortBox, searchField);
             for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Nazwa", "Name") })
                 sortBox.addItem(o);
             try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("devicesSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
@@ -420,7 +427,8 @@ final class Devices {
 
         /** Rebuilds the rows for the chosen build; hashing the downloaded files happens off the event thread. */
         private void rebuild() {
-            List<Item> shown = visible(items, build());
+            String typed = searchField.getText();
+            List<Item> shown = visible(items, build()).stream().filter(i -> Mods.matches(typed, i.name(), i.type())).toList();
             int sort = sortBox.getSelectedIndex();
             new Thread(() -> {
                 List<Row> fresh = new ArrayList<>();
