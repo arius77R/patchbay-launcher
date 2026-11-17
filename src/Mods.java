@@ -526,7 +526,13 @@ final class Mods {
         private final JComboBox<String> sortBox = new JComboBox<>();
         private final Theme.HintField searchField = new Theme.HintField(PatchbayLauncher.t("Szukaj", "Search"));
         /** "Update available" above the list; a click shows only the mods with updates. */
-        private final Theme.UpdateBar updateBar = new Theme.UpdateBar(() -> showBox.setSelectedIndex(3));
+        private final Theme.UpdateBar updateBar = new Theme.UpdateBar(() -> {
+            if (showBox.getSelectedIndex() != SHOW_UPDATES) beforeUpdates = showBox.getSelectedIndex();
+            showBox.setSelectedIndex(SHOW_UPDATES);
+        });
+        private static final int SHOW_UPDATES = 3;
+        /** The Show choice to go back to when Updates has nothing left; All unless the update bar was clicked from another. */
+        private int beforeUpdates;
         /** The Bitwig version when it can't be read from the system: chosen from the versions Patchbay has maps for. */
         private final JComboBox<String> bitwigBox = new JComboBox<>();
         private final JLabel bitwigLabel = Theme.label(PatchbayLauncher.t("Twój Bitwig:", "Your Bitwig:"), Theme.text(13f), Theme.MUTED);
@@ -1000,6 +1006,7 @@ final class Mods {
                 ? nameOf(waiting.get(0)) + "  " + waiting.get(0).installed() + " → " + waiting.get(0).available().version()
                 : String.join(", ", waiting.stream().map(this::nameOf).toList()));
             updatesFound.accept(updates);
+            if (updates == 0 && !busy && !catalog.isEmpty() && showBox.getSelectedIndex() == SHOW_UPDATES) showBox.setSelectedIndex(beforeUpdates);
             if (updates > 0 && !notified) {
                 notified = true;
                 PatchbayLauncher.notifyUser(PatchbayLauncher.t("Aktualizacje modów: ", "Mod updates: ") + updates);

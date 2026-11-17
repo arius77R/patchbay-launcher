@@ -8,6 +8,7 @@
 - **Type column:** Mods and Devices both start with a Type column, then the name. A mod's type is the part of its name before the colon ("Arranger"), shown apart from the name. Each type has its own colour; neighbouring types never share one.
 - **Device author:** a device's details name its author (the owner of its repository).
 - **Themes without a screenshot** (such as one added from a file) show a picture of their own colours.
+- **After updating, Mods goes back to the list:** when Show was on Updates and nothing is left to update, it returns to the choice before (All by default) instead of an empty list.
 - **Enter no longer starts Patchbay:** pressing Enter, for example in Search, did the same as clicking Start Patchbay. Now Patchbay starts only with a click.
 - **When the launcher can't open its window** it says so, keeps the details in `logs/start-error.log`, and offers to copy them or show the folder, instead of closing without a word.
 
