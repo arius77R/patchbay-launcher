@@ -1504,7 +1504,8 @@ public final class PatchbayLauncher {
             check(dated.published().startsWith("2026-03-04") && Mods.parseCatalog("[{\"published_at\":\"2026-01-02T00:00:00Z\",\"assets\":[{\"name\":\"b-mod-1.0.0.zip\",\"browser_download_url\":\"https://x/b-mod-1.0.0.zip\"}]}]", "o/r").get("b-mod").published().startsWith("2026-01-02"),
                 "a mod version's date: its file's, else its release's");
             check(Mods.matches("", "Arranger: Add Automation Points", "add-automation-points") && Mods.matches("  ARR  points ", "Arranger: Add Automation Points", "x")
-                && Mods.matches("automation-points", "Arranger", "add-automation-points") && !Mods.matches("piano", "Arranger: Add Automation Points", "add-automation-points"), "Search finds mods by every typed word, in the name or the id");
+                && Mods.matches("automation-points", "Arranger", "add-automation-points") && !Mods.matches("piano", "Arranger: Add Automation Points", "add-automation-points")
+                && Mods.matches("shaboo", "Arranger: Add Automation Points", "add-automation-points", "shaboogen"), "Search finds mods by every typed word, in the name, the id or the author");
             check(failureText(new IllegalStateException("boom")).startsWith("Patchbay Launcher " + VERSION) && failureText(new IllegalStateException("boom")).contains("IllegalStateException: boom"), "a start failure is described with the versions and Java's account");
             Map<String, Color> parsed = Themes.colours("// c\nGrey 0: #101010\nAccent (default): #ff6a1a80\nShort: #abc\nBad: #12\nNot a colour\n");
             check(parsed.size() == 3 && parsed.get("Grey 0").equals(new Color(0x101010)) && parsed.get("Accent (default)").getAlpha() == 0x80 && parsed.get("Short").equals(new Color(0xAABBCC)), "a theme's colours are read by name");

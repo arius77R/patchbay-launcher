@@ -33,9 +33,9 @@ final class Mods {
     /** published: when this version's file was put in the release (GitHub's ISO time), or "" when unknown. */
     record Available(String id, String version, String url, String sha256, String repo, String page, String published) { }
 
-    /** True when every word typed in Search is somewhere in the name or the id (for a device, its type; case ignored); an empty search finds all. */
-    static boolean matches(String typed, String name, String id) {
-        String where = (name + " " + id).toLowerCase(Locale.ROOT);
+    /** True when every word typed in Search is somewhere in the given fields (name, id or type, author; case ignored); an empty search finds all. */
+    static boolean matches(String typed, String... fields) {
+        String where = String.join(" ", fields).toLowerCase(Locale.ROOT);
         for (String word : typed.toLowerCase(Locale.ROOT).trim().split("\\s+"))
             if (!word.isEmpty() && !where.contains(word)) return false;
         return true;
@@ -592,6 +592,12 @@ final class Mods {
             return listed != null ? listed : row.name();
         }
 
+        /** The author from the mod's manifest, or "" until it has been read. */
+        private String authorOf(Row row) {
+            Info info = infos.get(row.id());
+            return info == null || info.author() == null ? "" : info.author();
+        }
+
         /** updatesFound gets the number of installed mods with a newer version each time the list is rebuilt. */
         Panel(Consumer<Integer> updatesFound) {
             super(new BorderLayout());
@@ -960,7 +966,7 @@ final class Mods {
                     case 4 -> off;
                     default -> true;
                 };
-                if (pass && matches(searchField.getText(), nameOf(r), r.id())) rows.add(r);
+                if (pass && matches(searchField.getText(), nameOf(r), r.id(), authorOf(r))) rows.add(r);
             }
             rows.sort(order(sortBox.getSelectedIndex()));
             Set<String> canTick = new HashSet<>();

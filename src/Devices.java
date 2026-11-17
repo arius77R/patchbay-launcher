@@ -427,7 +427,7 @@ final class Devices {
         /** Rebuilds the rows for the chosen build; hashing the downloaded files happens off the event thread. */
         private void rebuild() {
             String typed = searchField.getText();
-            List<Item> shown = visible(items, build()).stream().filter(i -> Mods.matches(typed, i.name(), i.type())).toList();
+            List<Item> shown = visible(items, build()).stream().filter(i -> Mods.matches(typed, i.name(), i.type(), i.repo().substring(0, i.repo().indexOf('/')))).toList();
             int sort = sortBox.getSelectedIndex();
             new Thread(() -> {
                 List<Row> fresh = new ArrayList<>();
