@@ -890,14 +890,11 @@ public final class Theme {
     }
 
     /** "Track: Hibernate Tracks" as a grey prefix and a light name. */
-    static String twoTone(String name) { return twoTone(name, MUTED); }
-
-    /** "Category: Name" with the category part in the given colour. */
-    static String twoTone(String name, Color category) {
+    static String twoTone(String name) {
         int colon = name.indexOf(':');
         String safe = name.replace("&", "&amp;").replace("<", "&lt;");
         if (colon < 0 || colon > 30) return "<html><nobr>" + safe + "</nobr></html>";
-        return "<html><nobr><font color='" + hex(category) + "'>" + safe.substring(0, colon + 1) + "</font>" + safe.substring(colon + 1) + "</nobr></html>";
+        return "<html><nobr><font color='" + hex(MUTED) + "'>" + safe.substring(0, colon + 1) + "</font>" + safe.substring(colon + 1) + "</nobr></html>";
     }
 
     // Category colours after Bitwig's track colours; the light set is darker so it reads on the pale background.
@@ -1125,17 +1122,14 @@ public final class Theme {
         };
     }
 
-    /** Names with a grey "Group:" prefix; a name starting with "~" is dimmed (a mod that can't run here). */
-    static DefaultTableCellRenderer nameCells(Categories categories) {
+    /** Names; a name starting with "~" is dimmed (a mod that can't run here). */
+    static DefaultTableCellRenderer nameCells() {
         return new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 String name = v == null ? "" : v.toString();
                 boolean dim = name.startsWith("~");
                 if (dim) name = name.substring(1);
-                int colon = name.indexOf(':');
-                String shown = dim ? "<html><nobr>" + name.replace("&", "&amp;").replace("<", "&lt;") + "</nobr></html>"
-                    : twoTone(name, colon > 0 ? categories.colour(name.substring(0, colon).strip()) : MUTED);
-                JLabel l = (JLabel) super.getTableCellRendererComponent(t, shown, s, false, r, c);
+                JLabel l = (JLabel) super.getTableCellRendererComponent(t, name, s, false, r, c);
                 l.setToolTipText(name.isEmpty() ? null : name);
                 l.setBorder(new EmptyBorder(0, 10, 0, 6));
                 l.setFont(medium(13f));
@@ -1145,15 +1139,25 @@ public final class Theme {
         };
     }
 
-    /** A category column (a device's type) in its category colour. */
-    static DefaultTableCellRenderer categoryCells(Categories categories) {
+    /** The Type column of Mods and Devices: the same width in both, values in their category colours. */
+    static void typeColumn(javax.swing.table.TableColumn column, Categories categories) {
+        column.setMinWidth(118);
+        column.setMaxWidth(130);
+        column.setCellRenderer(categoryCells(categories));
+    }
+
+    /** A Type column in its category colour; a value starting with "~" is dimmed (a mod that can't run here). */
+    private static DefaultTableCellRenderer categoryCells(Categories categories) {
         return new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 String category = v == null ? "" : v.toString();
+                boolean dim = category.startsWith("~");
+                if (dim) category = category.substring(1);
                 JLabel l = (JLabel) super.getTableCellRendererComponent(t, category, s, false, r, c);
+                l.setToolTipText(category.isEmpty() ? null : category);
                 l.setBorder(new EmptyBorder(0, 10, 0, 6));
                 l.setFont(text(13f));
-                l.setForeground(categories.colour(category));
+                l.setForeground(dim ? DIM : categories.colour(category));
                 return l;
             }
         };

@@ -46,6 +46,11 @@ final class Mods {
         int colon = name == null ? -1 : name.indexOf(": ");
         return colon > 0 ? name.substring(0, colon).strip() : "";
     }
+    /** A mod's name without its category ("Add Automation Points"). */
+    static String withoutCategory(String name) {
+        String category = category(name);
+        return category.isEmpty() ? name : name.substring(name.indexOf(": ") + 2).strip();
+    }
     /** What a mod's manifest says about it. */
     record Info(String name, String author, String description, List<Requirement> requires, String builtFor, String builtPlatform, String builtArch) { }
 
@@ -533,7 +538,7 @@ final class Mods {
         private final Set<String> checked = new HashSet<>();
         private final AbstractTableModel model = new AbstractTableModel() {
             private final String[] columns = {
-                "", "Mod", PatchbayLauncher.t("Zainstalowana", "Installed"),
+                "", PatchbayLauncher.t("Typ", "Type"), "Mod", PatchbayLauncher.t("Zainstalowana", "Installed"),
                 PatchbayLauncher.t("Dostępna", "Available"), PatchbayLauncher.t("Stan", "Status") };
             @Override public int getRowCount() { return rows.size(); }
             @Override public int getColumnCount() { return columns.length; }
@@ -550,9 +555,10 @@ final class Mods {
                 Row row = rows.get(r);
                 return switch (c) {
                     case 0 -> checked.contains(row.id());
-                    case 1 -> (unavailable(row) ? "~" : "") + nameOf(row);
-                    case 2 -> row.installed() == null ? "–" : row.installed();
-                    case 3 -> row.available() == null ? "" : row.available().version();
+                    case 1 -> (unavailable(row) ? "~" : "") + category(nameOf(row));
+                    case 2 -> (unavailable(row) ? "~" : "") + withoutCategory(nameOf(row));
+                    case 3 -> row.installed() == null ? "–" : row.installed();
+                    case 4 -> row.available() == null ? "" : row.available().version();
                     default -> unavailable(row) ? "off|" + PatchbayLauncher.t("niezgodny", "incompatible") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("zainstalowany", "installed");
@@ -594,17 +600,18 @@ final class Mods {
             table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             table.getColumnModel().getColumn(0).setMinWidth(40);
             table.getColumnModel().getColumn(0).setMaxWidth(40);
-            table.getColumnModel().getColumn(1).setPreferredWidth(320);
-            table.getColumnModel().getColumn(1).setCellRenderer(Theme.nameCells(categories));
-            table.getColumnModel().getColumn(2).setCellRenderer(Theme.monoCells(Theme.MUTED));
-            table.getColumnModel().getColumn(3).setCellRenderer(Theme.monoCells(Theme.SOFT));
-            table.getColumnModel().getColumn(4).setCellRenderer(Theme.pillCells());
-            for (int c = 2; c <= 3; c++) {
-                table.getColumnModel().getColumn(c).setMinWidth(118);
-                table.getColumnModel().getColumn(c).setMaxWidth(124);
+            Theme.typeColumn(table.getColumnModel().getColumn(1), categories);
+            table.getColumnModel().getColumn(2).setPreferredWidth(260);
+            table.getColumnModel().getColumn(2).setCellRenderer(Theme.nameCells());
+            table.getColumnModel().getColumn(3).setCellRenderer(Theme.monoCells(Theme.MUTED));
+            table.getColumnModel().getColumn(4).setCellRenderer(Theme.monoCells(Theme.SOFT));
+            table.getColumnModel().getColumn(5).setCellRenderer(Theme.pillCells());
+            for (int c = 3; c <= 4; c++) {
+                table.getColumnModel().getColumn(c).setMinWidth(108);
+                table.getColumnModel().getColumn(c).setMaxWidth(112);
             }
-            table.getColumnModel().getColumn(4).setMinWidth(140);
-            table.getColumnModel().getColumn(4).setMaxWidth(150);
+            table.getColumnModel().getColumn(5).setMinWidth(140);
+            table.getColumnModel().getColumn(5).setMaxWidth(150);
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));

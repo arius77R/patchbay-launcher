@@ -272,7 +272,7 @@ final class Devices {
         private final Set<String> checked = new HashSet<>();
         private final AbstractTableModel model = new AbstractTableModel() {
             private final String[] columns = { "",
-                PatchbayLauncher.t("Urządzenie", "Device"), PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Stan", "Status") };
+                PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Urządzenie", "Device"), PatchbayLauncher.t("Stan", "Status") };
             @Override public int getRowCount() { return rows.size(); }
             @Override public int getColumnCount() { return columns.length; }
             @Override public String getColumnName(int c) { return columns[c]; }
@@ -288,8 +288,8 @@ final class Devices {
                 Row row = rows.get(r);
                 return switch (c) {
                     case 0 -> checked.contains(key(row.item()));
-                    case 1 -> row.item().name();
-                    case 2 -> row.item().type();
+                    case 1 -> row.item().type();
+                    case 2 -> row.item().name();
                     default -> switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("pobrane", "downloaded");
@@ -325,11 +325,10 @@ final class Devices {
             table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             table.getColumnModel().getColumn(0).setMinWidth(40);
             table.getColumnModel().getColumn(0).setMaxWidth(40);
-            table.getColumnModel().getColumn(1).setPreferredWidth(260);
-            table.getColumnModel().getColumn(2).setPreferredWidth(140);
+            table.getColumnModel().getColumn(2).setPreferredWidth(260);
             table.getColumnModel().getColumn(3).setMinWidth(130);
             table.getColumnModel().getColumn(3).setMaxWidth(140);
-            table.getColumnModel().getColumn(2).setCellRenderer(Theme.categoryCells(categories));
+            Theme.typeColumn(table.getColumnModel().getColumn(1), categories);
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.pillCells());
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
