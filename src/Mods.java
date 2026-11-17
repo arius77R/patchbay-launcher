@@ -522,7 +522,7 @@ final class Mods {
         private final Theme.Categories categories = new Theme.Categories();
         /** Show: 0 all, 1 works on my Bitwig, 2 installed, 3 updates, 4 not available. */
         private final JComboBox<String> showBox = new JComboBox<>();
-        /** Sort: 0 by status (updates, installed, new), 1 by category then name, 2 newest version first. */
+        /** Sort: 0 by status (updates, installed, new), 1 by type then name, 2 newest version first. */
         private final JComboBox<String> sortBox = new JComboBox<>();
         private final Theme.HintField searchField = new Theme.HintField(PatchbayLauncher.t("Szukaj", "Search"));
         /** "Update available" above the list; a click shows only the mods with updates. */
@@ -630,7 +630,7 @@ final class Mods {
             try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(1); } // first time: only the mods that can run
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
             showBox.setPreferredSize(new Dimension(140, 32));
-            for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Kategoria", "Category"), PatchbayLauncher.t("Najnowsze", "Newest") })
+            for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Najnowsze", "Newest") })
                 sortBox.addItem(o);
             try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
             sortBox.addActionListener(e -> { I18n.remember("modsSort", String.valueOf(sortBox.getSelectedIndex())); refilter(); });

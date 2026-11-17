@@ -356,7 +356,6 @@ final class I18n {
         add("This theme is for an older Bitwig: it lacks Bitwig 6's main colours, so it would change very little. It wasn't added.", "Dieses Theme ist für ein älteres Bitwig: Ihm fehlen die Hauptfarben von Bitwig 6, es würde also kaum etwas ändern. Es wurde nicht hinzugefügt.", "Ce thème est destiné à un ancien Bitwig : il lui manque les couleurs principales de Bitwig 6, il changerait donc très peu de choses. Il n'a pas été ajouté.");
         add("A theme with this name is already in Patchbay. Replace it?", "Ein Theme mit diesem Namen ist bereits in Patchbay. Ersetzen?", "Un thème portant ce nom est déjà dans Patchbay. Le remplacer ?");
         add("Added. Click \"Use this theme\" to turn it on.", "Hinzugefügt. Klicke auf „Dieses Theme verwenden“, um es einzuschalten.", "Ajouté. Cliquez sur « Utiliser ce thème » pour l'activer.");
-        add("Category", "Kategorie", "Catégorie");
         add("Newest", "Neueste", "Plus récents");
         add("Sort", "Sortieren", "Trier");
         add("Released", "Veröffentlicht", "Publié");
