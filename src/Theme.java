@@ -1235,7 +1235,8 @@ public final class Theme {
     }
 
     static Color statusColor(String kind) {
-        return switch (kind) { case "update" -> UPDATE; case "active" -> ACCENT; case "installed" -> SOFT; case "off" -> DIM; default -> MUTED; };
+        return switch (kind) { case "update" -> UPDATE; case "active" -> ACCENT; case "installed" -> SOFT; case "off" -> DIM;
+            case "removed" -> ACCENT_SOFT; case "withdrawn" -> FAULT_TEXT; default -> MUTED; };
     }
 
     /** The mark before a status: dot, tick, plus or cross, drawn so it never depends on a font's glyphs. */
@@ -1251,6 +1252,11 @@ public final class Theme {
                 g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2.drawLine(x + 1, cy - 4, x + 8, cy + 3);
                 g2.drawLine(x + 8, cy - 4, x + 1, cy + 3);
+            }
+            case "removed", "withdrawn" -> { // an exclamation mark: gone from its repository
+                g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.drawLine(x + 5, cy - 5, x + 5, cy + 1);
+                g2.fillOval(x + 4, cy + 3, 3, 3);
             }
             default -> {
                 g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -1305,6 +1311,26 @@ public final class Theme {
         s.setBorder(BorderFactory.createLineBorder(EDGE));
         s.getViewport().setBackground(WELL);
         return s;
+    }
+
+    /**
+     * The note on a mod or device gone from its repository: withdrawn by its author because of problems
+     * (with the reason), or just removed. thisOne names it as the sentence starts: "Ten mod" / "This mod".
+     */
+    static JComponent goneNote(boolean withdrawn, String reason, String thisOne, int width) {
+        JPanel box = new Card(new BorderLayout(0, 6), WELL);
+        Color edge = withdrawn ? FAULT_TEXT : ACCENT_SOFT;
+        box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(edge, 1, true), new EmptyBorder(10, 10, 10, 10)));
+        box.add(label(withdrawn ? "!  " + PatchbayLauncher.t("Autor wycofał z powodu problemów", "Withdrawn by its author because of problems")
+            : "!  " + PatchbayLauncher.t("Usunięto z repozytorium", "Removed from the repository"), bold(13f), edge), BorderLayout.NORTH);
+        String text = withdrawn
+            ? (reason == null || reason.isBlank() ? "" : reason + " ") + PatchbayLauncher.t("Najlepiej go wyłączyć albo odinstalować.", "Best switch it off or uninstall it.")
+            : thisOne + PatchbayLauncher.t(" działa dalej, ale nie dostanie już aktualizacji. Możesz go zostawić albo odinstalować.",
+                " still works, but won't get updates. You can keep it or uninstall it.");
+        box.add(wrapped(text, width, SOFT, 13f), BorderLayout.CENTER);
+        box.setAlignmentX(Component.LEFT_ALIGNMENT);
+        box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
+        return box;
     }
 
     /** Key/value lines (Author, Available, Source…) between two hairlines. */

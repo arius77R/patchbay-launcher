@@ -171,6 +171,34 @@ final class Sources {
         return out;
     }
 
+    /**
+     * What a repository's author withdrew because it causes problems (withdrawn.json at its top, PUBLISHING):
+     * mod ids ("mods") or device file names ("devices") with the reason. Empty when there is no such file or
+     * it can't be had.
+     */
+    static Map<String, String> withdrawn(String repo, String list) {
+        Map<String, String> out = new HashMap<>();
+        try {
+            String f = System.getProperty("launcher.fixtures"); // offline test
+            String json;
+            if (f != null) {
+                Path fx = Path.of(f).resolve(repo.replace('/', '_') + ".withdrawn.json");
+                if (!Files.isRegularFile(fx)) return out;
+                json = Files.readString(fx);
+            } else {
+                json = PatchbayLauncher.httpText("https://raw.githubusercontent.com/" + repo + "/HEAD/withdrawn.json");
+            }
+            for (Object o : Mods.Json.array(Mods.Json.object(Mods.Json.parse(json)).get(list))) {
+                Map<String, Object> m = Mods.Json.object(o);
+                String id = Mods.Json.text(m, list.equals("mods") ? "id" : "file"), reason = Mods.Json.text(m, "reason");
+                if (id != null && !id.isBlank()) out.put(id.strip(), reason == null ? "" : reason.strip());
+            }
+        } catch (IOException | RuntimeException none) {
+            // no withdrawn.json (404) or not readable: nothing withdrawn
+        }
+        return out;
+    }
+
     /** GitHub topics an author puts on a repository so the launcher lists it (PUBLISHING), and the group each stands for. */
     static final Map<String, String> TOPICS = new LinkedHashMap<>(Map.of("patchbay-mod", MODS, "patchbay-devices", DEVICES, "patchbay-themes", THEMES));
 

@@ -341,8 +341,11 @@ final class Mods {
         }
     }
 
-    /** Every mod in the enabled sources' releases; withdrawn gets the ones whose folder is gone from their repository. */
-    static Map<String, Available> fetchCatalog(Set<String> withdrawn) throws IOException {
+    /**
+     * Every mod in the enabled sources' releases; removed gets the ones whose folder is gone from their
+     * repository, withdrawn the ones their author withdrew (withdrawn.json) with the reason.
+     */
+    static Map<String, Available> fetchCatalog(Set<String> removed, Map<String, String> withdrawn) throws IOException {
         Map<String, Available> all = new TreeMap<>();
         IOException failure = null;
         String offline = System.getProperty("launcher.fixtures"); // offline test: <repo name>.json files in this folder
@@ -350,9 +353,10 @@ final class Mods {
             String repo = src.repo();
             try {
                 Set<String> inRepo = modFolders(repo, offline);
+                withdrawn.putAll(Sources.withdrawn(repo, "mods"));
                 for (String json : releasePages(repo, offline))
                     for (Available a : parseCatalog(json, repo, Sources.glob(src.filter())).values()) {
-                        if (inRepo != null && !inRepo.contains(a.id())) withdrawn.add(a.id());
+                        if (inRepo != null && !inRepo.contains(a.id())) removed.add(a.id());
                         merge(all, a);
                     }
             } catch (IOException | RuntimeException ex) {
@@ -592,7 +596,7 @@ final class Mods {
         /** IDs of the mods marked with a star. */
         private final Set<String> favourites = SidePanel.favourites("favouriteMods");
         private final SidePanel side = new SidePanel("modsSide", key -> refilter());
-        /** Show: 0 all, 1 works on my Bitwig, 2 installed, 3 updates, 4 not available. */
+        /** Show: 0 all, 1 works on my Bitwig, 2 installed, 3 updates, 4 not available, 5 gone from their repository. */
         private final JComboBox<String> showBox = new JComboBox<>();
         /** Sort: 0 by status (updates, installed, new), 1 by category then name, 2 newest version first. */
         private final JComboBox<String> sortBox = new JComboBox<>();
@@ -602,7 +606,7 @@ final class Mods {
             if (showBox.getSelectedIndex() != SHOW_UPDATES) beforeUpdates = showBox.getSelectedIndex();
             showBox.setSelectedIndex(SHOW_UPDATES);
         });
-        private static final int SHOW_UPDATES = 3;
+        private static final int SHOW_UPDATES = 3, SHOW_GONE = 5;
         /** The Show choice to go back to when Updates has nothing left; All unless the update bar was clicked from another. */
         private int beforeUpdates;
         /** The Bitwig version when it can't be read from the system: chosen from the versions Patchbay has maps for. */
@@ -638,7 +642,9 @@ final class Mods {
                     case 3 -> (unavailable(row) ? "~" : "") + withoutCategory(nameOf(row));
                     case 4 -> row.installed() == null ? "–" : row.installed();
                     case 5 -> row.available() == null ? "" : row.available().version();
-                    default -> unavailable(row) ? "off|" + PatchbayLauncher.t("niezgodny", "incompatible") : switch (row.rank()) {
+                    default -> withdrawn.containsKey(row.id()) && row.installed() != null ? "withdrawn|" + PatchbayLauncher.t("wycofany", "withdrawn")
+                        : removed.contains(row.id()) && row.installed() != null ? "removed|" + PatchbayLauncher.t("usunięty", "removed")
+                        : unavailable(row) ? "off|" + PatchbayLauncher.t("niezgodny", "incompatible") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> switchedOn.contains(row.id()) ? "installed|" + PatchbayLauncher.t("włączony", "on")
                             : "off|" + PatchbayLauncher.t("wyłączony", "off");
@@ -667,10 +673,12 @@ final class Mods {
         private final Map<String, Installed> onDisk = new HashMap<>();
         private Map<String, Available> catalog = Map.of();
         /**
-         * Mods whose folder is gone from their repository: not offered any more, even if an old release still
-         * has the ZIP; one that is installed stays in the list as installed, with no update.
+         * Mods whose folder is gone from their repository, and mods their author withdrew (id to reason): not
+         * offered any more, even if an old release still has the ZIP; one that is installed stays in the list,
+         * marked, with no update.
          */
-        private Set<String> withdrawn = Set.of();
+        private Set<String> removed = Set.of();
+        private Map<String, String> withdrawn = Map.of();
         private boolean busy, notified, reloadAgain;
         private int infoRun;
 
@@ -739,7 +747,7 @@ final class Mods {
             refilterSoon.setRepeats(false);
             for (String o : new String[] { PatchbayLauncher.t("Wszystkie", "All"), PatchbayLauncher.t("Zgodne", "Compatible"),
                     PatchbayLauncher.t("Zainstalowane", "Installed"), PatchbayLauncher.t("Aktualizacje", "Updates"),
-                    PatchbayLauncher.t("Niezgodne", "Incompatible") })
+                    PatchbayLauncher.t("Niezgodne", "Incompatible"), PatchbayLauncher.t("Usunięte z repo", "Removed from repo") })
                 showBox.addItem(o);
             try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(1); } // first time: only the mods that can run
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
@@ -822,6 +830,40 @@ final class Mods {
             return Compat.check(target, version, Platform.suffix(), info.builtFor(), info.builtPlatform(), info.builtArch());
         }
 
+        /** Gone from its repository: removed, or withdrawn by its author. */
+        private boolean gone(Row row) {
+            return removed.contains(row.id()) || withdrawn.containsKey(row.id());
+        }
+
+        /**
+         * Once per mod: installed and switched-on mods their author withdrew are offered to be switched off
+         * (with the reason); installed mods removed from their repository get one notice.
+         */
+        private void askAboutGone() {
+            Set<String> asked = new HashSet<>(List.of(String.valueOf(I18n.setting("modsGoneSeen")).split(",")));
+            List<Row> pulled = all.stream().filter(r -> r.installed() != null && withdrawn.containsKey(r.id()) && switchedOn.contains(r.id()) && !asked.contains(r.id())).toList();
+            List<Row> fresh = all.stream().filter(r -> r.installed() != null && removed.contains(r.id()) && !withdrawn.containsKey(r.id()) && !asked.contains(r.id())).toList();
+            if (pulled.isEmpty() && fresh.isEmpty()) return;
+            for (Row r : pulled) asked.add(r.id());
+            for (Row r : fresh) asked.add(r.id());
+            asked.remove("null");
+            I18n.remember("modsGoneSeen", String.join(",", asked));
+            if (!fresh.isEmpty()) {
+                String text = PatchbayLauncher.t("Usunięte z repozytorium (działają dalej, bez aktualizacji): ", "Removed from their repository (still work, no updates): ") + named(fresh);
+                status.setText(text);
+                PatchbayLauncher.notifyUser(text);
+            }
+            if (pulled.isEmpty()) return;
+            StringBuilder why = new StringBuilder();
+            for (Row r : pulled) why.append("\n• ").append(withoutCategory(nameOf(r))).append(withdrawn.get(r.id()).isEmpty() ? "" : ": " + withdrawn.get(r.id()));
+            Object[] choice = { PatchbayLauncher.t("Wyłącz", "Switch off"), PatchbayLauncher.t("Zostaw", "Keep") };
+            int pick = JOptionPane.showOptionDialog(this, PatchbayLauncher.t("Autor wycofał z powodu problemów:", "The author withdrew because of problems:") + why
+                    + "\n\n" + PatchbayLauncher.t("Wyłączyć teraz? Pliki zostaną na dysku, możesz je potem włączyć albo odinstalować.",
+                        "Switch off now? The files stay on disk; you can switch them on or uninstall them later."),
+                "Patchbay Launcher", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, choice, choice[0]);
+            if (pick == 0) switchMods(pulled, false);
+        }
+
         private boolean unavailable(Row row) {
             return verdict(row).state() == Compat.State.UNAVAILABLE;
         }
@@ -865,6 +907,10 @@ final class Mods {
             col.add(left(Theme.wrapped(name, 190, Theme.TEXT, 20f)));
             ((JLabel) col.getComponent(col.getComponentCount() - 1)).setFont(Theme.bold(20f));
             col.add(Box.createVerticalStrut(12));
+            if (row.installed() != null && gone(row)) {
+                col.add(Theme.goneNote(withdrawn.containsKey(row.id()), withdrawn.get(row.id()), PatchbayLauncher.t("Ten mod", "This mod"), 166));
+                col.add(Box.createVerticalStrut(12));
+            }
             Compat.Verdict v = verdict(row);
             if (v.state() != Compat.State.UNKNOWN) {
                 boolean ok = v.state() != Compat.State.UNAVAILABLE;
@@ -1015,8 +1061,9 @@ final class Mods {
                 try {
                     String version = Compat.norm(Platform.bitwigVersion());
                     Set<String> gone = new HashSet<>();
-                    Map<String, Available> found = fetchCatalog(gone);
-                    SwingUtilities.invokeLater(() -> { detectedBitwig = version; detecting = false; catalog = found; withdrawn = gone; rebuild(); setBusy(false, ""); loadInfos(); reloadIfAsked(); });
+                    Map<String, String> pulled = new HashMap<>();
+                    Map<String, Available> found = fetchCatalog(gone, pulled);
+                    SwingUtilities.invokeLater(() -> { detectedBitwig = version; detecting = false; catalog = found; removed = gone; withdrawn = pulled; rebuild(); setBusy(false, ""); loadInfos(); reloadIfAsked(); SwingUtilities.invokeLater(this::askAboutGone); });
                 } catch (IOException ex) {
                     SwingUtilities.invokeLater(() -> { rebuild(); setBusy(false, ex.getMessage()); reloadIfAsked(); });
                 }
@@ -1047,7 +1094,7 @@ final class Mods {
             all.clear();
             for (Available a : catalog.values()) {
                 Installed i = have.get(a.id());
-                boolean gone = withdrawn.contains(a.id());
+                boolean gone = removed.contains(a.id()) || withdrawn.containsKey(a.id());
                 if (gone && i == null) continue;
                 int rank = i == null ? 2 : !gone && PatchbayLauncher.compareVersions(a.version(), i.version()) > 0 ? 0 : 1;
                 all.add(new Row(a.id(), i == null ? a.id() : i.name(), i == null ? null : i.version(), a, rank));
@@ -1101,6 +1148,7 @@ final class Mods {
                     case 2 -> r.rank() != 2;
                     case 3 -> r.rank() == 0;
                     case 4 -> off;
+                    case SHOW_GONE -> gone(r);
                     default -> true;
                 };
                 if (pass && matches(searchField.getText(), nameOf(r), r.id(), authorOf(r))) shown.add(r);

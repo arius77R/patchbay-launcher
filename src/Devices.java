@@ -130,6 +130,52 @@ final class Devices {
         return all;
     }
 
+    /**
+     * Device files on disk, in the folders of the enabled sources, that their repository doesn't list any
+     * more: kept as items (path "removed:…", no hash) so they can be switched off or uninstalled.
+     */
+    static List<Item> leftovers(List<Item> listed) {
+        Set<String> known = new HashSet<>(), answered = new HashSet<>();
+        for (Item i : listed) { known.add(i.repo() + " " + i.build() + " " + i.fileName()); answered.add(i.repo()); }
+        List<Item> out = new ArrayList<>();
+        for (Sources.Source s : Sources.enabled(Sources.DEVICES)) {
+            if (!answered.contains(s.repo())) continue; // its list couldn't be had: nothing can be called removed
+            Path folder = root().resolve(s.repo().replace('/', '_'));
+            if (!Files.isDirectory(folder)) continue;
+            try (var builds = Files.list(folder)) {
+                for (Path b : builds.filter(Files::isDirectory).toList()) {
+                    String build = b.getFileName().toString().equals("files") ? "" : b.getFileName().toString();
+                    try (var files = Files.list(b)) {
+                        for (Path f : files.filter(Files::isRegularFile).toList()) {
+                            String file = f.getFileName().toString();
+                            if (file.endsWith(OFF)) file = file.substring(0, file.length() - OFF.length());
+                            int dot = file.lastIndexOf('.');
+                            if (dot <= 0) continue;
+                            String kind = file.substring(dot + 1), name = file.substring(0, dot);
+                            if (!kind.equals("bwdevice") && !kind.equals("bwmodulator") && !kind.equals("bwmodule")) continue;
+                            if (!known.add(s.repo() + " " + build + " " + file)) continue;
+                            String type = kind.equals("bwmodulator") ? "Modulator" : kind.equals("bwmodule") ? "Grid module" : "Device";
+                            out.add(new Item(s.repo(), build, name, kind, "removed:" + build + "/" + file, "", Files.size(f), type, ""));
+                        }
+                    }
+                }
+            } catch (IOException unreadable) {
+                // a folder that can't be read: nothing to show from it
+            }
+        }
+        return out;
+    }
+
+    /** What the enabled sources' authors withdrew (withdrawn.json), "repo file" to the reason. */
+    static Map<String, String> withdrawn() {
+        Map<String, String> out = new HashMap<>();
+        for (Sources.Source s : Sources.enabled(Sources.DEVICES))
+            for (Map.Entry<String, String> e : Sources.withdrawn(s.repo(), "devices").entrySet()) out.put(s.repo() + " " + e.getKey(), e.getValue());
+        return out;
+    }
+
+    static boolean isLeftover(Item i) { return i.path().startsWith("removed:"); }
+
     // ---------- which build ----------
 
     /** The first version in a build folder's name: "Bitwig-6.1.3-6.1.4" starts at 6.1.3. */
@@ -184,6 +230,7 @@ final class Devices {
     static int rank(Item item) {
         Path file = folderOf(item).resolve(item.fileName());
         if (!Files.isRegularFile(file)) return Files.isRegularFile(offFile(item)) ? 3 : 2;
+        if (isLeftover(item)) return 1; // no longer in its repository: nothing to compare with
         try {
             return gitBlobSha(file).equals(item.sha()) ? 1 : 0;
         } catch (IOException e) {
@@ -318,7 +365,8 @@ final class Devices {
                     case 1 -> favourites.contains(key(row.item()));
                     case 2 -> row.item().type();
                     case 3 -> row.item().name();
-                    default -> switch (row.rank()) {
+                    default -> pulledReason(row.item()) != null && row.rank() != 2 ? "withdrawn|" + PatchbayLauncher.t("wycofane", "withdrawn")
+                        : isLeftover(row.item()) ? "removed|" + PatchbayLauncher.t("usunięte", "removed") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("pobrane", "downloaded");
                         case 3 -> "off|" + PatchbayLauncher.t("wyłączone", "off");
@@ -344,6 +392,8 @@ final class Devices {
         private final JProgressBar bar = new JProgressBar();
         private final Map<String, BufferedImage> previews = new HashMap<>();
         private List<Item> items = List.of();
+        /** Devices their author withdrew because of problems: "repo file" to the reason. */
+        private Map<String, String> withdrawn = Map.of();
         private String bitwig;
         private boolean busy, loaded, filling;
         private String shownPreview;
@@ -433,10 +483,14 @@ final class Devices {
             setBusy(true, PatchbayLauncher.t("Pobieranie listy urządzeń…", "Loading the device list…"));
             new Thread(() -> {
                 try {
-                    List<Item> found = fetch();
+                    List<Item> listed = fetch();
+                    List<Item> found = new ArrayList<>(listed);
+                    found.addAll(leftovers(listed));
+                    Map<String, String> pulled = withdrawn();
                     String detected = bitwigVersion();
                     SwingUtilities.invokeLater(() -> {
                         items = found;
+                        withdrawn = pulled;
                         bitwig = detected;
                         TreeSet<String> builds = new TreeSet<>();
                         for (Item i : found) if (!i.build().isEmpty()) builds.add(i.build());
@@ -478,7 +532,12 @@ final class Devices {
             int sort = sortBox.getSelectedIndex();
             new Thread(() -> {
                 List<Row> fresh = new ArrayList<>();
-                for (Item i : shown) fresh.add(new Row(i, rank(i)));
+                for (Item i : shown) {
+                    int rank = rank(i);
+                    boolean pulled = withdrawn.containsKey(i.repo() + " " + i.fileName());
+                    if (pulled && rank == 2) continue; // withdrawn by its author: not offered
+                    fresh.add(new Row(i, pulled && rank == 0 ? 1 : rank));
+                }
                 fresh.sort(order(sort));
                 SwingUtilities.invokeLater(() -> {
                     rows.clear();
@@ -493,6 +552,7 @@ final class Devices {
                         + " · " + (bitwig == null ? PatchbayLauncher.t("nie wykryto Bitwiga", "Bitwig not detected")
                             : PatchbayLauncher.t("wykryty Bitwig ", "detected Bitwig ") + bitwig));
                     refreshButtons();
+                    SwingUtilities.invokeLater(this::askAboutGone);
                     String select = System.getProperty("launcher.select"); // offline test: show this device's details
                     int pick = rows.isEmpty() ? -1 : 0;
                     for (int r = 0; select != null && r < rows.size(); r++) if (rows.get(r).item().name().equals(select)) pick = r;
@@ -581,6 +641,11 @@ final class Devices {
             name.setAlignmentX(LEFT_ALIGNMENT);
             col.add(name);
             col.add(Box.createVerticalStrut(10));
+            String why = pulledReason(item);
+            if (why != null || isLeftover(item)) {
+                col.add(Theme.goneNote(why != null, why, PatchbayLauncher.t("To urządzenie", "This device"), 210));
+                col.add(Box.createVerticalStrut(12));
+            }
             if (!item.description().isEmpty()) {
                 JLabel d = Theme.wrapped(item.description(), 226, Theme.SOFT, 14f);
                 d.setAlignmentX(LEFT_ALIGNMENT);
@@ -675,6 +740,38 @@ final class Devices {
         }
 
         /** Switches devices on or off; one already in that state is left as it is. */
+        /** The reason its author withdrew the device, or null when it isn't withdrawn. */
+        private String pulledReason(Item i) { return withdrawn.get(i.repo() + " " + i.fileName()); }
+
+        /**
+         * Once per device: downloaded, switched-on devices their author withdrew are offered to be switched
+         * off (with the reason); devices removed from their repository get one notice.
+         */
+        private void askAboutGone() {
+            Set<String> asked = new HashSet<>(List.of(String.valueOf(I18n.setting("devicesGoneSeen")).split(",")));
+            List<Item> pulled = rows.stream().filter(r -> (r.rank() == 0 || r.rank() == 1) && pulledReason(r.item()) != null && !asked.contains(key(r.item()))).map(Row::item).toList();
+            List<Item> fresh = rows.stream().filter(r -> isLeftover(r.item()) && pulledReason(r.item()) == null && !asked.contains(key(r.item()))).map(Row::item).toList();
+            if (pulled.isEmpty() && fresh.isEmpty()) return;
+            for (Item i : pulled) asked.add(key(i));
+            for (Item i : fresh) asked.add(key(i));
+            asked.remove("null");
+            I18n.remember("devicesGoneSeen", String.join(",", asked));
+            if (!fresh.isEmpty()) {
+                String text = PatchbayLauncher.t("Usunięte z repozytorium (działają dalej, bez aktualizacji): ", "Removed from their repository (still work, no updates): ") + named(fresh);
+                status.setText(text);
+                PatchbayLauncher.notifyUser(text);
+            }
+            if (pulled.isEmpty()) return;
+            StringBuilder why = new StringBuilder();
+            for (Item i : pulled) why.append("\n• ").append(i.name()).append(pulledReason(i).isEmpty() ? "" : ": " + pulledReason(i));
+            Object[] choice = { PatchbayLauncher.t("Wyłącz", "Switch off"), PatchbayLauncher.t("Zostaw", "Keep") };
+            int pick = JOptionPane.showOptionDialog(this, PatchbayLauncher.t("Autor wycofał z powodu problemów:", "The author withdrew because of problems:") + why
+                    + "\n\n" + PatchbayLauncher.t("Wyłączyć teraz? Pliki zostaną na dysku, możesz je potem włączyć albo odinstalować.",
+                        "Switch off now? The files stay on disk; you can switch them on or uninstall them later."),
+                "Patchbay Launcher", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, choice, choice[0]);
+            if (pick == 0) switchDevices(pulled, false);
+        }
+
         private void switchDevices(List<Item> chosen, boolean on) {
             if (chosen.isEmpty() || !bitwigClosed()) return;
             try {
