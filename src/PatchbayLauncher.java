@@ -290,6 +290,23 @@ public final class PatchbayLauncher {
         setCurrent(version);
     }
 
+    /** The mods an install came with (its BUILD-INFO.json) whose folders are no longer in its mods folder. */
+    static List<String> missingBundled(Path install) {
+        return Mods.bundled(install).stream().filter(id -> !Files.isDirectory(install.resolve("mods").resolve(id))).sorted().toList();
+    }
+
+    /** Copies the missing mods of an install from a fresh copy of the same version; nothing there is replaced. */
+    static List<String> copyMissingBundled(Path fresh, Path install) throws IOException {
+        List<String> copied = new ArrayList<>();
+        for (String id : missingBundled(install)) {
+            Path from = fresh.resolve("mods").resolve(id);
+            if (!Files.isDirectory(from)) continue;
+            copyTree(from, install.resolve("mods").resolve(id));
+            copied.add(id);
+        }
+        return copied;
+    }
+
     /** Copies mods and themes the new install doesn't have yet; nothing in the new install is replaced. */
     static int carryOver(Path from, Path to) throws IOException {
         int copied = 0;
@@ -351,6 +368,7 @@ public final class PatchbayLauncher {
     private final JLabel activeLabel = Theme.label(" ", Theme.mono(12f), Theme.MUTED);
     private final JComboBox<String> versionBox = new JComboBox<>();
     private final JButton installButton = Theme.button(" ", "primary");
+    private final JButton restoreButton = Theme.button(t("Przywróć mody Patchbay", "Restore Patchbay's mods"), "secondary");
     private final JButton startButton = Theme.button(t("Uruchom Patchbay", "Start Patchbay"), "start");
     private final JProgressBar bar = new JProgressBar(0, 1000);
     private final JLabel statusLabel = Theme.label(" ", Theme.text(13f), Theme.MUTED);
@@ -407,6 +425,7 @@ public final class PatchbayLauncher {
         guideButton.putClientProperty("current", key.equals("guide"));
         guideButton.repaint();
         settingsButton.repaint();
+        if (key.equals("patchbay")) refreshButtons(); // Restore Patchbay's mods shows when one was uninstalled in Mods
         if (key.equals("devices")) devicesPanel.shown();
         if (key.equals("themes")) themesPanel.shown();
         if (key.equals("sources")) sourcesPanel.shown();
@@ -901,7 +920,9 @@ public final class PatchbayLauncher {
         versionBox.setPreferredSize(new Dimension(240, 32));
         versionBox.setFont(Theme.mono(12f));
         versionBox.getAccessibleContext().setAccessibleName(t("Wersja Patchbay", "Patchbay version"));
-        JPanel pick = Theme.row(10, Theme.label(t("Wersja", "Version"), Theme.text(13f), Theme.MUTED), versionBox, installButton, carryLabel);
+        JPanel pick = Theme.row(10, Theme.label(t("Wersja", "Version"), Theme.text(13f), Theme.MUTED), versionBox, installButton, restoreButton, carryLabel);
+        restoreButton.setToolTipText(t("Brakuje modów, które przyszły z tą wersją Patchbay. Przycisk pobierze ją jeszcze raz i dołoży tylko brakujące; nic nie nadpisze.",
+            "Mods that came with this Patchbay version are missing. The button gets it again and adds only the missing ones; nothing is overwritten."));
         pick.setAlignmentX(Component.LEFT_ALIGNMENT);
         v.add(pick);
         bar.setPreferredSize(new Dimension(10, 4));
@@ -1059,6 +1080,7 @@ public final class PatchbayLauncher {
             SwingUtilities.invokeLater(() -> dockButton.setVisible(offer));
         }, "dock-check").start();
         installButton.addActionListener(e -> installSelected());
+        restoreButton.addActionListener(e -> restoreBundled());
         startButton.addActionListener(e -> start());
         versionBox.addActionListener(e -> refreshButtons());
 
@@ -1166,6 +1188,8 @@ public final class PatchbayLauncher {
         String sel = (String) versionBox.getSelectedItem();
         startButton.setEnabled(!busy && cur != null);
         installButton.setEnabled(!busy && sel != null && !sel.equals(cur));
+        restoreButton.setVisible(cur != null && !missingBundled(folderOf(cur)).isEmpty());
+        restoreButton.setEnabled(!busy);
         versionBox.setEnabled(!busy && versionBox.getItemCount() > 0);
         languageBox.setEnabled(!busy);
         if (sel == null || cur == null) installButton.setText(t("Zainstaluj", "Install"));
@@ -1211,6 +1235,66 @@ public final class PatchbayLauncher {
         if (showUpdate() && cur != null)
             notifyUser(t("Dostępna jest nowa wersja Patchbay: ", "A new Patchbay version is available: ") + newest);
         setBusy(false, "");
+    }
+
+    /** Gets the Patchbay in use again and puts back the mods it came with that were uninstalled, switched on. */
+    private void restoreBundled() {
+        String cur = currentVersion();
+        if (cur == null) return;
+        if (bitwigRunning() || patchbayRunning()) {
+            JOptionPane.showMessageDialog(frame,
+                t("Zamknij Bitwig Studio i okno Patchbay, a potem spróbuj ponownie.",
+                  "Quit Bitwig Studio and the Patchbay window, then try again."),
+                "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Release release = releases.stream().filter(r -> r.version().equals(cur)).findFirst().orElse(null);
+        if (release == null) {
+            JOptionPane.showMessageDialog(frame, t("Nie udało się znaleźć wersji ", "Couldn't find version ") + cur
+                + t(" na GitHubie. Sprawdź połączenie i kliknij Odśwież.", " on GitHub. Check the connection and click Refresh."),
+                "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        setBusy(true, "");
+        new Thread(() -> {
+            Path zip = data().resolve("downloads").resolve("BML-" + cur + "-" + Platform.suffix() + ".zip");
+            Path tmp = null;
+            try {
+                download(release.url(), zip, (done, total) -> SwingUtilities.invokeLater(() -> {
+                    if (total > 0) bar.setValue((int) (done * 1000 / total));
+                    else bar.setIndeterminate(true);
+                    statusLabel.setText(t("Pobieranie ", "Downloading ") + cur + ": " + done / 1_000_000 + " MB"
+                        + (total > 0 ? " / " + total / 1_000_000 + " MB" : ""));
+                }));
+                SwingUtilities.invokeLater(() -> bar.setIndeterminate(true));
+                tmp = Files.createTempDirectory(installs(), ".restore-");
+                Platform.unzip(zip, tmp);
+                Path fresh = null;
+                try (Stream<Path> s = Files.list(tmp)) {
+                    for (Path p : s.toList()) if (Files.isDirectory(p.resolve("mods"))) fresh = p;
+                }
+                if (fresh == null) throw new IOException(t("W archiwum nie ma folderu mods.", "The archive has no mods folder."));
+                List<String> copied = copyMissingBundled(fresh, folderOf(cur));
+                for (String id : copied) Mods.setEnabled(id, true);
+                SwingUtilities.invokeLater(() -> {
+                    setBusy(false, t("Przywrócono modów Patchbay: ", "Patchbay's mods restored: ") + copied.size());
+                    modsPanel.patchbayChanged();
+                    themesPanel.patchbayChanged();
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    setBusy(false, "");
+                    JOptionPane.showMessageDialog(frame, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+                });
+            } finally {
+                try {
+                    if (tmp != null) deleteTree(tmp);
+                    Files.deleteIfExists(zip);
+                } catch (IOException ignored) {
+                    // left in the launcher's folder; the next install or restore replaces it
+                }
+            }
+        }, "restore").start();
     }
 
     private void installSelected() {
@@ -1652,6 +1736,18 @@ public final class PatchbayLauncher {
             Files.writeString(trees.resolve("a_elsewhere.tree.json"), "{\"tree\":[{\"path\":\"src/two/mod.json\"},{\"path\":\"README.md\"}]}");
             check(Set.of("one").equals(Mods.modFolders("a/folders", trees.toString())) && Mods.modFolders("a/elsewhere", trees.toString()) == null,
                 "a repository with no <id>/mod.json folders doesn't make its mods removed");
+            Path inst = Files.createTempDirectory("inst"), fresh = Files.createTempDirectory("fresh");
+            Files.writeString(inst.resolve("BUILD-INFO.json"), "{\"mods\":[{\"id\":\"kept\"},{\"id\":\"gone\"}]}");
+            Files.createDirectories(inst.resolve("mods/kept"));
+            Files.writeString(inst.resolve("mods/kept/mod.json"), "mine");
+            for (String id : new String[] { "kept", "gone" }) {
+                Files.createDirectories(fresh.resolve("mods").resolve(id));
+                Files.writeString(fresh.resolve("mods").resolve(id).resolve("mod.json"), "fresh");
+            }
+            check(Mods.bundled(inst).equals(Set.of("kept", "gone")) && missingBundled(inst).equals(List.of("gone")),
+                "the mods a Patchbay install came with are read from BUILD-INFO.json, missing ones found");
+            check(copyMissingBundled(fresh, inst).equals(List.of("gone")) && "mine".equals(Files.readString(inst.resolve("mods/kept/mod.json")))
+                && missingBundled(inst).isEmpty(), "restoring Patchbay's mods adds only the missing ones, nothing overwritten");
             if (args.length < 3) { System.out.println("SELFTEST_OK (logic only)"); return; }
 
             Path zip = Path.of(args[1]);

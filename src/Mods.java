@@ -102,6 +102,20 @@ final class Mods {
 
     // ---------- JSON (objects as Map, arrays as List, numbers as Double) ----------
 
+    /** The mods a Patchbay install came with, from its BUILD-INFO.json (kept even when their folders were deleted). */
+    static Set<String> bundled(Path install) {
+        Set<String> out = new HashSet<>();
+        try {
+            Path info = install.resolve("BUILD-INFO.json");
+            if (!Files.isRegularFile(info)) return out;
+            for (Object m : Json.array(Json.object(Json.parse(Files.readString(info))).get("mods")))
+                if (m instanceof Map<?, ?> map && map.get("id") instanceof String id) out.add(id);
+        } catch (IOException | RuntimeException unreadable) {
+            // an older or changed file: nothing is marked as part of Patchbay
+        }
+        return out;
+    }
+
     static final class Json {
         private final String s;
         private int i;
@@ -649,6 +663,7 @@ final class Mods {
                     case 5 -> row.available() == null ? "" : row.available().version();
                     default -> withdrawn.containsKey(row.id()) && row.installed() != null ? "withdrawn|" + PatchbayLauncher.t("wycofany", "withdrawn")
                         : removed.contains(row.id()) && row.installed() != null ? "removed|" + PatchbayLauncher.t("usunięty", "removed")
+                        : row.available() == null && partOfPatchbay(row) ? "bundled|" + PatchbayLauncher.t("z Patchbay", "from Patchbay")
                         : row.available() == null ? "outside|" + PatchbayLauncher.t("spoza źródeł", "not in sources")
                         : unavailable(row) ? "off|" + PatchbayLauncher.t("niezgodny", "incompatible") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
@@ -806,17 +821,41 @@ final class Mods {
             return v == null ? null : PatchbayLauncher.folderOf(v).resolve("mods");
         }
 
+        private String bundledFor;
+        private Set<String> bundledIds = Set.of();
+
+        /** The mod came with the Patchbay in use: other mods, devices and themes need it. */
+        private boolean partOfPatchbay(Row row) {
+            String v = PatchbayLauncher.currentVersion();
+            if (v == null) return false;
+            if (!v.equals(bundledFor)) {
+                bundledIds = bundled(PatchbayLauncher.folderOf(v));
+                bundledFor = v;
+            }
+            return bundledIds.contains(row.id());
+        }
+
+        /** A warning that some of the chosen mods are part of Patchbay, or "". */
+        private String patchbayWarning(List<Row> chosen) {
+            List<String> parts = chosen.stream().filter(this::partOfPatchbay).map(this::nameOf).toList();
+            if (parts.isEmpty()) return "";
+            return PatchbayLauncher.t("Uwaga, część Patchbay: ", "Careful, part of Patchbay: ") + shortList(parts) + "\n"
+                + PatchbayLauncher.t("Przyszły razem z Patchbay i potrzebują ich inne mody, urządzenia i motywy. Bez nich mogą przestać działać. Przywrócisz je w zakładce Patchbay („Przywróć mody Patchbay”).",
+                    "They came with Patchbay and other mods, devices and themes need them. Without them those may stop working. You can bring them back in the Patchbay tab (Restore Patchbay's mods).") + "\n\n";
+        }
+
         private List<Row> checkedRows() {
             return rows.stream().filter(r -> checked.contains(r.id())).toList();
         }
 
         /**
          * Rows Tick all ticks: the ones that can be installed or updated; when the list shown has none (Not in sources,
-         * Removed from repo, Installed with nothing to update), every installed one, to switch off or uninstall them together.
+         * Removed from repo, Installed with nothing to update), every installed one but those that are part of Patchbay,
+         * to switch off or uninstall them together.
          */
         private List<Row> checkable() {
             List<Row> install = rows.stream().filter(this::installable).toList();
-            return install.isEmpty() ? rows.stream().filter(this::tickable).toList() : install;
+            return install.isEmpty() ? rows.stream().filter(r -> tickable(r) && !partOfPatchbay(r)).toList() : install;
         }
 
         private boolean installable(Row r) { return r.rank() != 1 && r.available() != null && !unavailable(r); }
@@ -918,7 +957,10 @@ final class Mods {
             col.add(left(Theme.wrapped(name, 190, Theme.TEXT, 20f)));
             ((JLabel) col.getComponent(col.getComponentCount() - 1)).setFont(Theme.bold(20f));
             col.add(Box.createVerticalStrut(12));
-            if (row.installed() != null && row.available() == null) {
+            if (row.installed() != null && row.available() == null && partOfPatchbay(row)) {
+                col.add(Theme.bundledNote(166));
+                col.add(Box.createVerticalStrut(12));
+            } else if (row.installed() != null && row.available() == null) {
                 col.add(Theme.outsideNote(166));
                 col.add(Box.createVerticalStrut(12));
             } else if (row.installed() != null && gone(row)) {
@@ -1153,7 +1195,7 @@ final class Mods {
                     case 3 -> r.rank() == 0;
                     case 4 -> off;
                     case SHOW_GONE -> gone(r);
-                    case SHOW_OUTSIDE -> r.available() == null;
+                    case SHOW_OUTSIDE -> r.available() == null && !partOfPatchbay(r);
                     default -> true;
                 };
                 if (pass && matches(searchField.getText(), nameOf(r), r.id(), authorOf(r))) shown.add(r);
@@ -1278,8 +1320,8 @@ final class Mods {
         private void switchMods(List<Row> chosen, boolean on) {
             if (chosen.isEmpty() || !patchbayClosed()) return;
             if (!on) {
-                String warning = neededWarning(chosen);
-                if (!warning.isEmpty() && JOptionPane.showConfirmDialog(this, Theme.message(PatchbayLauncher.t("Wyłączyć ", "Switch off ") + named(chosen) + "?" + warning),
+                String warning = neededWarning(chosen), parts = patchbayWarning(chosen);
+                if (!(warning + parts).isEmpty() && JOptionPane.showConfirmDialog(this, Theme.message(parts + PatchbayLauncher.t("Wyłączyć ", "Switch off ") + named(chosen) + "?" + warning),
                         "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
             }
             try {
@@ -1295,7 +1337,7 @@ final class Mods {
 
         private void uninstallMods(List<Row> chosen) {
             if (chosen.isEmpty() || !patchbayClosed()) return;
-            String question = PatchbayLauncher.t("Odinstalować ", "Uninstall ") + named(chosen) + "?\n\n"
+            String question = patchbayWarning(chosen) + PatchbayLauncher.t("Odinstalować ", "Uninstall ") + named(chosen) + "?\n\n"
                 + PatchbayLauncher.t("Pliki zostaną usunięte z dysku. Żeby przywrócić mod, trzeba go zainstalować ponownie. Żeby tylko go nie ładować, wybierz Wyłącz.",
                     "The files are deleted from disk. To bring a mod back, install it again. To only stop loading it, choose Switch off.")
                 + neededWarning(chosen);

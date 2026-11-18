@@ -1267,6 +1267,9 @@ public final class Theme {
                 g2.drawLine(x + 1, cy - 4, x + 8, cy + 3);
                 g2.drawLine(x + 8, cy - 4, x + 1, cy + 3);
             }
+            case "bundled" -> { // a small dot: part of Patchbay
+                g2.fillOval(x + 3, cy - 2, 5, 5);
+            }
             case "outside" -> { // a short dash: installed, but no source offers it
                 g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2.drawLine(x + 2, cy, x + 8, cy);
@@ -1356,8 +1359,20 @@ public final class Theme {
         JPanel box = new Card(new BorderLayout(0, 6), WELL);
         box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(LINE, 1, true), new EmptyBorder(10, 10, 10, 10)));
         box.add(label(PatchbayLauncher.t("Spoza źródeł", "Not in your sources"), bold(13f), TEXT), BorderLayout.NORTH);
-        box.add(wrapped(PatchbayLauncher.t("Tego moda nie ma w żadnym włączonym źródle: przyszedł razem z Patchbay, dodano go ręcznie albo jego repozytorium zostało usunięte. Działa dalej, ale Launcher go nie zaktualizuje.",
-            "No source you have switched on offers this mod: it came with Patchbay, was added by hand, or its repository is gone. It still works, but the launcher won't update it."), width, SOFT, 13f), BorderLayout.CENTER);
+        box.add(wrapped(PatchbayLauncher.t("Tego moda nie ma w żadnym włączonym źródle: dodano go ręcznie albo jego repozytorium zostało usunięte. Działa dalej, ale Launcher go nie zaktualizuje.",
+            "No source you have switched on offers this mod: it was added by hand, or its repository is gone. It still works, but the launcher won't update it."), width, SOFT, 13f), BorderLayout.CENTER);
+        box.setAlignmentX(Component.LEFT_ALIGNMENT);
+        box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
+        return box;
+    }
+
+    /** The note for a mod that came with Patchbay: keep it, others need it. */
+    static JComponent bundledNote(int width) {
+        JPanel box = new Card(new BorderLayout(0, 6), WELL);
+        box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(LINE, 1, true), new EmptyBorder(10, 10, 10, 10)));
+        box.add(label(PatchbayLauncher.t("Część Patchbay", "Part of Patchbay"), bold(13f), TEXT), BorderLayout.NORTH);
+        box.add(wrapped(PatchbayLauncher.t("Ten mod przyszedł razem z Patchbay. Potrzebują go inne mody, urządzenia albo motywy, więc zostaw go. Zaktualizuje się z nową wersją Patchbay.",
+            "This mod came with Patchbay. Other mods, devices or themes need it, so keep it. It is updated with a new Patchbay version."), width, SOFT, 13f), BorderLayout.CENTER);
         box.setAlignmentX(Component.LEFT_ALIGNMENT);
         box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
         return box;

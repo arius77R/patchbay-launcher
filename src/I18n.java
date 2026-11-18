@@ -194,7 +194,24 @@ final class I18n {
         add("Author's page", "Seite des Autors", "Page de l'auteur");
         add("not in sources", "nicht in Quellen", "hors sources");
         add("Not in your sources", "Nicht in deinen Quellen", "Hors de vos sources");
-        add("No source you have switched on offers this mod: it came with Patchbay, was added by hand, or its repository is gone. It still works, but the launcher won't update it.", "Keine eingeschaltete Quelle bietet diesen Mod an: Er kam mit Patchbay, wurde von Hand hinzugefügt, oder sein Repository gibt es nicht mehr. Er funktioniert weiter, aber der Launcher aktualisiert ihn nicht.", "Aucune source activée ne propose ce mod : il est venu avec Patchbay, a été ajouté à la main, ou son dépôt n'existe plus. Il fonctionne toujours, mais le lanceur ne le mettra pas à jour.");
+        add("No source you have switched on offers this mod: it was added by hand, or its repository is gone. It still works, but the launcher won't update it.", "Keine eingeschaltete Quelle bietet diesen Mod an: Er wurde von Hand hinzugefügt, oder sein Repository gibt es nicht mehr. Er funktioniert weiter, aber der Launcher aktualisiert ihn nicht.", "Aucune source activée ne propose ce mod : il a été ajouté à la main, ou son dépôt n'existe plus. Il fonctionne toujours, mais le lanceur ne le mettra pas à jour.");
+        add("from Patchbay", "aus Patchbay", "de Patchbay");
+        add("Part of Patchbay", "Teil von Patchbay", "Fait partie de Patchbay");
+        add("This mod came with Patchbay. Other mods, devices or themes need it, so keep it. It is updated with a new Patchbay version.",
+            "Dieser Mod kam mit Patchbay. Andere Mods, Geräte oder Themes brauchen ihn, also behalte ihn. Er wird mit einer neuen Patchbay-Version aktualisiert.",
+            "Ce mod est venu avec Patchbay. D'autres mods, appareils ou thèmes en ont besoin, gardez-le. Il est mis à jour avec une nouvelle version de Patchbay.");
+        add("Careful, part of Patchbay: ", "Achtung, Teil von Patchbay: ", "Attention, fait partie de Patchbay : ");
+        add("They came with Patchbay and other mods, devices and themes need them. Without them those may stop working. You can bring them back in the Patchbay tab (Restore Patchbay's mods).",
+            "Sie kamen mit Patchbay, und andere Mods, Geräte und Themes brauchen sie. Ohne sie funktionieren diese vielleicht nicht mehr. Du kannst sie im Tab Patchbay zurückholen (Patchbay-Mods wiederherstellen).",
+            "Ils sont venus avec Patchbay et d'autres mods, appareils et thèmes en ont besoin. Sans eux, ceux-ci peuvent cesser de fonctionner. Vous pouvez les remettre dans l'onglet Patchbay (Restaurer les mods de Patchbay).");
+        add("Restore Patchbay's mods", "Patchbay-Mods wiederherstellen", "Restaurer les mods de Patchbay");
+        add("Mods that came with this Patchbay version are missing. The button gets it again and adds only the missing ones; nothing is overwritten.",
+            "Mods, die mit dieser Patchbay-Version kamen, fehlen. Die Schaltfläche lädt sie erneut und ergänzt nur die fehlenden; nichts wird überschrieben.",
+            "Des mods venus avec cette version de Patchbay manquent. Le bouton la télécharge à nouveau et n'ajoute que ceux qui manquent ; rien n'est écrasé.");
+        add("Couldn't find version ", "Version nicht gefunden: ", "Version introuvable : ");
+        add(" on GitHub. Check the connection and click Refresh.", " auf GitHub. Prüfe die Verbindung und klicke auf Neu laden.", " sur GitHub. Vérifiez la connexion et cliquez sur Actualiser.");
+        add("The archive has no mods folder.", "Das Archiv hat keinen Ordner mods.", "L'archive n'a pas de dossier mods.");
+        add("Patchbay's mods restored: ", "Patchbay-Mods wiederhergestellt: ", "Mods de Patchbay restaurés : ");
         add("a list: ", "eine Liste: ", "une liste : ");
         add(" theme repositories", " Theme-Repositorys", " dépôts de thèmes");
         add("withdrawn", "zurückgezogen", "retiré");
