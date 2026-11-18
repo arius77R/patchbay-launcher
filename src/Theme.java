@@ -1050,6 +1050,20 @@ public final class Theme {
         return split(left, right);
     }
 
+    /** A dialog's text, wrapped at a fixed width, so a long list of names doesn't stretch the window across the screen. */
+    static JComponent message(String text) {
+        JTextArea area = new JTextArea(text);
+        area.setFont(text(13f));
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setEditable(false);
+        area.setOpaque(false);
+        area.setBorder(null);
+        area.setSize(460, Short.MAX_VALUE);
+        area.setPreferredSize(new Dimension(460, area.getPreferredSize().height));
+        return area;
+    }
+
     static JPanel page(String title, JComponent subtitle, JComponent actions, JComponent body, JComponent footLeft, JComponent footRight) {
         JPanel p = new JPanel(new BorderLayout(0, 0));
         p.setBackground(WELL);

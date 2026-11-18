@@ -772,9 +772,9 @@ final class Devices {
             StringBuilder why = new StringBuilder();
             for (Item i : pulled) why.append("\n• ").append(i.name()).append(pulledReason(i).isEmpty() ? "" : ": " + pulledReason(i));
             Object[] choice = { PatchbayLauncher.t("Wyłącz", "Switch off"), PatchbayLauncher.t("Zostaw", "Keep") };
-            int pick = JOptionPane.showOptionDialog(this, PatchbayLauncher.t("Autor wycofał z powodu problemów:", "The author withdrew because of problems:") + why
+            int pick = JOptionPane.showOptionDialog(this, Theme.message(PatchbayLauncher.t("Autor wycofał z powodu problemów:", "The author withdrew because of problems:") + why
                     + "\n\n" + PatchbayLauncher.t("Wyłączyć teraz? Pliki zostaną na dysku, możesz je potem włączyć albo odinstalować.",
-                        "Switch off now? The files stay on disk; you can switch them on or uninstall them later."),
+                        "Switch off now? The files stay on disk; you can switch them on or uninstall them later.")),
                 "Patchbay Launcher", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, choice, choice[0]);
             if (pick == 0) switchDevices(pulled, false);
         }
@@ -797,7 +797,7 @@ final class Devices {
                 + PatchbayLauncher.t("Pliki zostaną usunięte z dysku. Żeby przywrócić urządzenie, trzeba je pobrać ponownie. Żeby tylko go nie pokazywać, wybierz Wyłącz.",
                     "The files are deleted from disk. To bring a device back, download it again. To only hide it, choose Switch off.");
             String remove = PatchbayLauncher.t("Odinstaluj", "Uninstall"), cancel = PatchbayLauncher.t("Anuluj", "Cancel");
-            if (JOptionPane.showOptionDialog(this, question, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+            if (JOptionPane.showOptionDialog(this, Theme.message(question), "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
                     null, new String[] { remove, cancel }, cancel) != 0) return;
             try {
                 for (Item item : chosen) Devices.remove(item);

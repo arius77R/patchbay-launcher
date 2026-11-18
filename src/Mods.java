@@ -868,9 +868,9 @@ final class Mods {
             StringBuilder why = new StringBuilder();
             for (Row r : pulled) why.append("\n• ").append(withoutCategory(nameOf(r))).append(withdrawn.get(r.id()).isEmpty() ? "" : ": " + withdrawn.get(r.id()));
             Object[] choice = { PatchbayLauncher.t("Wyłącz", "Switch off"), PatchbayLauncher.t("Zostaw", "Keep") };
-            int pick = JOptionPane.showOptionDialog(this, PatchbayLauncher.t("Autor wycofał z powodu problemów:", "The author withdrew because of problems:") + why
+            int pick = JOptionPane.showOptionDialog(this, Theme.message(PatchbayLauncher.t("Autor wycofał z powodu problemów:", "The author withdrew because of problems:") + why
                     + "\n\n" + PatchbayLauncher.t("Wyłączyć teraz? Pliki zostaną na dysku, możesz je potem włączyć albo odinstalować.",
-                        "Switch off now? The files stay on disk; you can switch them on or uninstall them later."),
+                        "Switch off now? The files stay on disk; you can switch them on or uninstall them later.")),
                 "Patchbay Launcher", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, choice, choice[0]);
             if (pick == 0) switchMods(pulled, false);
         }
@@ -1273,21 +1273,26 @@ final class Mods {
             for (Row r : going) users.addAll(neededBy(r.id(), modsDir()));
             for (Row r : going) users.remove(onDisk.containsKey(r.id()) ? onDisk.get(r.id()).name() : r.name());
             return users.isEmpty() ? "" : "\n\n" + PatchbayLauncher.t("Potrzebują ich włączone mody, które przestaną działać: ",
-                "Switched-on mods that need them and will stop working: ") + String.join(", ", users);
+                "Switched-on mods that need them and will stop working: ") + shortList(new ArrayList<>(users));
         }
 
         /** "Name" for one mod, "N mods: a, b, c" for several. */
         private String named(List<Row> chosen) {
             if (chosen.size() == 1) return nameOf(chosen.get(0));
-            List<String> names = chosen.stream().map(this::nameOf).limit(8).toList();
-            return chosen.size() + PatchbayLauncher.t(" modów: ", " mods: ") + String.join(", ", names) + (chosen.size() > 8 ? ", …" : "");
+            return chosen.size() + PatchbayLauncher.t(" modów: ", " mods: ") + shortList(chosen.stream().map(this::nameOf).toList());
+        }
+
+        /** The first eight names, then "and N more". */
+        private static String shortList(List<String> names) {
+            return String.join(", ", names.subList(0, Math.min(8, names.size())))
+                + (names.size() > 8 ? PatchbayLauncher.t(" i ", " and ") + (names.size() - 8) + PatchbayLauncher.t(" innych", " more") : "");
         }
 
         private void switchMods(List<Row> chosen, boolean on) {
             if (chosen.isEmpty() || !patchbayClosed()) return;
             if (!on) {
                 String warning = neededWarning(chosen);
-                if (!warning.isEmpty() && JOptionPane.showConfirmDialog(this, PatchbayLauncher.t("Wyłączyć ", "Switch off ") + named(chosen) + "?" + warning,
+                if (!warning.isEmpty() && JOptionPane.showConfirmDialog(this, Theme.message(PatchbayLauncher.t("Wyłączyć ", "Switch off ") + named(chosen) + "?" + warning),
                         "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
             }
             try {
@@ -1308,7 +1313,7 @@ final class Mods {
                     "The files are deleted from disk. To bring a mod back, install it again. To only stop loading it, choose Switch off.")
                 + neededWarning(chosen);
             String remove = PatchbayLauncher.t("Odinstaluj", "Uninstall"), cancel = PatchbayLauncher.t("Anuluj", "Cancel");
-            if (JOptionPane.showOptionDialog(this, question, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+            if (JOptionPane.showOptionDialog(this, Theme.message(question), "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
                     null, new String[] { remove, cancel }, cancel) != 0) return;
             try {
                 for (Row r : chosen) uninstall(r.id(), modsDir());

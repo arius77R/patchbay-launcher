@@ -835,7 +835,7 @@ final class Themes {
                 + PatchbayLauncher.t("Pliki zostaną usunięte z Patchbay. Żeby przywrócić motyw, trzeba go zainstalować ponownie.",
                     "The files are deleted from Patchbay. To bring a theme back, install it again.");
             String remove = PatchbayLauncher.t("Odinstaluj", "Uninstall"), cancel = PatchbayLauncher.t("Anuluj", "Cancel");
-            if (JOptionPane.showOptionDialog(this, question, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+            if (JOptionPane.showOptionDialog(this, Theme.message(question), "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
                     null, new String[] { remove, cancel }, cancel) != 0) return;
             boolean active = mine.stream().anyMatch(Row::active);
             if (active && !patchbayClosed()) return;
