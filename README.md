@@ -46,9 +46,9 @@ GitHub allows 60 requests an hour without signing in; the launcher caches what i
 
 ## For mod authors
 
-The launcher finds mods in GitHub releases on its own, but only in repositories that follow one layout: one `<mod-id>-<version>.zip` per mod for every system, and the same `mod.json` in the repository at `<mod-id>/mod.json`. [shaboogen-dev/Mods](https://github.com/shaboogen-dev/Mods) and [polarity/bitwig-mods](https://github.com/polarity/bitwig-mods) already work this way.
+The launcher finds mods in GitHub releases on its own, but only in repositories that follow one layout: one `<mod-id>-<version>.zip` per mod for every system, the same `mod.json` in the repository at `<mod-id>/mod.json`, and a mod name that starts with a category from a fixed list, for example `Arranger: Add Automation Points`. [shaboogen-dev/Mods](https://github.com/shaboogen-dev/Mods) and [polarity/bitwig-mods](https://github.com/polarity/bitwig-mods) already work this way.
 
-Full rules, a checklist and a ready-made prompt for an AI agent: [Publishing mods](docs/PUBLISHING.md).
+Full rules, the list of categories, a checklist and a ready-made prompt for an AI agent: [Publishing mods](docs/PUBLISHING.md).
 
 ## Where it keeps things
 
