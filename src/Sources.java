@@ -272,10 +272,26 @@ final class Sources {
     /** Devices and themes are files in the repository itself; Patchbay and mods come from releases. */
     static boolean inRepository(String group) { return group.equals(DEVICES) || group.equals(THEMES); }
 
+    /** What GitHub says about a repository: who owns it, what it is, when it last changed. */
+    record RepoInfo(String owner, String description, String changed, int stars, String license) { }
+
+    static RepoInfo repoInfo(String repo) throws IOException {
+        String f = System.getProperty("launcher.fixtures"); // offline test
+        String json = f != null ? Files.readString(Path.of(f).resolve("launcher-repo-" + repo.replace('/', '_') + ".json"))
+            : PatchbayLauncher.httpText("https://api.github.com/repos/" + repo);
+        Map<String, Object> m = Mods.Json.object(Mods.Json.parse(json));
+        Map<String, Object> owner = m.get("owner") instanceof Map<?, ?> ? Mods.Json.object(m.get("owner")) : Map.of();
+        Map<String, Object> licence = m.get("license") instanceof Map<?, ?> ? Mods.Json.object(m.get("license")) : Map.of();
+        String pushed = Mods.Json.text(m, "pushed_at");
+        return new RepoInfo(Objects.requireNonNullElse(Mods.Json.text(owner, "login"), repo.substring(0, repo.indexOf('/'))),
+            Mods.Json.text(m, "description"), pushed == null || pushed.length() < 10 ? null : pushed.substring(0, 10),
+            m.get("stargazers_count") instanceof Number n ? n.intValue() : 0, Mods.Json.text(licence, "spdx_id"));
+    }
+
     /** How many mods, devices or themes a repository found on GitHub holds for its group (0: nothing the launcher can use). */
     static int found(Suggestion x) throws IOException {
         return switch (x.group()) {
-            case MODS -> Mods.parseCatalog(PatchbayLauncher.httpText("https://api.github.com/repos/" + x.repo() + "/releases?per_page=100"), x.repo(), glob("*.zip")).size();
+            case MODS -> Mods.parseCatalog(Mods.releasePages(x.repo(), System.getProperty("launcher.fixtures")).get(0), x.repo(), glob("*.zip")).size();
             case THEMES -> Themes.fetchRepo(x.repo(), "").size();
             default -> Devices.fetchRepo(x.repo(), "").size();
         };
@@ -356,6 +372,13 @@ final class Sources {
         /** Repositories found on GitHub by topic that the user doesn't have; null until searched. */
         private List<Suggestion> discovered;
         private boolean discoveredFailed;
+        /** The repository picked in Lista źródeł and in Polecane (group and name), shown in the card beside each. */
+        private String pickedFound, pickedRecommended;
+        private final JPanel foundCard = new Theme.Card(new BorderLayout(), Theme.FRAME);
+        private final JPanel recommendedCard = new Theme.Card(new BorderLayout(), Theme.FRAME);
+        /** What GitHub said about a repository, and how many things it holds (-1: couldn't check); filled as they are picked. */
+        private final Map<String, RepoInfo> infos = new HashMap<>();
+        private final Map<String, Integer> counts = new HashMap<>();
         /** Gets how many recommended sources the user hasn't looked at yet: the red count on the Sources tab. */
         private final java.util.function.IntConsumer unseen;
 
@@ -385,8 +408,8 @@ final class Sources {
 
             viewCards.setOpaque(false);
             viewCards.add(body, "active");
-            viewCards.add(scrolled(foundList), "found");
-            viewCards.add(scrolled(recommended), "recommended");
+            viewCards.add(withCard(foundList, foundCard), "found");
+            viewCards.add(withCard(recommended, recommendedCard), "recommended");
             JPanel tabs = Theme.tabStrip(PatchbayLauncher.t("Widok źródeł", "Sources view"));
             activeTab.addActionListener(e -> showView("active"));
             foundTab.addActionListener(e -> showView("found"));
@@ -410,6 +433,17 @@ final class Sources {
         }
 
         // ---------- Lista źródeł and Polecane: sources on GitHub to add ----------
+
+        /** A list on the left and the card for the picked repository on the right, as in Aktywne. */
+        private static JComponent withCard(JPanel column, JPanel card) {
+            card.setPreferredSize(new Dimension(316, 10));
+            card.setBorder(new EmptyBorder(18, 18, 18, 18));
+            JPanel both = new JPanel(new BorderLayout(16, 0));
+            both.setOpaque(false);
+            both.add(scrolled(column), BorderLayout.CENTER);
+            both.add(card, BorderLayout.EAST);
+            return both;
+        }
 
         private static JScrollPane scrolled(JPanel column) {
             column.setOpaque(false);
@@ -515,9 +549,16 @@ final class Sources {
             fill(recommended, PatchbayLauncher.t("Polecane", "Recommended"),
                 PatchbayLauncher.t("sprawdzone przez autora Launchera, jeszcze nie na Twojej liście", "checked by the launcher's author, not on your list yet"),
                 suggestions, suggestionsFailed, picked, false);
+            fillCard(foundCard, find(everything, pickedFound), picked);
+            fillCard(recommendedCard, find(suggestions, pickedRecommended), picked);
         }
 
-        private void fill(JPanel column, String title, String hint, List<Suggestion> items, boolean failed, Set<String> picked, boolean checkFirst) {
+        private static Suggestion find(List<Suggestion> items, String key) {
+            if (items == null || key == null) return null;
+            return items.stream().filter(x -> key(x).equals(key)).findFirst().orElse(null);
+        }
+
+        private void fill(JPanel column, String title, String hint, List<Suggestion> items, boolean failed, Set<String> picked, boolean inFound) {
             column.removeAll();
             JPanel box = new JPanel(new BorderLayout());
             box.setOpaque(false);
@@ -541,7 +582,7 @@ final class Sources {
                 none.setMaximumSize(new Dimension(Integer.MAX_VALUE, none.getPreferredSize().height));
                 list.add(none);
             } else {
-                for (Suggestion x : items) list.add(onlineRow(x, checkFirst && picked.contains(key(x)), checkFirst && !picked.contains(key(x))));
+                for (Suggestion x : items) list.add(onlineRow(x, inFound && picked.contains(key(x)), inFound));
             }
             box.add(list, BorderLayout.CENTER);
             box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
@@ -550,14 +591,15 @@ final class Sources {
             column.repaint();
         }
 
-        /**
-         * One repository to add: its name, group and description, and Add. One found by topic alone is
-         * checked first: it is added only when it holds something the launcher can use.
-         */
-        private JComponent onlineRow(Suggestion x, boolean markPicked, boolean checkFirst) {
+        /** One repository on GitHub: its name, group and description; a click shows it in the card beside the list. */
+        private JComponent onlineRow(Suggestion x, boolean markPicked, boolean inFound) {
+            boolean selected = key(x).equals(inFound ? pickedFound : pickedRecommended);
             JPanel row = new JPanel(new BorderLayout(12, 0));
-            row.setBackground(Theme.WELL);
-            row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(8, 14, 8, 12)));
+            row.setBackground(selected ? Theme.ACCENT_SEL : Theme.WELL);
+            row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR),
+                selected ? BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 3, 0, 0, Theme.ACCENT), new EmptyBorder(8, 11, 8, 12))
+                    : new EmptyBorder(8, 14, 8, 12)));
+            row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             JPanel text = new JPanel();
             text.setOpaque(false);
             text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
@@ -572,40 +614,96 @@ final class Sources {
                 text.add(note);
             }
             row.add(text, BorderLayout.CENTER);
-            JButton add = Theme.button(PatchbayLauncher.t("Dodaj", "Add"), "secondary");
-            add.putClientProperty("small", true);
-            add.setFont(Theme.text(12f));
-            add.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Dodaj źródło: ", "Add source: ") + x.repo());
-            add.addActionListener(e -> {
-                if (!checkFirst) { addOnline(x, row); return; }
-                add.setEnabled(false);
-                add.setText(PatchbayLauncher.t("Sprawdzam…", "Checking…"));
-                new Thread(() -> {
-                    int n;
-                    try {
-                        n = found(x);
-                    } catch (IOException | RuntimeException ex) {
-                        n = -1;
-                    }
-                    int count = n;
-                    SwingUtilities.invokeLater(() -> {
-                        if (count > 0) { addOnline(x, row); return; }
-                        add.setText(PatchbayLauncher.t("Dodaj", "Add"));
-                        add.setEnabled(true);
-                        JOptionPane.showMessageDialog(row, count < 0
-                            ? PatchbayLauncher.t("Nie udało się sprawdzić repozytorium. Spróbuj za chwilę.", "Couldn't check the repository. Try again in a moment.")
-                            : PatchbayLauncher.t("W tym repozytorium nie ma niczego, co Launcher umie pobrać (", "This repository holds nothing the launcher can get (")
-                                + groupName(x.group()) + PatchbayLauncher.t("). Źródło nie zostało dodane.", "). The source wasn't added."),
-                            "Patchbay Launcher", JOptionPane.INFORMATION_MESSAGE);
-                    });
-                }, "check-source").start();
-            });
-            JPanel right = new JPanel(new GridBagLayout());
-            right.setOpaque(false);
-            right.add(add);
-            row.add(right, BorderLayout.EAST);
+            row.getAccessibleContext().setAccessibleName(x.repo());
+            java.awt.event.MouseAdapter pick = new java.awt.event.MouseAdapter() {
+                @Override public void mouseClicked(java.awt.event.MouseEvent e) { pick(x, inFound); }
+            };
+            row.addMouseListener(pick);
+            for (Component c : text.getComponents()) c.addMouseListener(pick);
+            for (Component c : top.getComponents()) c.addMouseListener(pick);
             row.setMaximumSize(new Dimension(Integer.MAX_VALUE, row.getPreferredSize().height));
             return row;
+        }
+
+        /** Marks the repository, shows it in the card and asks GitHub about it (once). */
+        private void pick(Suggestion x, boolean inFound) {
+            if (inFound) pickedFound = key(x); else pickedRecommended = key(x);
+            buildOnline();
+            if (infos.containsKey(key(x)) || counts.containsKey(key(x))) return;
+            new Thread(() -> {
+                RepoInfo info;
+                try {
+                    info = repoInfo(x.repo());
+                } catch (IOException | RuntimeException ex) {
+                    info = null;
+                }
+                int n;
+                try {
+                    n = found(x);
+                } catch (IOException | RuntimeException ex) {
+                    n = -1;
+                }
+                RepoInfo i = info;
+                int count = n;
+                SwingUtilities.invokeLater(() -> {
+                    if (i != null) infos.put(key(x), i);
+                    counts.put(key(x), count);
+                    buildOnline();
+                });
+            }, "repo-info").start();
+        }
+
+        /** The card beside Lista źródeł and Polecane: who made the picked repository, what it is and holds, and Add to active. */
+        private void fillCard(JPanel card, Suggestion x, Set<String> picked) {
+            card.removeAll();
+            JPanel col = new JPanel();
+            col.setOpaque(false);
+            col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
+            if (x == null) {
+                add(col, Theme.label(PatchbayLauncher.t("Repozytorium", "Repository"), Theme.bold(18f), Theme.TEXT), 10);
+                add(col, Theme.wrapped(PatchbayLauncher.t("Kliknij repozytorium na liście, żeby zobaczyć, kto je zrobił i co w nim jest, i dodać je do aktywnych.",
+                    "Click a repository in the list to see who made it and what's in it, and to add it to the active sources."), 230, Theme.MUTED, 13f), 0);
+                card.add(col, BorderLayout.NORTH);
+                card.revalidate();
+                card.repaint();
+                return;
+            }
+            String k = key(x);
+            RepoInfo info = infos.get(k);
+            Integer count = counts.get(k);
+            JPanel tags = picked.contains(k) ? Theme.row(8, badge(groupName(x.group())), badge(PatchbayLauncher.t("polecane", "recommended"))) : Theme.row(8, badge(groupName(x.group())));
+            add(col, tags, 8);
+            add(col, Theme.wrapped(x.repo().replace("/", "/\u200B"), 230, Theme.TEXT, 18f), 10);
+            String about = info != null && info.description() != null && !info.description().isBlank() ? info.description() : x.note();
+            if (about != null && !about.isBlank()) add(col, Theme.wrapped(about, 230, Theme.SOFT, 14f), 12);
+            String holds = count == null ? PatchbayLauncher.t("sprawdzam…", "checking…")
+                : count < 0 ? PatchbayLauncher.t("nie udało się sprawdzić", "couldn't check")
+                : count == 0 ? PatchbayLauncher.t("nic, co Launcher umie pobrać", "nothing the launcher can get")
+                : groupName(x.group()) + ": " + count;
+            List<String[]> facts = new ArrayList<>();
+            facts.add(new String[] { PatchbayLauncher.t("Autor", "Author"), info != null ? info.owner() : x.repo().substring(0, x.repo().indexOf('/')) });
+            facts.add(new String[] { PatchbayLauncher.t("Zawiera", "Holds"), holds });
+            if (info != null && info.changed() != null) facts.add(new String[] { PatchbayLauncher.t("Ostatnia zmiana", "Last change"), info.changed(), "mono" });
+            if (info != null && info.license() != null && !"NOASSERTION".equals(info.license())) facts.add(new String[] { PatchbayLauncher.t("Licencja", "Licence"), info.license() });
+            if (info != null) facts.add(new String[] { PatchbayLauncher.t("Gwiazdki", "Stars"), String.valueOf(info.stars()), "mono" });
+            JPanel table = Theme.facts(facts.toArray(new String[0][]));
+            add(col, table, 0);
+            card.add(Theme.scrolling(col), BorderLayout.CENTER);
+
+            JButton addIt = Theme.button(PatchbayLauncher.t("Dodaj do aktywnych", "Add to active"), "primary");
+            // a recommended one can be added even when GitHub couldn't be asked; one found by topic only when it holds something
+            addIt.setEnabled(count != null && (count > 0 || count < 0 && picked.contains(k)));
+            addIt.addActionListener(e -> addOnline(x, card));
+            JButton page = Theme.button(PatchbayLauncher.t("Strona repozytorium", "Repository page"), "secondary");
+            page.addActionListener(e -> Platform.open("https://github.com/" + x.repo()));
+            JPanel south = new JPanel(new GridLayout(0, 1, 0, 8));
+            south.setOpaque(false);
+            south.setBorder(new EmptyBorder(12, 0, 0, 0));
+            south.add(addIt);
+            south.add(page);
+            card.add(south, BorderLayout.SOUTH);
+            card.revalidate();
+            card.repaint();
         }
 
         private void addOnline(Suggestion x, JComponent row) {
@@ -615,6 +713,8 @@ final class Sources {
                 JOptionPane.showMessageDialog(row, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            if (key(x).equals(pickedFound)) pickedFound = null;
+            if (key(x).equals(pickedRecommended)) pickedRecommended = null;
             if (suggestions != null) suggestions.removeIf(y -> key(y).equals(key(x)));
             if (discovered != null) discovered.removeIf(y -> key(y).equals(key(x)));
             sources = all();
