@@ -2,6 +2,12 @@ Patchbay Launcher installiert und startet Patchbay (BML) und lädt Mods, Geräte
 
 Ein inoffizielles Projekt von Marius R, nicht verbunden mit Bitwig GmbH oder dem Autor von Patchbay.
 
+## Patchbay
+
+Im Tab Patchbay installierst, aktualisierst und wechselst du Patchbay-Versionen. Deine Mods und Themes ziehen von selbst in die neue Version um.
+
+- **Patchbay-Mods wiederherstellen:** Die Schaltfläche erscheint, wenn ein Mod fehlt, der mit Patchbay kam, z. B. nachdem ein Framework deinstalliert wurde. Der Launcher lädt dieselbe Version erneut und ergänzt nur die fehlenden Mods, eingeschaltet. Nichts wird überschrieben. Bitwig und das Patchbay-Fenster müssen geschlossen sein.
+
 ## Mods
 
 Unter Mods wählst du Mods für Patchbay aus, installierst, aktualisierst, schaltest sie aus und deinstallierst sie.
@@ -10,9 +16,10 @@ Unter Mods wählst du Mods für Patchbay aus, installierst, aktualisierst, schal
 - **Favoriten:** Klicke auf den Stern neben einem Mod. Favoriten sind in der Sicherung der Einstellungen enthalten.
 - **Kategorie:** ergibt sich aus dem Namen des Mods („Kategorie: Name“). Ein Mod ohne Kategorie aus der Liste landet unter Other.
 - **Anzeigen:** Alle, Kompatibel, Installiert, Updates, Inkompatibel, Aus dem Repo entfernt und Nicht in Quellen. Um alle Mods, die nicht in Quellen sind, auf einmal loszuwerden: Anzeigen → Nicht in Quellen, „Alle auswählen“, dann „Deinstallieren“.
-- **Installieren:** Mods auswählen und „Ausgewählte installieren“ klicken. „Alle auswählen“ wählt nur die aus, die installiert oder aktualisiert werden können.
+- **Installieren:** Mods auswählen und „Ausgewählte installieren“ klicken. „Alle auswählen“ wählt die Mods zum Installieren oder Aktualisieren. Wenn die Liste nichts zum Installieren hat (z. B. Anzeigen → Nicht in Quellen oder Aus dem Repo entfernt), wählt es alle installierten, außer Mods aus Patchbay.
 - **Ausschalten / Einschalten:** Der Mod bleibt auf dem Datenträger, Patchbay lädt ihn nicht. Markiere einen oder mehrere mit Häkchen und nutze die Schaltfläche unter der Liste.
 - **Deinstallieren:** entfernt die Mods mit Häkchen nach Bestätigung vom Datenträger. Der Launcher warnt, wenn ein anderer eingeschalteter Mod sie braucht.
+- „Ausschalten“ und „Deinstallieren“ sind nur unter der Liste. Sie bleiben grau, bis ein Mod ein Häkchen hat.
 
 Zum Ausschalten und Deinstallieren müssen Bitwig und das Patchbay-Fenster geschlossen sein.
 
@@ -20,9 +27,10 @@ Zum Ausschalten und Deinstallieren müssen Bitwig und das Patchbay-Fenster gesch
 
 | Zustand | Bedeutung | Was tun |
 | --- | --- | --- |
+| aus Patchbay | Der Mod kam mit Patchbay (Frameworks: Actions and Menus, Browser, Themes, Nitro Devices und andere). Andere Mods, Geräte und Themes brauchen ihn. | Behalten. Er wird mit Patchbay aktualisiert. |
 | entfernt | Der Autor hat den Mod aus dem Repository entfernt. Er funktioniert weiter, bekommt aber keine Aktualisierungen. | Behalten oder deinstallieren. |
 | zurückgezogen | Der Autor hat den Mod wegen Problemen zurückgezogen. Der Grund steht in den Details. Der Launcher fragt einmal, ob er ausgeschaltet werden soll. | Am besten ausschalten oder deinstallieren. |
-| nicht in Quellen | Keine eingeschaltete Quelle bietet ihn an: Er kam mit Patchbay, wurde von Hand hinzugefügt, oder sein Repository gibt es nicht mehr. | Behalten oder deinstallieren. |
+| nicht in Quellen | Keine eingeschaltete Quelle bietet ihn an: Er wurde von Hand hinzugefügt, oder sein Repository gibt es nicht mehr. | Behalten oder deinstallieren. |
 | inkompatibel | Er funktioniert nicht mit deinem Bitwig. | Auf eine neue Version warten. |
 
 ## Geräte
@@ -37,6 +45,30 @@ Unter Geräte lädst du Bitwig-Gerätedateien (.bwdevice, .bwmodulator, Grid-Mod
 - **entfernt / zurückgezogen:** wie bei Mods. Eine Datei, die ihr Repository nicht mehr hat, bleibt in der Liste, damit sie deinstalliert werden kann.
 
 Für Änderungen muss Bitwig geschlossen sein.
+
+## Dateien, die nicht mehr im Repository sind
+
+Der Launcher zeigt auch Mods und Geräte auf deinem Datenträger, die keine Quelle mehr anbietet:
+
+- **entfernt:** Der Autor hat sie aus dem Repository entfernt;
+- **nicht in Quellen:** Sie wurden von Hand hinzugefügt, oder die Quelle gibt es nicht mehr.
+
+Sie funktionieren weiter, bekommen aber keine Updates. Wenn du sie nicht willst:
+
+**Mods**
+
+1. Beende Bitwig und schließe das Patchbay-Fenster.
+2. Anzeigen → Aus dem Repo entfernt oder Nicht in Quellen. Um nur einige zu wählen, tippe einen Namen in Suchen.
+3. Setze Häkchen oder klicke „Alle auswählen“.
+4. Klicke „Deinstallieren“ unter der Liste und bestätige. Der Launcher listet auf, was er entfernt, und warnt, wenn ein anderer Mod etwas davon braucht.
+
+Mods aus Patchbay erscheinen nicht in diesen Ansichten. Setzt du selbst ein Häkchen bei einem, warnt der Launcher vor dem Entfernen.
+
+**Geräte**
+
+1. Beende Bitwig.
+2. Sortiere nach „Status“: Entfernte stehen oben.
+3. Setze Häkchen und klicke „Deinstallieren“ unter der Liste.
 
 ## Quellen
 
@@ -60,8 +92,14 @@ GitHub erlaubt 60 Anfragen pro Stunde von einer Adresse. Sind sie aufgebraucht, 
 - **Systeminformationen:** die Versionen von Launcher, System, Java, Bitwig, Patchbay und die Liste der Mods, ohne Pfade und persönliche Daten. „Kopieren“ legt sie in die Zwischenablage.
 - **Problem melden** (untere Leiste): öffnet eine neue Meldung auf GitHub mit bereits eingetragenen Systeminformationen. Ergänze, was passiert ist und was hätte passieren sollen.
 - **Bitwig-Warnung:** Vor „Patchbay starten“ prüft der Launcher, ob Patchbay dein Bitwig unterstützt. Wenn nicht, zeigt er die unterstützten Versionen und fragt: Abbrechen oder Trotzdem starten.
-- **GitHub-Speicher leeren** (Einstellungen): wenn der Launcher etwas zeigt, das es im Repository nicht mehr gibt. Er löscht die gemerkten Listen und lädt alles neu. Installiertes bleibt.
 - **Fenster:** Beim ersten Mal passt es sich dem Bildschirm an, danach öffnet es sich dort und so groß, wie es beim Schließen war.
+
+## Wenn etwas nicht stimmt
+
+1. **Neu laden:** in Mods, Geräte, Themes oder Quellen. Das reicht meistens.
+2. **Patchbay-Mods wiederherstellen** (Tab Patchbay), wenn Mods, Geräte oder Themes nach einer Deinstallation nicht mehr funktionieren.
+3. **GitHub-Speicher leeren** (Einstellungen). Der letzte Ausweg, wenn der Launcher nach „Neu laden“ immer noch einen Mod, ein Gerät oder ein Theme zeigt, das es im Repository nicht mehr gibt, eine neue Version nicht sieht, die schon auf GitHub ist, oder Fehler beim Laden der Listen zeigt. Er löscht die gemerkten Listen und lädt alles neu. Installierte Mods, Geräte, Themes und Einstellungen bleiben. Das verbraucht einen Teil des GitHub-Limits (60 Anfragen pro Stunde), also nicht oft nutzen. Dateien, die nicht in Quellen sind, entfernt es nicht; dafür gibt es „Deinstallieren“.
+4. **Problem melden,** wenn nichts davon geholfen hat.
 
 ## Für Autoren von Mods, Geräten und Themes
 

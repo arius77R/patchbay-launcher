@@ -2,6 +2,12 @@ Patchbay Launcher installe et démarre Patchbay (BML) et récupère des mods, de
 
 Un projet non officiel de Marius R, sans lien avec Bitwig GmbH ni avec l'auteur de Patchbay.
 
+## Patchbay
+
+Dans l'onglet Patchbay, vous installez, mettez à jour et changez de version de Patchbay. Vos mods et thèmes passent seuls à la nouvelle version.
+
+- **Restaurer les mods de Patchbay :** le bouton apparaît quand un mod venu avec Patchbay manque, par ex. après la désinstallation d'un framework. Le lanceur télécharge à nouveau la même version et n'ajoute que les mods manquants, activés. Rien n'est écrasé. Bitwig et la fenêtre Patchbay doivent être fermés.
+
 ## Mods
 
 Dans Mods, vous choisissez, installez, mettez à jour, désactivez et désinstallez les mods de Patchbay.
@@ -10,9 +16,10 @@ Dans Mods, vous choisissez, installez, mettez à jour, désactivez et désinstal
 - **Favoris :** cliquez sur l'étoile à côté d'un mod. Les favoris font partie de la sauvegarde des réglages.
 - **Catégorie :** elle vient du nom du mod (« Catégorie : Nom »). Un mod sans catégorie de la liste va dans Other.
 - **Afficher :** Tous, Compatibles, Installés, Mises à jour, Incompatibles, Supprimés du dépôt et Hors sources. Pour retirer d'un coup tous les mods hors sources : Afficher → Hors sources, « Tout cocher », puis « Désinstaller ».
-- **Installer :** cochez des mods et cliquez sur « Installer la sélection ». « Tout cocher » ne coche que ceux à installer ou à mettre à jour.
+- **Installer :** cochez des mods et cliquez sur « Installer la sélection ». « Tout cocher » coche les mods à installer ou à mettre à jour. Quand la liste n'a rien à installer (par ex. Afficher → Hors sources ou Supprimés du dépôt), il coche tous les mods installés, sauf ceux de Patchbay.
 - **Désactiver / Activer :** le mod reste sur le disque, Patchbay ne le charge pas. Cochez-en un ou plusieurs et utilisez le bouton sous la liste.
 - **Désinstaller :** supprime les mods cochés du disque, après confirmation. Le lanceur prévient quand un autre mod activé en a besoin.
+- « Désactiver » et « Désinstaller » sont seulement sous la liste. Ils restent gris tant qu'aucun mod n'est coché.
 
 Pour désactiver et désinstaller, Bitwig et la fenêtre de Patchbay doivent être fermés.
 
@@ -20,9 +27,10 @@ Pour désactiver et désinstaller, Bitwig et la fenêtre de Patchbay doivent êt
 
 | État | Ce que cela veut dire | Que faire |
 | --- | --- | --- |
+| de Patchbay | Le mod est venu avec Patchbay (frameworks : Actions and Menus, Browser, Themes, Nitro Devices et d'autres). D'autres mods, appareils et thèmes en ont besoin. | Le garder. Il est mis à jour avec Patchbay. |
 | supprimé | L'auteur a supprimé le mod du dépôt. Il fonctionne toujours, mais ne recevra plus de mises à jour. | Le garder ou le désinstaller. |
 | retiré | L'auteur a retiré le mod à cause de problèmes. La raison est dans les détails. Le lanceur demande une fois s'il faut le désactiver. | Mieux vaut le désactiver ou le désinstaller. |
-| hors sources | Aucune source activée ne le propose : il est venu avec Patchbay, a été ajouté à la main, ou son dépôt n'existe plus. | Le garder ou le désinstaller. |
+| hors sources | Aucune source activée ne le propose : il a été ajouté à la main, ou son dépôt n'existe plus. | Le garder ou le désinstaller. |
 | incompatible | Il ne fonctionne pas avec votre Bitwig. | Attendre une nouvelle version. |
 
 ## Appareils
@@ -37,6 +45,30 @@ Appareils récupère les fichiers d'appareils Bitwig (.bwdevice, .bwmodulator, m
 - **supprimé / retiré :** comme dans Mods. Un fichier que son dépôt n'a plus reste dans la liste, pour pouvoir le désinstaller.
 
 Les changements demandent que Bitwig soit fermé.
+
+## Fichiers qui ne sont plus dans le dépôt
+
+Le lanceur montre aussi les mods et appareils présents sur votre disque qu'aucune source ne propose plus :
+
+- **supprimé :** l'auteur les a retirés du dépôt ;
+- **hors sources :** ils ont été ajoutés à la main, ou la source n'existe plus.
+
+Ils fonctionnent toujours, mais ne recevront pas de mises à jour. Si vous n'en voulez pas :
+
+**Mods**
+
+1. Quittez Bitwig et la fenêtre Patchbay.
+2. Afficher → Supprimés du dépôt ou Hors sources. Pour n'en choisir que certains, tapez un nom dans Rechercher.
+3. Cochez-les, ou cliquez sur « Tout cocher ».
+4. Cliquez sur « Désinstaller » sous la liste et confirmez. Le lanceur liste ce qu'il supprime et prévient si un autre mod en a besoin.
+
+Les mods de Patchbay n'apparaissent pas dans ces vues. Si vous en cochez un vous-même, le lanceur prévient avant de le supprimer.
+
+**Appareils**
+
+1. Quittez Bitwig.
+2. Triez par « État » : les supprimés sont en haut.
+3. Cochez-les et cliquez sur « Désinstaller » sous la liste.
 
 ## Sources
 
@@ -60,8 +92,14 @@ GitHub autorise 60 requêtes par heure depuis une même adresse. Quand elles son
 - **Informations système :** les versions du lanceur, du système, de Java, de Bitwig, de Patchbay et la liste des mods, sans chemins ni données personnelles. « Copier » les met dans le presse-papiers.
 - **Signaler un problème** (barre du bas) : ouvre un nouveau signalement sur GitHub avec les informations système déjà remplies. Ajoutez ce qui s'est passé et ce qui aurait dû se passer.
 - **Avertissement Bitwig :** avant « Lancer Patchbay », le lanceur vérifie que Patchbay prend en charge votre Bitwig. Sinon, il montre les versions prises en charge et demande : Annuler ou Démarrer quand même.
-- **Vider la mémoire GitHub** (Réglages) : quand le lanceur affiche quelque chose que le dépôt n'a plus. Il efface les listes gardées et télécharge tout à nouveau. Ce qui est installé reste.
 - **Fenêtre :** la première fois, elle s'adapte à l'écran, ensuite elle s'ouvre là où elle était, à la même taille qu'à la fermeture.
+
+## Quand quelque chose ne va pas
+
+1. **Actualiser :** dans Mods, Appareils, Thèmes ou Sources. Cela suffit en général.
+2. **Restaurer les mods de Patchbay** (onglet Patchbay), quand des mods, appareils ou thèmes ne marchent plus après une désinstallation.
+3. **Vider la mémoire GitHub** (Réglages). En dernier recours, quand après « Actualiser » le lanceur continue à afficher un mod, un appareil ou un thème que le dépôt n'a plus, ne voit pas une nouvelle version déjà sur GitHub, ou affiche des erreurs en chargeant les listes. Il efface les listes gardées et télécharge tout à nouveau. Les mods, appareils, thèmes et réglages installés restent. Il consomme une partie de la limite de GitHub (60 requêtes par heure), donc ne l'utilisez pas souvent. Il ne supprime pas les fichiers hors sources ; c'est le rôle de « Désinstaller ».
+4. **Signaler un problème,** si rien de tout cela n'a aidé.
 
 ## Pour les auteurs de mods, d'appareils et de thèmes
 

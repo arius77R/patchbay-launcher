@@ -2,6 +2,12 @@ Patchbay Launcher instaluje i uruchamia Patchbay (BML) oraz pobiera mody, urząd
 
 To nieoficjalny projekt Mariusa R, niezwiązany z Bitwig GmbH ani z autorem Patchbay.
 
+## Patchbay
+
+W zakładce Patchbay instalujesz, aktualizujesz i przełączasz wersje Patchbay. Twoje mody i motywy przechodzą do nowej wersji same.
+
+- **Przywróć mody Patchbay:** przycisk pojawia się, gdy brakuje któregoś modu, który przyszedł z Patchbay, np. po odinstalowaniu frameworka. Launcher pobiera tę samą wersję jeszcze raz i dokłada tylko brakujące mody, włączone. Niczego nie nadpisuje. Wymaga zamkniętego Bitwiga i okna Patchbay.
+
 ## Mody
 
 W zakładce Mody wybierasz, instalujesz, aktualizujesz, wyłączasz i odinstalowujesz mody do Patchbay.
@@ -10,9 +16,10 @@ W zakładce Mody wybierasz, instalujesz, aktualizujesz, wyłączasz i odinstalow
 - **Ulubione:** kliknij gwiazdkę przy modzie. Ulubione są w kopii zapasowej ustawień.
 - **Kategoria:** wynika z nazwy moda („Kategoria: Nazwa”). Mod bez kategorii z listy trafia do Other.
 - **Pokaż:** Wszystkie, Zgodne, Zainstalowane, Aktualizacje, Niezgodne, Usunięte z repo i Spoza źródeł. Żeby pozbyć się wszystkich modów spoza źródeł naraz: Pokaż → Spoza źródeł, „Zaznacz wszystkie”, potem „Odinstaluj”.
-- **Instalacja:** zaznacz mody i kliknij „Zainstaluj zaznaczone”. „Zaznacz wszystkie” zaznacza tylko te do zainstalowania albo aktualizacji.
+- **Instalacja:** zaznacz mody i kliknij „Zainstaluj zaznaczone”. „Zaznacz wszystkie” zaznacza mody do zainstalowania albo aktualizacji. Gdy na liście nie ma nic do zainstalowania (np. Pokaż → Spoza źródeł albo Usunięte z repo), zaznacza wszystkie zainstalowane, oprócz modów z Patchbay.
 - **Wyłącz / Włącz:** mod zostaje na dysku, Patchbay go nie ładuje. Postaw ptaszek przy jednym lub kilku i użyj przycisku pod listą.
 - **Odinstaluj:** usuwa zaznaczone ptaszkiem mody z dysku, po potwierdzeniu. Launcher ostrzega, gdy inny włączony mod go potrzebuje.
+- Przyciski „Wyłącz” i „Odinstaluj” są tylko pod listą. Są szare, dopóki przy żadnym modzie nie ma ptaszka.
 
 Wyłączanie i odinstalowanie wymaga zamkniętego Bitwiga i okna Patchbay.
 
@@ -20,9 +27,10 @@ Wyłączanie i odinstalowanie wymaga zamkniętego Bitwiga i okna Patchbay.
 
 | Stan | Co znaczy | Co zrobić |
 | --- | --- | --- |
+| z Patchbay | Mod przyszedł razem z Patchbay (frameworki: Actions and Menus, Browser, Themes, Nitro Devices i inne). Potrzebują go inne mody, urządzenia i motywy. | Zostaw. Aktualizuje się razem z Patchbay. |
 | usunięty | Autor usunął mod z repozytorium. Działa dalej, ale nie dostanie aktualizacji. | Zostaw albo odinstaluj. |
 | wycofany | Autor wycofał mod z powodu problemów. Powód jest w szczegółach. Launcher raz zapyta, czy go wyłączyć. | Najlepiej wyłącz albo odinstaluj. |
-| spoza źródeł | Żadne włączone źródło go nie oferuje: przyszedł z Patchbay, dodano go ręcznie albo jego repozytorium usunięto. | Zostaw albo odinstaluj. |
+| spoza źródeł | Żadne włączone źródło go nie oferuje: dodano go ręcznie albo jego repozytorium usunięto. | Zostaw albo odinstaluj. |
 | niezgodny | Nie działa z Twoim Bitwigiem. | Poczekaj na nową wersję. |
 
 ## Urządzenia
@@ -37,6 +45,30 @@ Zakładka Urządzenia pobiera pliki urządzeń Bitwiga (.bwdevice, .bwmodulator,
 - **usunięte / wycofane:** jak w Modach. Plik, którego repozytorium już nie ma, zostaje na liście, żeby dało się go odinstalować.
 
 Zmiany wymagają zamkniętego Bitwiga.
+
+## Pliki, których nie ma w repozytorium
+
+Launcher pokazuje też mody i urządzenia, które masz na dysku, ale których żadne źródło już nie oferuje:
+
+- **usunięty / usunięte:** autor usunął je z repozytorium;
+- **spoza źródeł:** dodano je ręcznie albo źródło usunięto.
+
+Działają dalej, ale nie dostaną aktualizacji. Jeśli ich nie chcesz:
+
+**Mody**
+
+1. Zamknij Bitwiga i okno Patchbay.
+2. Pokaż → Usunięte z repo albo Spoza źródeł. Żeby wybrać tylko część, wpisz nazwę w Szukaj.
+3. Postaw ptaszki albo kliknij „Zaznacz wszystkie”.
+4. Kliknij „Odinstaluj” pod listą i potwierdź. Launcher wypisze, co usuwa, i ostrzeże, jeśli coś jest potrzebne innemu modowi.
+
+Mody z Patchbay nie trafiają do tych widoków. Jeśli sam postawisz przy którymś ptaszek, Launcher ostrzeże przed usunięciem.
+
+**Urządzenia**
+
+1. Zamknij Bitwiga.
+2. Sortuj po „Stan”: usunięte są na górze.
+3. Postaw ptaszki i kliknij „Odinstaluj” pod listą.
 
 ## Źródła
 
@@ -60,8 +92,14 @@ GitHub pozwala na 60 zapytań na godzinę z jednego adresu. Gdy limit się skoń
 - **Informacje o systemie:** wersje Launchera, systemu, Javy, Bitwiga, Patchbay i lista modów, bez ścieżek i danych osobistych. „Kopiuj” kopiuje je do schowka.
 - **Zgłoś problem** (dolny pasek): otwiera nowe zgłoszenie na GitHubie z już wpisanymi informacjami o systemie. Dopisz, co się stało i co miało się stać.
 - **Ostrzeżenie o Bitwigu:** przed „Uruchom Patchbay” Launcher sprawdza, czy Patchbay obsługuje Twój Bitwig. Jeśli nie, pokazuje obsługiwane wersje i pyta: Anuluj albo Uruchom mimo to.
-- **Wyczyść pamięć GitHub** (Ustawienia): gdy Launcher pokazuje coś, czego w repozytorium już nie ma. Usuwa zapamiętane listy i pobiera wszystko od nowa. Zainstalowane rzeczy zostają.
 - **Okno:** przy pierwszym uruchomieniu dopasowuje się do ekranu, potem otwiera się tam i tak duże, jak było przy zamknięciu.
+
+## Gdy coś się nie zgadza
+
+1. **Odśwież:** w Modach, Urządzeniach, Motywach albo Źródłach. To zwykle wystarcza.
+2. **Przywróć mody Patchbay** (zakładka Patchbay), gdy mody, urządzenia albo motywy przestały działać po odinstalowaniu czegoś.
+3. **Wyczyść pamięć GitHub** (Ustawienia). To ostateczność, gdy po „Odśwież” Launcher dalej pokazuje mod, urządzenie albo motyw, którego w repozytorium już nie ma, nie widzi nowej wersji, która jest już na GitHubie, albo pokazuje błędy przy pobieraniu list. Usuwa zapamiętane listy i pobiera wszystko od nowa. Zainstalowane mody, urządzenia, motywy i ustawienia zostają. Zużywa część limitu GitHuba (60 zapytań na godzinę), więc nie używaj jej często. Nie usuwa plików spoza źródeł, do tego służy „Odinstaluj”.
+4. **Zgłoś problem,** jeśli nic z tego nie pomogło.
 
 ## Dla autorów modów, urządzeń i motywów
 
