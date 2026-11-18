@@ -134,15 +134,18 @@ final class Sources {
 
     // ---------- recommended sources ----------
 
-    /** A repository the launcher's author recommends, from sources.json in the launcher's own repository. */
+    /** The list of sources the launcher's author keeps on GitHub: sources.json in this repository (Polecane). */
+    static final String LIST_REPO = "arius77R/bitwig-mods-list";
+
+    /** A repository on GitHub to add as a source: from the author's list or found by its topic. */
     record Suggestion(String group, String repo, String note) { }
 
     /**
-     * The recommended sources the user doesn't have yet (in any group, switched on or off). The list lives
-     * in the launcher's repository, so a new source reaches everyone without a new launcher version.
-     * No list there yet means none: an empty list, not an error.
+     * Every source on the author's list (LIST_REPO/sources.json), the ones the user has too. The list lives
+     * on GitHub, so a new source reaches everyone without a new launcher version. No list there yet means
+     * none: an empty list, not an error.
      */
-    static List<Suggestion> suggested() throws IOException {
+    static List<Suggestion> listed() throws IOException {
         String f = System.getProperty("launcher.fixtures"); // offline test
         String json;
         if (f != null) {
@@ -151,20 +154,19 @@ final class Sources {
             json = Files.readString(fx);
         } else {
             try {
-                json = PatchbayLauncher.httpText("https://raw.githubusercontent.com/" + SelfUpdate.REPO + "/HEAD/sources.json");
+                json = PatchbayLauncher.httpText("https://raw.githubusercontent.com/" + LIST_REPO + "/HEAD/sources.json");
             } catch (IOException none) {
                 if (String.valueOf(none.getMessage()).contains("HTTP 404")) return List.of();
                 throw none;
             }
         }
-        Set<String> have = new HashSet<>();
-        for (Source s : all()) have.add(s.group() + " " + s.repo().toLowerCase(Locale.ROOT));
+        Set<String> seen = new HashSet<>();
         List<Suggestion> out = new ArrayList<>();
         for (Object o : Mods.Json.array(Mods.Json.object(Mods.Json.parse(json)).get("sources"))) {
             Map<String, Object> m = Mods.Json.object(o);
             String group = Mods.Json.text(m, "group"), repo = normalizeRepo(String.valueOf(Mods.Json.text(m, "repo")));
             if (group == null || group.equals(PATCHBAY) || !GROUPS.contains(group) || repo == null) continue;
-            if (have.add(group + " " + repo.toLowerCase(Locale.ROOT))) out.add(new Suggestion(group, repo, Mods.Json.text(m, "note")));
+            if (seen.add(group + " " + repo.toLowerCase(Locale.ROOT))) out.add(new Suggestion(group, repo, Mods.Json.text(m, "note")));
         }
         return out;
     }
@@ -173,13 +175,12 @@ final class Sources {
     static final Map<String, String> TOPICS = new LinkedHashMap<>(Map.of("patchbay-mod", MODS, "patchbay-devices", DEVICES, "patchbay-themes", THEMES));
 
     /**
-     * Repositories on GitHub with one of the launcher's topics that the user doesn't have yet, with their
-     * description. A topic that can't be searched is skipped unless all fail.
+     * Repositories on GitHub with one of the launcher's topics, with their description, the ones the user
+     * has too. A topic that can't be searched is skipped unless all fail.
      */
     static List<Suggestion> discovered() throws IOException {
         String f = System.getProperty("launcher.fixtures"); // offline test
-        Set<String> have = new HashSet<>();
-        for (Source s : all()) have.add(s.group() + " " + s.repo().toLowerCase(Locale.ROOT));
+        Set<String> seen = new HashSet<>();
         List<Suggestion> out = new ArrayList<>();
         IOException failed = null;
         int searched = 0;
@@ -201,7 +202,7 @@ final class Sources {
                 Map<String, Object> m = Mods.Json.object(o);
                 String repo = normalizeRepo(String.valueOf(Mods.Json.text(m, "full_name")));
                 if (repo == null || Boolean.TRUE.equals(m.get("archived")) || Boolean.TRUE.equals(m.get("fork"))) continue;
-                if (have.add(topic.getValue() + " " + repo.toLowerCase(Locale.ROOT))) out.add(new Suggestion(topic.getValue(), repo, Mods.Json.text(m, "description")));
+                if (seen.add(topic.getValue() + " " + repo.toLowerCase(Locale.ROOT))) out.add(new Suggestion(topic.getValue(), repo, Mods.Json.text(m, "description")));
             }
         }
         if (searched == 0 && failed != null) throw failed;
@@ -366,10 +367,10 @@ final class Sources {
         private JComponent listActions;
         /** "active", "found" or "recommended": the tab on view. */
         private String view = "active";
-        /** Recommended sources the user doesn't have; null until loaded, or when the list can't be had (failed). */
-        private List<Suggestion> suggestions;
-        private boolean suggestionsFailed;
-        /** Repositories found on GitHub by topic that the user doesn't have; null until searched. */
+        /** The author's list of sources (Polecane: the ones not active yet); null until loaded, or when it can't be had (failed). */
+        private List<Suggestion> listed;
+        private boolean listedFailed;
+        /** Repositories found on GitHub by topic; null until searched. */
         private List<Suggestion> discovered;
         private boolean discoveredFailed;
         /** The repository picked in Lista źródeł and in Polecane (group and name), shown in the card beside each. */
@@ -461,7 +462,7 @@ final class Sources {
             new Thread(() -> {
                 List<Suggestion> picked, topics;
                 try {
-                    picked = suggested();
+                    picked = listed();
                 } catch (IOException | RuntimeException none) {
                     picked = null; // no network or GitHub busy: the tab says the list couldn't be had
                 }
@@ -476,10 +477,10 @@ final class Sources {
         }
 
         private void onlineLoaded(List<Suggestion> picked, List<Suggestion> topics) {
-            suggestionsFailed = picked == null;
-            suggestions = picked == null ? List.of() : new ArrayList<>(picked);
+            listedFailed = picked == null;
+            listed = picked == null ? List.of() : picked;
             discoveredFailed = topics == null;
-            discovered = topics == null ? List.of() : new ArrayList<>(topics);
+            discovered = topics == null ? List.of() : topics;
             buildOnline();
             if (view.equals("recommended") && isShowing()) markSeen(); else countUnseen();
         }
@@ -509,7 +510,8 @@ final class Sources {
         /** The red count on the Polecane tab and on the Sources tab: recommended sources not looked at yet. */
         private void countUnseen() {
             Set<String> seen = seen();
-            int n = suggestions == null ? 0 : (int) suggestions.stream().filter(x -> !seen.contains(x.repo())).count();
+            List<Suggestion> fresh = recommendedNow();
+            int n = fresh == null ? 0 : (int) fresh.stream().filter(x -> !seen.contains(x.repo())).count();
             recommendedTab.putClientProperty("badge", n);
             recommendedTab.getAccessibleContext().setAccessibleDescription(n > 0 ? PatchbayLauncher.t("Nowe: ", "New: ") + n : null);
             recommendedTab.revalidate();
@@ -518,9 +520,10 @@ final class Sources {
         }
 
         private void markSeen() {
-            if (suggestions == null) return;
+            List<Suggestion> fresh = recommendedNow();
+            if (fresh == null) return;
             Set<String> seen = seen();
-            for (Suggestion x : suggestions) seen.add(x.repo());
+            for (Suggestion x : fresh) seen.add(x.repo());
             seen.remove("null");
             I18n.remember("sourcesSeen", String.join(",", seen));
             countUnseen();
@@ -528,29 +531,46 @@ final class Sources {
 
         private static String key(Suggestion x) { return x.group() + " " + x.repo().toLowerCase(Locale.ROOT); }
 
+        /** The sources the user has (Aktywne), by group and name. */
+        private Set<String> active() {
+            Set<String> out = new HashSet<>();
+            for (Source x : sources) out.add(x.group() + " " + x.repo().toLowerCase(Locale.ROOT));
+            return out;
+        }
+
+        /** Polecane: the author's list without the sources the user has; null until loaded. */
+        private List<Suggestion> recommendedNow() {
+            if (listed == null) return null;
+            Set<String> active = active();
+            return listed.stream().filter(x -> !active.contains(key(x))).toList();
+        }
+
         /**
-         * Lista źródeł: everything on GitHub to add, the recommended ones marked; Polecane: the recommended
-         * ones alone. Each in one framed list like a group of sources, with a line when there are none.
+         * Lista źródeł: everything on GitHub, the author's list and the repositories with a topic, the active
+         * ones marked; Polecane: the author's list without the active ones. Each in one framed list like a group
+         * of sources, with a line when there are none, and the card for the picked repository beside it.
          */
         private void buildOnline() {
-            Set<String> picked = new HashSet<>();
-            if (suggestions != null) for (Suggestion x : suggestions) picked.add(key(x));
+            Set<String> picked = new HashSet<>(), active = active();
+            if (listed != null) for (Suggestion x : listed) picked.add(key(x));
             List<Suggestion> everything = null;
-            if (suggestions != null && discovered != null) {
+            if (listed != null && discovered != null) {
                 Map<String, Suggestion> byKey = new LinkedHashMap<>();
-                for (Suggestion x : suggestions) byKey.put(key(x), x);
+                for (Suggestion x : listed) byKey.put(key(x), x);
                 for (Suggestion x : discovered) byKey.putIfAbsent(key(x), x);
                 everything = new ArrayList<>(byKey.values());
                 everything.sort(Comparator.comparing((Suggestion x) -> GROUPS.indexOf(x.group())).thenComparing(x -> x.repo().toLowerCase(Locale.ROOT)));
             }
+            List<Suggestion> fresh = recommendedNow();
             fill(foundList, PatchbayLauncher.t("Lista źródeł", "Source list"),
-                PatchbayLauncher.t("repozytoria na GitHubie z tematem patchbay-mod, patchbay-devices albo patchbay-themes", "GitHub repositories with the topic patchbay-mod, patchbay-devices or patchbay-themes"),
-                everything, discoveredFailed && suggestionsFailed, picked, true);
+                PatchbayLauncher.t("lista ", "the list ") + LIST_REPO + PatchbayLauncher.t(" i repozytoria z tematem patchbay-mod, patchbay-devices albo patchbay-themes",
+                    " and repositories with the topic patchbay-mod, patchbay-devices or patchbay-themes"),
+                everything, discoveredFailed && listedFailed, picked, active, true);
             fill(recommended, PatchbayLauncher.t("Polecane", "Recommended"),
-                PatchbayLauncher.t("sprawdzone przez autora Launchera, jeszcze nie na Twojej liście", "checked by the launcher's author, not on your list yet"),
-                suggestions, suggestionsFailed, picked, false);
-            fillCard(foundCard, find(everything, pickedFound), picked);
-            fillCard(recommendedCard, find(suggestions, pickedRecommended), picked);
+                PatchbayLauncher.t("z listy ", "from the list ") + LIST_REPO + PatchbayLauncher.t(", jeszcze nie w aktywnych", ", not active yet"),
+                fresh, listedFailed, picked, active, false);
+            fillCard(foundCard, find(everything, pickedFound), picked, active);
+            fillCard(recommendedCard, find(fresh, pickedRecommended), picked, active);
         }
 
         private static Suggestion find(List<Suggestion> items, String key) {
@@ -558,7 +578,7 @@ final class Sources {
             return items.stream().filter(x -> key(x).equals(key)).findFirst().orElse(null);
         }
 
-        private void fill(JPanel column, String title, String hint, List<Suggestion> items, boolean failed, Set<String> picked, boolean inFound) {
+        private void fill(JPanel column, String title, String hint, List<Suggestion> items, boolean failed, Set<String> picked, Set<String> active, boolean inFound) {
             column.removeAll();
             JPanel box = new JPanel(new BorderLayout());
             box.setOpaque(false);
@@ -582,7 +602,7 @@ final class Sources {
                 none.setMaximumSize(new Dimension(Integer.MAX_VALUE, none.getPreferredSize().height));
                 list.add(none);
             } else {
-                for (Suggestion x : items) list.add(onlineRow(x, inFound && picked.contains(key(x)), inFound));
+                for (Suggestion x : items) list.add(onlineRow(x, inFound && picked.contains(key(x)), inFound && active.contains(key(x)), inFound));
             }
             box.add(list, BorderLayout.CENTER);
             box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
@@ -591,8 +611,18 @@ final class Sources {
             column.repaint();
         }
 
+        /** The repository's name (null: none) with its group and, when they hold, "polecane" and "w aktywnych". */
+        private static JPanel tags(String repo, String group, boolean picked, boolean active) {
+            List<Component> parts = new ArrayList<>();
+            if (repo != null) parts.add(Theme.label(repo, Theme.mono(13f), Theme.TEXT));
+            parts.add(badge(groupName(group)));
+            if (picked) parts.add(badge(PatchbayLauncher.t("polecane", "recommended")));
+            if (active) parts.add(badge(PatchbayLauncher.t("w aktywnych", "active")));
+            return Theme.row(8, parts.toArray(new Component[0]));
+        }
+
         /** One repository on GitHub: its name, group and description; a click shows it in the card beside the list. */
-        private JComponent onlineRow(Suggestion x, boolean markPicked, boolean inFound) {
+        private JComponent onlineRow(Suggestion x, boolean markPicked, boolean markActive, boolean inFound) {
             boolean selected = key(x).equals(inFound ? pickedFound : pickedRecommended);
             JPanel row = new JPanel(new BorderLayout(12, 0));
             row.setBackground(selected ? Theme.ACCENT_SEL : Theme.WELL);
@@ -603,8 +633,7 @@ final class Sources {
             JPanel text = new JPanel();
             text.setOpaque(false);
             text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
-            JPanel top = markPicked ? Theme.row(8, Theme.label(x.repo(), Theme.mono(13f), Theme.TEXT), badge(groupName(x.group())), badge(PatchbayLauncher.t("polecane", "recommended")))
-                : Theme.row(8, Theme.label(x.repo(), Theme.mono(13f), Theme.TEXT), badge(groupName(x.group())));
+            JPanel top = tags(x.repo(), x.group(), markPicked, markActive);
             top.setAlignmentX(LEFT_ALIGNMENT);
             text.add(top);
             if (x.note() != null && !x.note().isBlank()) {
@@ -654,7 +683,7 @@ final class Sources {
         }
 
         /** The card beside Lista źródeł and Polecane: who made the picked repository, what it is and holds, and Add to active. */
-        private void fillCard(JPanel card, Suggestion x, Set<String> picked) {
+        private void fillCard(JPanel card, Suggestion x, Set<String> picked, Set<String> active) {
             card.removeAll();
             JPanel col = new JPanel();
             col.setOpaque(false);
@@ -671,8 +700,8 @@ final class Sources {
             String k = key(x);
             RepoInfo info = infos.get(k);
             Integer count = counts.get(k);
-            JPanel tags = picked.contains(k) ? Theme.row(8, badge(groupName(x.group())), badge(PatchbayLauncher.t("polecane", "recommended"))) : Theme.row(8, badge(groupName(x.group())));
-            add(col, tags, 8);
+            boolean on = active.contains(k);
+            add(col, tags(null, x.group(), picked.contains(k), on), 8);
             add(col, Theme.wrapped(x.repo().replace("/", "/\u200B"), 230, Theme.TEXT, 18f), 10);
             String about = info != null && info.description() != null && !info.description().isBlank() ? info.description() : x.note();
             if (about != null && !about.isBlank()) add(col, Theme.wrapped(about, 230, Theme.SOFT, 14f), 12);
@@ -690,9 +719,9 @@ final class Sources {
             add(col, table, 0);
             card.add(Theme.scrolling(col), BorderLayout.CENTER);
 
-            JButton addIt = Theme.button(PatchbayLauncher.t("Dodaj do aktywnych", "Add to active"), "primary");
-            // a recommended one can be added even when GitHub couldn't be asked; one found by topic only when it holds something
-            addIt.setEnabled(count != null && (count > 0 || count < 0 && picked.contains(k)));
+            JButton addIt = Theme.button(on ? PatchbayLauncher.t("Już w aktywnych", "Already active") : PatchbayLauncher.t("Dodaj do aktywnych", "Add to active"), "primary");
+            // one on the author's list can be added even when GitHub couldn't be asked; one found by topic only when it holds something
+            addIt.setEnabled(!on && count != null && (count > 0 || count < 0 && picked.contains(k)));
             addIt.addActionListener(e -> addOnline(x, card));
             JButton page = Theme.button(PatchbayLauncher.t("Strona repozytorium", "Repository page"), "secondary");
             page.addActionListener(e -> Platform.open("https://github.com/" + x.repo()));
@@ -715,8 +744,6 @@ final class Sources {
             }
             if (key(x).equals(pickedFound)) pickedFound = null;
             if (key(x).equals(pickedRecommended)) pickedRecommended = null;
-            if (suggestions != null) suggestions.removeIf(y -> key(y).equals(key(x)));
-            if (discovered != null) discovered.removeIf(y -> key(y).equals(key(x)));
             sources = all();
             rebuild();
             buildOnline();
@@ -725,6 +752,7 @@ final class Sources {
         }
 
         private void rebuild() {
+            if (listed != null) { buildOnline(); countUnseen(); } // an added or removed source changes what is marked active
             restoreButton.setVisible(!removedBuiltins().isEmpty() || sources.stream().anyMatch(Sources::changed));
             groups.removeAll();
             for (String g : GROUPS) {

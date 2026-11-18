@@ -177,11 +177,15 @@ final class I18n {
         add("Version, what's new and system information", "Version, Neuerungen und Systeminformationen", "Version, nouveautés et informations système");
         add("Source list", "Quellenliste", "Liste des sources");
         add("Active", "Aktiv", "Actives");
-        add("GitHub repositories with the topic patchbay-mod, patchbay-devices or patchbay-themes", "GitHub-Repositorys mit dem Thema patchbay-mod, patchbay-devices oder patchbay-themes", "Dépôts GitHub avec le sujet patchbay-mod, patchbay-devices ou patchbay-themes");
         add("Checking the sources on GitHub…", "Quellen auf GitHub werden geprüft…", "Vérification des sources sur GitHub…");
         add("Couldn't get the list of sources from GitHub.", "Die Quellenliste von GitHub konnte nicht geladen werden.", "Impossible d'obtenir la liste des sources depuis GitHub.");
         add("No new sources. You have them all.", "Keine neuen Quellen. Du hast alle.", "Aucune nouvelle source. Vous les avez toutes.");
         add("recommended", "empfohlen", "recommandée");
+        add("the list ", "die Liste ", "la liste ");
+        add(" and repositories with the topic patchbay-mod, patchbay-devices or patchbay-themes", " und Repositorys mit dem Thema patchbay-mod, patchbay-devices oder patchbay-themes", " et les dépôts avec le sujet patchbay-mod, patchbay-devices ou patchbay-themes");
+        add("from the list ", "aus der Liste ", "de la liste ");
+        add(", not active yet", ", noch nicht aktiv", ", pas encore actives");
+        add("Already active", "Bereits aktiv", "Déjà active");
         add("Repository", "Repository", "Dépôt");
         add("Click a repository in the list to see who made it and what's in it, and to add it to the active sources.", "Klicke auf ein Repository in der Liste, um zu sehen, wer es gemacht hat und was darin ist, und um es zu den aktiven Quellen hinzuzufügen.", "Cliquez sur un dépôt dans la liste pour voir qui l'a créé et ce qu'il contient, et pour l'ajouter aux sources actives.");
         add("checking…", "wird geprüft…", "vérification…");
@@ -197,7 +201,6 @@ final class I18n {
         add("Sources view", "Quellenansicht", "Vue des sources");
         add("New: ", "Neu: ", "Nouvelles : ");
         add("New recommended sources: ", "Neue empfohlene Quellen: ", "Nouvelles sources recommandées : ");
-        add("checked by the launcher's author, not on your list yet", "vom Autor des Launchers geprüft, noch nicht in deiner Liste", "vérifiées par l'auteur du lanceur, pas encore dans votre liste");
         add("a new version is available: ", "eine neue Version ist verfügbar: ", "une nouvelle version est disponible : ");
         add("you have the newest version", "du hast die neueste Version", "vous avez la version la plus récente");
         add("couldn't check for a new version", "neue Version konnte nicht geprüft werden", "impossible de vérifier s'il existe une nouvelle version");
