@@ -363,6 +363,7 @@ final class Devices {
             table.getColumnModel().getColumn(4).setMinWidth(130);
             table.getColumnModel().getColumn(4).setMaxWidth(140);
             Theme.typeColumn(table.getColumnModel().getColumn(2), categories::colour);
+            table.getColumnModel().getColumn(2).setMinWidth(124); // "Note generator" whole
             table.getColumnModel().getColumn(4).setCellRenderer(Theme.pillCells());
             SidePanel.starClicks(table, 1, r -> key(rows.get(r).item()), favourites, "favouriteDevices", this::rebuild);
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
