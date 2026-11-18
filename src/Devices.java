@@ -385,8 +385,9 @@ final class Devices {
             left.setOpaque(false);
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
-            JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), null, refreshButton, details);
-            add(Theme.listPage(PatchbayLauncher.t("Urządzenia", "Devices"), subtitle, null, body, left, Theme.row(8, switchButton, removeButton, Box.createHorizontalStrut(16), folderButton, installButton)), BorderLayout.CENTER);
+            JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), null, refreshButton, details,
+                left, Theme.row(8, switchButton, removeButton), Theme.row(8, folderButton, installButton));
+            add(Theme.listPage(PatchbayLauncher.t("Urządzenia", "Devices"), subtitle, null, body, null, null), BorderLayout.CENTER);
 
             buildBox.addActionListener(e -> { if (!filling) rebuild(); });
             checkAllButton.addActionListener(e -> checkAll());

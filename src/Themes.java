@@ -531,9 +531,9 @@ final class Themes {
             left.setOpaque(false);
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
-            JComponent body = Theme.split(Theme.row(8, addFileButton), checkAllButton, Theme.framed(table), null, refreshButton, details);
-            add(Theme.listPage(PatchbayLauncher.t("Motywy", "Themes"), subtitle, null, body,
-                left, Theme.row(8, folderButton, installButton)), BorderLayout.CENTER);
+            JComponent body = Theme.split(Theme.row(8, addFileButton), checkAllButton, Theme.framed(table), null, refreshButton, details,
+                left, null, Theme.row(8, folderButton, installButton));
+            add(Theme.listPage(PatchbayLauncher.t("Motywy", "Themes"), subtitle, null, body, null, null), BorderLayout.CENTER);
 
             checkAllButton.addActionListener(e -> checkAll());
             installButton.addActionListener(e -> installChecked());

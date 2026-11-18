@@ -984,10 +984,13 @@ public final class Theme {
     }
 
     /**
-     * The list beside its details with a row of controls over each, so the controls follow the divider:
-     * tools at the list's left, atListEdge (Tick all) at the list's right edge, atEdge (Refresh) at the window's.
+     * The list beside its details with a row of controls over each and a row under each, so the controls follow
+     * the divider: over the list, tools at its left and atListEdge (Tick all) at its right edge; over the details,
+     * atEdge (Refresh) at the window's edge. Under the list, the status at its left and listActions ending at the
+     * list's right edge; under the details, detailsActions ending at the window's edge.
      */
-    static JSplitPane split(JComponent tools, JComponent atListEdge, JComponent list, JComponent besideRefresh, JComponent atEdge, JComponent details) {
+    static JSplitPane split(JComponent tools, JComponent atListEdge, JComponent list, JComponent besideRefresh, JComponent atEdge, JComponent details,
+            JComponent status, JComponent listActions, JComponent detailsActions) {
         JPanel overList = new JPanel(new BorderLayout(8, 0));
         overList.setOpaque(false);
         overList.add(tools, BorderLayout.WEST);
@@ -1008,6 +1011,18 @@ public final class Theme {
         right.setOpaque(false);
         right.add(overDetails, BorderLayout.NORTH);
         right.add(details, BorderLayout.CENTER);
+        JPanel underList = new JPanel(new BorderLayout(12, 0));
+        underList.setOpaque(false);
+        if (status != null) underList.add(status, BorderLayout.CENTER);
+        if (listActions != null) underList.add(listActions, BorderLayout.EAST);
+        JPanel underDetails = new JPanel(new BorderLayout());
+        underDetails.setOpaque(false);
+        if (detailsActions != null) underDetails.add(detailsActions, BorderLayout.EAST);
+        int low = Math.max(underList.getPreferredSize().height, underDetails.getPreferredSize().height);
+        underList.setPreferredSize(new Dimension(underList.getPreferredSize().width, low));
+        underDetails.setPreferredSize(new Dimension(underDetails.getPreferredSize().width, low));
+        left.add(underList, BorderLayout.SOUTH);
+        right.add(underDetails, BorderLayout.SOUTH);
         return split(left, right);
     }
 

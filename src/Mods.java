@@ -709,9 +709,9 @@ final class Mods {
                 @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { refilter(); }
             });
             JPanel tools = Theme.row(8, showBox, sortBox, searchField);
-            JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), Theme.row(8, bitwigLabel, bitwigBox), refreshButton, details);
-            add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, updateBar, body,
-                left, Theme.row(8, switchButton, removeButton, Box.createHorizontalStrut(16), updateAllButton, installButton)), BorderLayout.CENTER);
+            JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), Theme.row(8, bitwigLabel, bitwigBox), refreshButton, details,
+                left, Theme.row(8, switchButton, removeButton), Theme.row(8, updateAllButton, installButton));
+            add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, updateBar, body, null, null), BorderLayout.CENTER);
 
             installButton.addActionListener(e -> installRows(checkedRows().stream().filter(this::installable).toList()));
             switchButton.addActionListener(e -> {
