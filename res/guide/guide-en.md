@@ -9,7 +9,7 @@ In Mods you choose, install, update, switch off and uninstall mods for Patchbay.
 - **Side panel:** All, Favourites and each category with its icon and number of mods. A click filters the list. « folds the panel to icons, » opens it again.
 - **Favourites:** click the star beside a mod. Favourites are in the settings backup.
 - **Category:** comes from the mod's name ("Category: Name"). A mod without a category from the list goes under Other.
-- **Show:** All, Compatible, Installed, Updates, Incompatible and Removed from repo.
+- **Show:** All, Compatible, Installed, Updates, Incompatible, Removed from repo and Not in sources. To get rid of all mods not in sources at once: Show → Not in sources, "Tick all", then "Uninstall".
 - **Install:** tick mods and click "Install ticked". "Tick all" ticks only the ones to install or update.
 - **Switch off / Switch on:** the mod stays on disk, Patchbay doesn't load it. Tick several and use the button under the list.
 - **Uninstall:** removes the mod from disk, after you confirm. The launcher warns when another switched-on mod needs it.
@@ -60,6 +60,7 @@ GitHub allows 60 requests an hour from one address. When they run out, the launc
 - **System information:** the versions of the launcher, the system, Java, Bitwig, Patchbay and the list of mods, with no paths or personal data. "Copy" puts it on the clipboard.
 - **Report a problem** (bottom bar): opens a new issue on GitHub with the system information filled in. Add what happened and what should have happened.
 - **Bitwig warning:** before "Start Patchbay" the launcher checks that Patchbay supports your Bitwig. If not, it shows the supported versions and asks: Cancel or Start anyway.
+- **Clear the GitHub memory** (Settings): when the launcher shows something its repository no longer has. It deletes the kept lists and fetches everything again. Installed things stay.
 - **Window:** the first time it fits the screen, then it opens where and as big as it was when you closed it.
 
 ## For authors of mods, devices and themes

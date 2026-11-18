@@ -9,7 +9,7 @@ Dans Mods, vous choisissez, installez, mettez à jour, désactivez et désinstal
 - **Panneau latéral :** Tous, Favoris et chaque catégorie avec son icône et son nombre de mods. Un clic filtre la liste. « replie le panneau en icônes, » le rouvre.
 - **Favoris :** cliquez sur l'étoile à côté d'un mod. Les favoris font partie de la sauvegarde des réglages.
 - **Catégorie :** elle vient du nom du mod (« Catégorie : Nom »). Un mod sans catégorie de la liste va dans Other.
-- **Afficher :** Tous, Compatibles, Installés, Mises à jour, Incompatibles et Supprimés du dépôt.
+- **Afficher :** Tous, Compatibles, Installés, Mises à jour, Incompatibles, Supprimés du dépôt et Hors sources. Pour retirer d'un coup tous les mods hors sources : Afficher → Hors sources, « Tout cocher », puis « Désinstaller ».
 - **Installer :** cochez des mods et cliquez sur « Installer la sélection ». « Tout cocher » ne coche que ceux à installer ou à mettre à jour.
 - **Désactiver / Activer :** le mod reste sur le disque, Patchbay ne le charge pas. Cochez-en plusieurs et utilisez le bouton sous la liste.
 - **Désinstaller :** supprime le mod du disque, après confirmation. Le lanceur prévient quand un autre mod activé en a besoin.
@@ -60,6 +60,7 @@ GitHub autorise 60 requêtes par heure depuis une même adresse. Quand elles son
 - **Informations système :** les versions du lanceur, du système, de Java, de Bitwig, de Patchbay et la liste des mods, sans chemins ni données personnelles. « Copier » les met dans le presse-papiers.
 - **Signaler un problème** (barre du bas) : ouvre un nouveau signalement sur GitHub avec les informations système déjà remplies. Ajoutez ce qui s'est passé et ce qui aurait dû se passer.
 - **Avertissement Bitwig :** avant « Lancer Patchbay », le lanceur vérifie que Patchbay prend en charge votre Bitwig. Sinon, il montre les versions prises en charge et demande : Annuler ou Démarrer quand même.
+- **Vider la mémoire GitHub** (Réglages) : quand le lanceur affiche quelque chose que le dépôt n'a plus. Il efface les listes gardées et télécharge tout à nouveau. Ce qui est installé reste.
 - **Fenêtre :** la première fois, elle s'adapte à l'écran, ensuite elle s'ouvre là où elle était, à la même taille qu'à la fermeture.
 
 ## Pour les auteurs de mods, d'appareils et de thèmes

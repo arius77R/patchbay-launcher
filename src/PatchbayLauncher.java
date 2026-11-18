@@ -963,6 +963,17 @@ public final class PatchbayLauncher {
         col.add(section(null, null, files));
         col.add(Box.createVerticalStrut(12));
 
+        JButton clear = Theme.button(t("Wyczyść pamięć GitHub", "Clear the GitHub memory"), "secondary");
+        clear.addActionListener(e -> clearGitHubMemory(clear));
+        JPanel memory = new JPanel(new BorderLayout(12, 0));
+        memory.setOpaque(false);
+        memory.add(Theme.wrapped(t("Launcher pamięta listy pobrane z GitHuba, żeby oszczędzać zapytania. Jeśli pokazuje coś, czego w repozytorium już nie ma, wyczyść pamięć: wszystko zostanie pobrane od nowa. Zainstalowane mody, urządzenia i motywy zostają.",
+            "The launcher keeps the lists it got from GitHub to save requests. If it shows something its repository no longer has, clear this memory: everything is fetched again. Installed mods, devices and themes stay."),
+            420, Theme.MUTED, 13f), BorderLayout.CENTER);
+        memory.add(Theme.row(8, clear), BorderLayout.EAST);
+        col.add(section(null, null, memory));
+        col.add(Box.createVerticalStrut(12));
+
         JPanel about = new JPanel(new BorderLayout());
         about.setOpaque(false);
         about.add(Theme.wrapped(aboutText(), 620, Theme.MUTED, 13f), BorderLayout.CENTER);
@@ -977,6 +988,19 @@ public final class PatchbayLauncher {
         scroll.setOpaque(false);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         return Theme.page(t("Ustawienia", "Settings"), Theme.label("Patchbay Launcher " + VERSION, Theme.mono(12f), Theme.MUTED), null, scroll, null, null);
+    }
+
+    /** Deletes what the launcher kept from GitHub (lists, ETags, mod details) and fetches everything again. */
+    private void clearGitHubMemory(JButton button) {
+        try {
+            Path cache = data().resolve("cache");
+            if (Files.exists(cache)) deleteTree(cache);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(frame, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        sourcesPanel.refreshOnline(); // reads the sources again, then Patchbay, Mods, Devices and Themes
+        button.setText(t("Wyczyszczono", "Cleared"));
     }
 
     /** The launcher's own GitHub page, where its problems are reported (not Patchbay's). */

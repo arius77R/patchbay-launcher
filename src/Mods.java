@@ -611,7 +611,7 @@ final class Mods {
             if (showBox.getSelectedIndex() != SHOW_UPDATES) beforeUpdates = showBox.getSelectedIndex();
             showBox.setSelectedIndex(SHOW_UPDATES);
         });
-        private static final int SHOW_UPDATES = 3, SHOW_GONE = 5;
+        private static final int SHOW_UPDATES = 3, SHOW_GONE = 5, SHOW_OUTSIDE = 6;
         /** The Show choice to go back to when Updates has nothing left; All unless the update bar was clicked from another. */
         private int beforeUpdates;
         /** The Bitwig version when it can't be read from the system: chosen from the versions Patchbay has maps for. */
@@ -753,7 +753,8 @@ final class Mods {
             refilterSoon.setRepeats(false);
             for (String o : new String[] { PatchbayLauncher.t("Wszystkie", "All"), PatchbayLauncher.t("Zgodne", "Compatible"),
                     PatchbayLauncher.t("Zainstalowane", "Installed"), PatchbayLauncher.t("Aktualizacje", "Updates"),
-                    PatchbayLauncher.t("Niezgodne", "Incompatible"), PatchbayLauncher.t("Usunięte z repo", "Removed from repo") })
+                    PatchbayLauncher.t("Niezgodne", "Incompatible"), PatchbayLauncher.t("Usunięte z repo", "Removed from repo"),
+                    PatchbayLauncher.t("Spoza źródeł", "Not in sources") })
                 showBox.addItem(o);
             try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(1); } // first time: only the mods that can run
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
@@ -1161,6 +1162,7 @@ final class Mods {
                     case 3 -> r.rank() == 0;
                     case 4 -> off;
                     case SHOW_GONE -> gone(r);
+                    case SHOW_OUTSIDE -> r.available() == null;
                     default -> true;
                 };
                 if (pass && matches(searchField.getText(), nameOf(r), r.id(), authorOf(r))) shown.add(r);

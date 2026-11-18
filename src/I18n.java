@@ -200,6 +200,12 @@ final class I18n {
         add("withdrawn", "zurückgezogen", "retiré");
         add("removed", "entfernt", "supprimé");
         add("Removed from repo", "Aus dem Repo entfernt", "Supprimés du dépôt");
+        add("Not in sources", "Nicht in Quellen", "Hors sources");
+        add("Clear the GitHub memory", "GitHub-Speicher leeren", "Vider la mémoire GitHub");
+        add("Cleared", "Geleert", "Vidée");
+        add("The launcher keeps the lists it got from GitHub to save requests. If it shows something its repository no longer has, clear this memory: everything is fetched again. Installed mods, devices and themes stay.",
+            "Der Launcher merkt sich die von GitHub geladenen Listen, um Anfragen zu sparen. Zeigt er etwas, das es im Repository nicht mehr gibt, leere diesen Speicher: alles wird neu geladen. Installierte Mods, Geräte und Themes bleiben.",
+            "Le lanceur garde les listes reçues de GitHub pour économiser les requêtes. S'il affiche quelque chose que le dépôt n'a plus, videz cette mémoire : tout est téléchargé à nouveau. Les mods, appareils et thèmes installés restent.");
         add("Withdrawn by its author because of problems", "Vom Autor wegen Problemen zurückgezogen", "Retiré par son auteur à cause de problèmes");
         add("Removed from the repository", "Aus dem Repository entfernt", "Supprimé du dépôt");
         add("Best switch it off or uninstall it.", "Am besten ausschalten oder deinstallieren.", "Mieux vaut le désactiver ou le désinstaller.");

@@ -558,7 +558,7 @@ final class Sources {
          * Refresh: the active sources (Patchbay, mods, devices, themes, so a repository that is gone or back shows),
          * the author's list, the topic search and the repositories' cards, from GitHub again.
          */
-        private void refreshOnline() {
+        void refreshOnline() {
             changed.run();
             infos.clear();
             counts.clear();

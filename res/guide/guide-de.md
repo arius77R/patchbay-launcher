@@ -9,7 +9,7 @@ Unter Mods wählst du Mods für Patchbay aus, installierst, aktualisierst, schal
 - **Seitenleiste:** Alle, Favoriten und jede Kategorie mit Symbol und Anzahl der Mods. Ein Klick filtert die Liste. « klappt die Leiste auf Symbole zusammen, » klappt sie wieder auf.
 - **Favoriten:** Klicke auf den Stern neben einem Mod. Favoriten sind in der Sicherung der Einstellungen enthalten.
 - **Kategorie:** ergibt sich aus dem Namen des Mods („Kategorie: Name“). Ein Mod ohne Kategorie aus der Liste landet unter Other.
-- **Anzeigen:** Alle, Kompatibel, Installiert, Updates, Inkompatibel und Aus dem Repo entfernt.
+- **Anzeigen:** Alle, Kompatibel, Installiert, Updates, Inkompatibel, Aus dem Repo entfernt und Nicht in Quellen. Um alle Mods, die nicht in Quellen sind, auf einmal loszuwerden: Anzeigen → Nicht in Quellen, „Alle auswählen“, dann „Deinstallieren“.
 - **Installieren:** Mods auswählen und „Ausgewählte installieren“ klicken. „Alle auswählen“ wählt nur die aus, die installiert oder aktualisiert werden können.
 - **Ausschalten / Einschalten:** Der Mod bleibt auf dem Datenträger, Patchbay lädt ihn nicht. Wähle mehrere aus und nutze die Schaltfläche unter der Liste.
 - **Deinstallieren:** entfernt den Mod nach Bestätigung vom Datenträger. Der Launcher warnt, wenn ein anderer eingeschalteter Mod ihn braucht.
@@ -60,6 +60,7 @@ GitHub erlaubt 60 Anfragen pro Stunde von einer Adresse. Sind sie aufgebraucht, 
 - **Systeminformationen:** die Versionen von Launcher, System, Java, Bitwig, Patchbay und die Liste der Mods, ohne Pfade und persönliche Daten. „Kopieren“ legt sie in die Zwischenablage.
 - **Problem melden** (untere Leiste): öffnet eine neue Meldung auf GitHub mit bereits eingetragenen Systeminformationen. Ergänze, was passiert ist und was hätte passieren sollen.
 - **Bitwig-Warnung:** Vor „Patchbay starten“ prüft der Launcher, ob Patchbay dein Bitwig unterstützt. Wenn nicht, zeigt er die unterstützten Versionen und fragt: Abbrechen oder Trotzdem starten.
+- **GitHub-Speicher leeren** (Einstellungen): wenn der Launcher etwas zeigt, das es im Repository nicht mehr gibt. Er löscht die gemerkten Listen und lädt alles neu. Installiertes bleibt.
 - **Fenster:** Beim ersten Mal passt es sich dem Bildschirm an, danach öffnet es sich dort und so groß, wie es beim Schließen war.
 
 ## Für Autoren von Mods, Geräten und Themes

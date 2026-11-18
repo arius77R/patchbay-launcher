@@ -9,7 +9,7 @@ W zakładce Mody wybierasz, instalujesz, aktualizujesz, wyłączasz i odinstalow
 - **Panel boczny:** Wszystkie, Ulubione i każda kategoria z ikoną i liczbą modów. Kliknięcie filtruje listę. « zwija panel do samych ikon, » rozwija go z powrotem.
 - **Ulubione:** kliknij gwiazdkę przy modzie. Ulubione są w kopii zapasowej ustawień.
 - **Kategoria:** wynika z nazwy moda („Kategoria: Nazwa”). Mod bez kategorii z listy trafia do Other.
-- **Pokaż:** Wszystkie, Zgodne, Zainstalowane, Aktualizacje, Niezgodne i Usunięte z repo.
+- **Pokaż:** Wszystkie, Zgodne, Zainstalowane, Aktualizacje, Niezgodne, Usunięte z repo i Spoza źródeł. Żeby pozbyć się wszystkich modów spoza źródeł naraz: Pokaż → Spoza źródeł, „Zaznacz wszystkie”, potem „Odinstaluj”.
 - **Instalacja:** zaznacz mody i kliknij „Zainstaluj zaznaczone”. „Zaznacz wszystkie” zaznacza tylko te do zainstalowania albo aktualizacji.
 - **Wyłącz / Włącz:** mod zostaje na dysku, Patchbay go nie ładuje. Zaznacz kilka i użyj przycisku pod listą.
 - **Odinstaluj:** usuwa mod z dysku, po potwierdzeniu. Launcher ostrzega, gdy inny włączony mod go potrzebuje.
@@ -60,6 +60,7 @@ GitHub pozwala na 60 zapytań na godzinę z jednego adresu. Gdy limit się skoń
 - **Informacje o systemie:** wersje Launchera, systemu, Javy, Bitwiga, Patchbay i lista modów, bez ścieżek i danych osobistych. „Kopiuj” kopiuje je do schowka.
 - **Zgłoś problem** (dolny pasek): otwiera nowe zgłoszenie na GitHubie z już wpisanymi informacjami o systemie. Dopisz, co się stało i co miało się stać.
 - **Ostrzeżenie o Bitwigu:** przed „Uruchom Patchbay” Launcher sprawdza, czy Patchbay obsługuje Twój Bitwig. Jeśli nie, pokazuje obsługiwane wersje i pyta: Anuluj albo Uruchom mimo to.
+- **Wyczyść pamięć GitHub** (Ustawienia): gdy Launcher pokazuje coś, czego w repozytorium już nie ma. Usuwa zapamiętane listy i pobiera wszystko od nowa. Zainstalowane rzeczy zostają.
 - **Okno:** przy pierwszym uruchomieniu dopasowuje się do ekranu, potem otwiera się tam i tak duże, jak było przy zamknięciu.
 
 ## Dla autorów modów, urządzeń i motywów
