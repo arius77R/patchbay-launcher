@@ -253,7 +253,7 @@ public final class Theme {
                 case "primary" -> !b.isEnabled() ? CONTROL : m.isPressed() ? ACCENT.darker() : m.isRollover() ? ACCENT.brighter() : ACCENT;
                 case "start" -> !b.isEnabled() ? CONTROL : m.isPressed() ? START.darker() : m.isRollover() ? START.brighter() : START;
                 case "nav" -> on ? NAV_ON : m.isRollover() ? FRAME : null;
-                case "danger" -> m.isRollover() ? DANGER_HOVER : null;
+                case "danger" -> !b.isEnabled() ? DISABLED : m.isRollover() ? DANGER_HOVER : null;
                 default -> !b.isEnabled() ? DISABLED : m.isPressed() ? LINE : m.isRollover() ? CONTROL_HOVER : CONTROL;
             };
             Graphics2D g2 = (Graphics2D) g.create();
@@ -266,7 +266,7 @@ public final class Theme {
                 g2.setColor(LINE);
                 g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, 8, 8);
             }
-            if (k.equals("danger")) {
+            if (k.equals("danger") && b.isEnabled()) {
                 g2.setColor(FAULT);
                 g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, 8, 8);
             }
