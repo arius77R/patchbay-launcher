@@ -151,6 +151,11 @@ public final class PatchbayLauncher {
         }
     }
 
+    /** GitHub says the file or repository isn't there (HTTP 404): a kept copy must not stand in for it. */
+    static final class Gone extends IOException {
+        Gone(String url) { super("GitHub: HTTP 404 (" + url + ")"); }
+    }
+
     /**
      * The body of a GitHub answer as text. Each answer is kept in the cache with its ETag: the next
      * request asks only whether it changed (a "not modified" answer does not count against GitHub's
@@ -168,6 +173,10 @@ public final class PatchbayLauncher {
             } catch (RateLimited limited) {
                 last = limited;
                 break;
+            } catch (Gone gone) {
+                // GitHub says it's not there (any more): the kept copy is out of date, never shown again
+                try { Files.deleteIfExists(body); Files.deleteIfExists(tag); } catch (IOException ignored) { }
+                throw gone;
             } catch (IOException ex) {
                 last = ex;
                 try { Thread.sleep(1500); } catch (InterruptedException stop) { Thread.currentThread().interrupt(); break; }
@@ -194,6 +203,7 @@ public final class PatchbayLauncher {
             int status = c.getResponseCode();
             if (status == 304) return Files.readString(body);
             if (status == 403 || status == 429) throw new RateLimited();
+            if (status == 404) throw new Gone(url);
             if (status != 200) throw new IOException("GitHub: HTTP " + status + " (" + url + ")");
             String text;
             try (InputStream in = c.getInputStream()) {

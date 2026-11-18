@@ -313,15 +313,48 @@ final class Mods {
         return pages;
     }
 
-    static Map<String, Available> fetchCatalog() throws IOException {
+    /**
+     * The mods a repository still holds: the ids with an <id>/mod.json on its default branch (PUBLISHING
+     * rule 3). Null when the repository's files can't be had: then every mod in its releases counts.
+     */
+    static Set<String> modFolders(String repo, String offline) {
+        try {
+            String json;
+            if (offline != null) {
+                Path fx = Path.of(offline, repo.replace('/', '_') + ".tree.json");
+                if (!Files.isRegularFile(fx)) return null;
+                json = Files.readString(fx);
+            } else {
+                json = PatchbayLauncher.httpText("https://api.github.com/repos/" + repo + "/git/trees/HEAD?recursive=1");
+            }
+            Map<String, Object> root = Json.object(Json.parse(json));
+            if (Boolean.TRUE.equals(root.get("truncated"))) return null; // too big to know for sure
+            Set<String> out = new HashSet<>();
+            for (Object o : Json.array(root.get("tree"))) {
+                String path = Json.text(Json.object(o), "path");
+                if (path != null && path.endsWith("/mod.json") && path.indexOf('/') == path.length() - "/mod.json".length())
+                    out.add(path.substring(0, path.indexOf('/')));
+            }
+            return out;
+        } catch (IOException | RuntimeException unknown) {
+            return null;
+        }
+    }
+
+    /** Every mod in the enabled sources' releases; withdrawn gets the ones whose folder is gone from their repository. */
+    static Map<String, Available> fetchCatalog(Set<String> withdrawn) throws IOException {
         Map<String, Available> all = new TreeMap<>();
         IOException failure = null;
         String offline = System.getProperty("launcher.fixtures"); // offline test: <repo name>.json files in this folder
         for (Sources.Source src : Sources.enabled(Sources.MODS)) {
             String repo = src.repo();
             try {
+                Set<String> inRepo = modFolders(repo, offline);
                 for (String json : releasePages(repo, offline))
-                    for (Available a : parseCatalog(json, repo, Sources.glob(src.filter())).values()) merge(all, a);
+                    for (Available a : parseCatalog(json, repo, Sources.glob(src.filter())).values()) {
+                        if (inRepo != null && !inRepo.contains(a.id())) withdrawn.add(a.id());
+                        merge(all, a);
+                    }
             } catch (IOException | RuntimeException ex) {
                 failure = ex instanceof IOException io ? io : new IOException(repo + ": " + ex.getMessage());
             }
@@ -633,6 +666,11 @@ final class Mods {
         /** Name and version of the mods on disk, frameworks included, for the "Needs" list. */
         private final Map<String, Installed> onDisk = new HashMap<>();
         private Map<String, Available> catalog = Map.of();
+        /**
+         * Mods whose folder is gone from their repository: not offered any more, even if an old release still
+         * has the ZIP; one that is installed stays in the list as installed, with no update.
+         */
+        private Set<String> withdrawn = Set.of();
         private boolean busy, notified, reloadAgain;
         private int infoRun;
 
@@ -976,8 +1014,9 @@ final class Mods {
             new Thread(() -> {
                 try {
                     String version = Compat.norm(Platform.bitwigVersion());
-                    Map<String, Available> found = fetchCatalog();
-                    SwingUtilities.invokeLater(() -> { detectedBitwig = version; detecting = false; catalog = found; rebuild(); setBusy(false, ""); loadInfos(); reloadIfAsked(); });
+                    Set<String> gone = new HashSet<>();
+                    Map<String, Available> found = fetchCatalog(gone);
+                    SwingUtilities.invokeLater(() -> { detectedBitwig = version; detecting = false; catalog = found; withdrawn = gone; rebuild(); setBusy(false, ""); loadInfos(); reloadIfAsked(); });
                 } catch (IOException ex) {
                     SwingUtilities.invokeLater(() -> { rebuild(); setBusy(false, ex.getMessage()); reloadIfAsked(); });
                 }
@@ -1008,7 +1047,9 @@ final class Mods {
             all.clear();
             for (Available a : catalog.values()) {
                 Installed i = have.get(a.id());
-                int rank = i == null ? 2 : PatchbayLauncher.compareVersions(a.version(), i.version()) > 0 ? 0 : 1;
+                boolean gone = withdrawn.contains(a.id());
+                if (gone && i == null) continue;
+                int rank = i == null ? 2 : !gone && PatchbayLauncher.compareVersions(a.version(), i.version()) > 0 ? 0 : 1;
                 all.add(new Row(a.id(), i == null ? a.id() : i.name(), i == null ? null : i.version(), a, rank));
             }
             String v = PatchbayLauncher.currentVersion();
