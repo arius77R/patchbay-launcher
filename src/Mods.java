@@ -810,9 +810,13 @@ final class Mods {
             return rows.stream().filter(r -> checked.contains(r.id())).toList();
         }
 
-        /** Rows Tick all ticks: the ones that can be installed or updated. */
+        /**
+         * Rows Tick all ticks: the ones that can be installed or updated; when the list shown has none (Not in sources,
+         * Removed from repo, Installed with nothing to update), every installed one, to switch off or uninstall them together.
+         */
         private List<Row> checkable() {
-            return rows.stream().filter(this::installable).toList();
+            List<Row> install = rows.stream().filter(this::installable).toList();
+            return install.isEmpty() ? rows.stream().filter(this::tickable).toList() : install;
         }
 
         private boolean installable(Row r) { return r.rank() != 1 && r.available() != null && !unavailable(r); }
@@ -875,7 +879,7 @@ final class Mods {
             return verdict(row).state() == Compat.State.UNAVAILABLE;
         }
 
-        /** Ticks every row that can be installed or updated; unticks them all when they are all ticked. */
+        /** Ticks every row checkable() gives; unticks them all when they are all ticked. */
         private void checkAll() {
             List<Row> tickable = checkable();
             boolean allTicked = !tickable.isEmpty() && tickable.stream().allMatch(r -> checked.contains(r.id()));

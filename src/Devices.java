@@ -577,7 +577,11 @@ final class Devices {
             side.show(SidePanel.top(found.size(), (int) found.stream().filter(i -> favourites.contains(key(i))).count()), parts);
         }
 
-        private List<Row> checkable() { return rows.stream().filter(Panel::downloadable).toList(); }
+        /** Rows Tick all ticks: the ones to download; when the list shown has none, every downloaded one, to switch off or uninstall them together. */
+        private List<Row> checkable() {
+            List<Row> get = rows.stream().filter(Panel::downloadable).toList();
+            return get.isEmpty() ? rows : get;
+        }
         private List<Row> checkedRows() { return rows.stream().filter(r -> checked.contains(key(r.item()))).toList(); }
 
         private void checkAll() {
