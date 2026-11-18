@@ -924,6 +924,25 @@ public final class Theme {
         }
     }
 
+    /** A row of tabs in a rounded well, like the sections in the top bar; the tabs are buttons of kind "nav". */
+    static JPanel tabStrip(String name) {
+        JPanel tabs = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0)) {
+            @Override protected void paintComponent(Graphics gr) {
+                Graphics2D g2 = (Graphics2D) gr.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(WELL);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.setColor(EDGE);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.dispose();
+            }
+        };
+        tabs.setOpaque(false);
+        tabs.setBorder(new EmptyBorder(3, 3, 3, 3));
+        tabs.getAccessibleContext().setAccessibleName(name);
+        return tabs;
+    }
+
     static JPanel row(int gap, Component... parts) {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         p.setOpaque(false);

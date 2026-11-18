@@ -174,8 +174,14 @@ final class I18n {
         add("New Patchbay Launcher version: ", "Neue Patchbay-Launcher-Version: ", "Nouvelle version de Patchbay Launcher : ");
         add("What's new, and updating the launcher", "Neuerungen und Aktualisierung des Launchers", "Nouveautés et mise à jour du lanceur");
         add("What's new in ", "Neu in ", "Nouveautés de la version ");
-        add("Version, what's new, new sources and system information", "Version, Neuerungen, neue Quellen und Systeminformationen", "Version, nouveautés, nouvelles sources et informations système");
-        add("New sources", "Neue Quellen", "Nouvelles sources");
+        add("Version, what's new and system information", "Version, Neuerungen und Systeminformationen", "Version, nouveautés et informations système");
+        add("Source list", "Quellenliste", "Liste des sources");
+        add("Recommended", "Empfohlen", "Recommandées");
+        add("Sources view", "Quellenansicht", "Vue des sources");
+        add("New: ", "Neu: ", "Nouvelles : ");
+        add("New recommended sources: ", "Neue empfohlene Quellen: ", "Nouvelles sources recommandées : ");
+        add("Checking the recommended sources…", "Empfohlene Quellen werden geprüft…", "Vérification des sources recommandées…");
+        add("checked by the launcher's author, not on your list yet", "vom Autor des Launchers geprüft, noch nicht in deiner Liste", "vérifiées par l'auteur du lanceur, pas encore dans votre liste");
         add("a new version is available: ", "eine neue Version ist verfügbar: ", "une nouvelle version est disponible : ");
         add("you have the newest version", "du hast die neueste Version", "vous avez la version la plus récente");
         add("couldn't check for a new version", "neue Version konnte nicht geprüft werden", "impossible de vérifier s'il existe une nouvelle version");
@@ -186,7 +192,6 @@ final class I18n {
         add("Couldn't get the list of recommended sources.", "Die Liste empfohlener Quellen konnte nicht geladen werden.", "Impossible d'obtenir la liste des sources recommandées.");
         add("No new sources. You have all the recommended ones.", "Keine neuen Quellen. Du hast alle empfohlenen.", "Aucune nouvelle source. Vous avez toutes les sources recommandées.");
         add("Add", "Hinzufügen", "Ajouter");
-        add("Added", "Hinzugefügt", "Ajoutée");
         add("Checking the Bitwig version…", "Bitwig-Version wird geprüft…", "Vérification de la version de Bitwig…");
         add(" doesn't support your Bitwig ", " unterstützt dein Bitwig nicht: ", " ne prend pas en charge votre Bitwig ");
         add("Supported Bitwig versions (", "Unterstützte Bitwig-Versionen (", "Versions de Bitwig prises en charge (");

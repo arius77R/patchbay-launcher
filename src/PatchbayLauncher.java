@@ -354,7 +354,7 @@ public final class PatchbayLauncher {
     private final Mods.Panel modsPanel = new Mods.Panel(this::modUpdatesFound);
     private final Devices.Panel devicesPanel = new Devices.Panel();
     private final Themes.Panel themesPanel = new Themes.Panel();
-    private final Sources.Panel sourcesPanel = new Sources.Panel(this::sourcesChanged);
+    private final Sources.Panel sourcesPanel = new Sources.Panel(this::sourcesChanged, this::newSourcesFound);
     private List<Release> releases = List.of();
     private boolean busy;
 
@@ -363,6 +363,16 @@ public final class PatchbayLauncher {
         if (b == null) return;
         b.putClientProperty("badge", updates);
         b.getAccessibleContext().setAccessibleDescription(updates > 0 ? t("Aktualizacje: ", "Updates: ") + updates : null);
+        b.revalidate();
+        b.repaint();
+    }
+
+    /** The red count on the Sources tab: recommended sources the user hasn't looked at in Polecane. */
+    private void newSourcesFound(int count) {
+        JButton b = nav.get("sources");
+        if (b == null) return;
+        b.putClientProperty("badge", count);
+        b.getAccessibleContext().setAccessibleDescription(count > 0 ? t("Nowe polecane źródła: ", "New recommended sources: ") + count : null);
         b.revalidate();
         b.repaint();
     }
@@ -386,6 +396,7 @@ public final class PatchbayLauncher {
         settingsButton.repaint();
         if (key.equals("devices")) devicesPanel.shown();
         if (key.equals("themes")) themesPanel.shown();
+        if (key.equals("sources")) sourcesPanel.shown();
     }
 
     /** The mark beside the name: a socket with two jacks and a cable, drawn in the accent. */
@@ -459,9 +470,9 @@ public final class PatchbayLauncher {
         brand.add(name, g);
         g.gridy = 1;
         g.insets = new Insets(1, 0, 0, 0);
-        brand.add(Theme.row(8, version, newSourcesDot, launcherLink), g);
+        brand.add(Theme.row(8, version, launcherLink), g);
         brand.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        brand.setToolTipText(t("Wersja, co nowego, nowe źródła i informacje o systemie", "Version, what's new, new sources and system information"));
+        brand.setToolTipText(t("Wersja, co nowego i informacje o systemie", "Version, what's new and system information"));
         brand.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) { showLauncherPage(); }
             @Override public void mouseEntered(java.awt.event.MouseEvent e) { name.setForeground(Theme.ACCENT); }
@@ -469,20 +480,7 @@ public final class PatchbayLauncher {
         });
         bar.add(brand, BorderLayout.WEST);
 
-        JPanel tabs = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0)) {
-            @Override protected void paintComponent(Graphics gr) {
-                Graphics2D g2 = (Graphics2D) gr.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(Theme.WELL);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.setColor(Theme.EDGE);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-                g2.dispose();
-            }
-        };
-        tabs.setOpaque(false);
-        tabs.setBorder(new EmptyBorder(3, 3, 3, 3));
-        tabs.getAccessibleContext().setAccessibleName(t("Sekcje", "Sections"));
+        JPanel tabs = Theme.tabStrip(t("Sekcje", "Sections"));
         String[][] items = { { "patchbay", "Patchbay" }, { "mods", t("Mody", "Mods") }, { "devices", t("Urządzenia", "Devices") }, { "themes", t("Motywy", "Themes") }, { "sources", t("Źródła", "Sources") } };
         for (String[] it : items) {
             JButton b = Theme.button(it[1], "nav");
@@ -1224,16 +1222,12 @@ public final class PatchbayLauncher {
         tab.repaint();
     }
 
-    // ---------- the launcher's own window: version and updates, what's new, recommended sources, system information ----------
+    // ---------- the launcher's own window: version and updates, what's new, system information ----------
 
     /** The newest launcher release on GitHub (this version or a newer one); null until checked or when GitHub can't be reached. */
     private SelfUpdate.Release launcherLatest;
-    /** Recommended sources the user doesn't have; null until loaded or when the list can't be had. */
-    private List<Sources.Suggestion> suggestions;
     /** "New version 0.9.6" beside the launcher's version in the top bar: shown only while a newer launcher is out; a click opens the launcher's window. */
     private final JLabel launcherLink = new JLabel();
-    /** A dot beside the version while there are recommended sources the user hasn't seen in the launcher's window. */
-    private final JLabel newSourcesDot = new JLabel("●");
     {
         launcherLink.setIcon(new DownloadIcon());
         launcherLink.setIconTextGap(5);
@@ -1245,10 +1239,6 @@ public final class PatchbayLauncher {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) { showLauncherPage(); }
         });
         launcherLink.setVisible(false);
-        newSourcesDot.setFont(Theme.text(9f));
-        newSourcesDot.setForeground(Theme.ACCENT);
-        newSourcesDot.getAccessibleContext().setAccessibleName(t("Nowe źródła", "New sources"));
-        newSourcesDot.setVisible(false);
     }
 
     private void checkLauncher() {
@@ -1259,13 +1249,8 @@ public final class PatchbayLauncher {
             } catch (IOException | RuntimeException ignored) {
                 // no network or GitHub busy: no launcher update shown, nothing else changes
             }
-            try {
-                List<Sources.Suggestion> found = Sources.suggested();
-                SwingUtilities.invokeLater(() -> suggestionsLoaded(found));
-            } catch (IOException | RuntimeException ignored) {
-                // the window says the list couldn't be had
-            }
         }, "launcher-update").start();
+        sourcesPanel.loadSuggestions();
     }
 
     private void launcherChecked(SelfUpdate.Release r) {
@@ -1282,23 +1267,6 @@ public final class PatchbayLauncher {
         }
     }
 
-    private void suggestionsLoaded(List<Sources.Suggestion> found) {
-        suggestions = found;
-        Set<String> seen = new HashSet<>(List.of(String.valueOf(I18n.setting("sourcesSeen")).split(",")));
-        newSourcesDot.setVisible(!"launcher".equals(shownTab) && found.stream().anyMatch(s -> !seen.contains(s.repo())));
-        newSourcesDot.getParent().revalidate();
-        if ("launcher".equals(shownTab)) markSourcesSeen();
-        fillLauncherPage();
-    }
-
-    private void markSourcesSeen() {
-        if (suggestions == null) return;
-        List<String> seen = new ArrayList<>();
-        for (Sources.Suggestion s : suggestions) seen.add(s.repo());
-        I18n.remember("sourcesSeen", String.join(",", seen));
-        newSourcesDot.setVisible(false);
-    }
-
     /** The launcher's own page, opened from its name and version in the top bar (and from "New version"). */
     private final JPanel launcherPage = new JPanel(new BorderLayout());
     /** The update under way: the page is not rebuilt while it runs, so its progress stays on screen. */
@@ -1306,14 +1274,13 @@ public final class PatchbayLauncher {
 
     private void showLauncherPage() {
         select("launcher");
-        markSourcesSeen();
         fillLauncherPage();
     }
 
     /**
      * This version and whether a newer one is out, with Update and the release page; what's new; the
-     * recommended sources with Add; the system information for a report, with Copy. Rebuilt when what it
-     * shows arrives (the release, the sources) and each time it is opened (the system information).
+     * system information for a report, with Copy. Rebuilt when the release arrives and each time it is
+     * opened (the system information).
      */
     private void fillLauncherPage() {
         if (launcherUpdating) return;
@@ -1366,8 +1333,6 @@ public final class PatchbayLauncher {
         JPanel right = new JPanel();
         right.setOpaque(false);
         right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
-        right.add(section(Theme.label(t("Nowe źródła", "New sources"), Theme.bold(13f), Theme.TEXT), null, suggestionList()));
-        right.add(Box.createVerticalStrut(12));
         right.add(section(Theme.label(t("Informacje o systemie", "System information"), Theme.bold(13f), Theme.TEXT), copy, infoBody));
         JPanel rightTop = new JPanel(new BorderLayout());
         rightTop.setOpaque(false);
@@ -1400,39 +1365,6 @@ public final class PatchbayLauncher {
         scroll.getViewport().setOpaque(false);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         return scroll;
-    }
-
-    /** The recommended sources, each with Add; a line when there are none or the list can't be had. */
-    private JComponent suggestionList() {
-        if (suggestions == null || suggestions.isEmpty())
-            return Theme.label(suggestions == null ? t("Nie udało się pobrać listy polecanych źródeł.", "Couldn't get the list of recommended sources.")
-                : t("Brak nowych źródeł. Masz wszystkie polecane.", "No new sources. You have all the recommended ones."), Theme.text(12f), Theme.MUTED);
-        JPanel list = new JPanel(new GridLayout(0, 1, 0, 6));
-        list.setOpaque(false);
-        for (Sources.Suggestion s : suggestions) {
-            JPanel row = new JPanel(new BorderLayout(12, 0));
-            row.setOpaque(false);
-            JPanel words = new JPanel(new GridLayout(0, 1, 0, 1));
-            words.setOpaque(false);
-            words.add(Theme.row(8, Theme.label(s.repo(), Theme.mono(12f), Theme.TEXT), Theme.label(Sources.groupName(s.group()), Theme.text(11f), Theme.MUTED)));
-            if (s.note() != null && !s.note().isBlank()) words.add(Theme.label(s.note(), Theme.text(11f), Theme.MUTED));
-            JButton add = Theme.button(t("Dodaj", "Add"), "secondary");
-            add.addActionListener(e -> {
-                try {
-                    Sources.add(s);
-                    add.setText(t("Dodane", "Added"));
-                    add.setEnabled(false);
-                    sourcesPanel.reloadFromDisk();
-                    sourcesChanged();
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(row, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
-                }
-            });
-            row.add(words, BorderLayout.CENTER);
-            row.add(add, BorderLayout.EAST);
-            list.add(row);
-        }
-        return list;
     }
 
     /** Downloads the new launcher, then quits; a script swaps it in and starts it again. A copy that can't update itself opens the release page. */

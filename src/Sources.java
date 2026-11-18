@@ -290,11 +290,25 @@ final class Sources {
         /** Brings back the built-in sources as the launcher ships them; shown while one is removed or changed. */
         private final JButton restoreButton = Theme.button(PatchbayLauncher.t("Przywróć wbudowane", "Restore built-in"), "secondary");
         private int nextId;
+        /** "Lista źródeł" (the user's sources) or "Polecane" (recommended ones to add), switched by the tabs above. */
+        private final CardLayout views = new CardLayout();
+        private final JPanel viewCards = new JPanel(views);
+        private final JButton listTab = Theme.button(PatchbayLauncher.t("Lista źródeł", "Source list"), "nav");
+        private final JButton recommendedTab = Theme.button(PatchbayLauncher.t("Polecane", "Recommended"), "nav");
+        private final JPanel recommended = new JPanel();
+        private JComponent listActions;
+        private boolean showingRecommended;
+        /** Recommended sources the user doesn't have; null until loaded, or when the list can't be had (failed). */
+        private List<Suggestion> suggestions;
+        private boolean suggestionsFailed;
+        /** Gets how many recommended sources the user hasn't looked at yet: the red count on the Sources tab. */
+        private final java.util.function.IntConsumer unseen;
 
-        /** changed runs after the user changes the sources, so the other sections reload. */
-        Panel(Runnable changed) {
+        /** changed runs after the user changes the sources, so the other sections reload; unseen gets the count of new recommended ones. */
+        Panel(Runnable changed, java.util.function.IntConsumer unseen) {
             super(new BorderLayout());
             this.changed = changed;
+            this.unseen = unseen;
             sources = all();
             groups.setOpaque(false);
             groups.setLayout(new BoxLayout(groups, BoxLayout.Y_AXIS));
@@ -312,19 +326,178 @@ final class Sources {
             JButton add = Theme.button(PatchbayLauncher.t("Dodaj źródło", "Add source"), "secondary");
             add.addActionListener(e -> startNew(MODS));
             restoreButton.addActionListener(e -> restoreBuiltins());
+            listActions = Theme.row(8, restoreButton, add);
+
+            recommended.setOpaque(false);
+            recommended.setLayout(new BoxLayout(recommended, BoxLayout.Y_AXIS));
+            JScrollPane recScroll = new JScrollPane(recommended);
+            recScroll.setBorder(BorderFactory.createEmptyBorder());
+            recScroll.getViewport().setOpaque(false);
+            recScroll.setOpaque(false);
+            recScroll.getVerticalScrollBar().setUnitIncrement(16);
+            viewCards.setOpaque(false);
+            viewCards.add(body, "list");
+            viewCards.add(recScroll, "recommended");
+            JPanel tabs = Theme.tabStrip(PatchbayLauncher.t("Widok źródeł", "Sources view"));
+            listTab.addActionListener(e -> showView(false));
+            recommendedTab.addActionListener(e -> showView(true));
+            tabs.add(listTab);
+            tabs.add(recommendedTab);
+            JPanel both = new JPanel(new BorderLayout(0, 12));
+            both.setOpaque(false);
+            both.add(Theme.row(0, tabs), BorderLayout.NORTH);
+            both.add(viewCards, BorderLayout.CENTER);
             add(Theme.page(PatchbayLauncher.t("Źródła", "Sources"),
                 prose(Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody, urządzenia i motywy.",
                     "GitHub repositories the launcher gets Patchbay, mods, devices and themes from."), Theme.text(13f), Theme.MUTED)),
-                Theme.row(8, restoreButton, add), body, null, null), BorderLayout.CENTER);
+                listActions, both, null, null), BorderLayout.CENTER);
+            showView(false);
+            buildRecommended();
             repoField.setFont(Theme.mono(13f));
             filterField.setFont(Theme.mono(13f));
             rebuild();
         }
 
-        /** The list was changed outside this section (a recommended source added): shows it as saved. */
-        void reloadFromDisk() {
-            sources = all();
-            rebuild();
+        // ---------- Polecane: recommended sources to add ----------
+
+        /** Gets the recommended sources from the launcher's repository (in the background). */
+        void loadSuggestions() {
+            new Thread(() -> {
+                List<Suggestion> found;
+                try {
+                    found = suggested();
+                } catch (IOException | RuntimeException none) {
+                    found = null; // no network or GitHub busy: the tab says the list couldn't be had
+                }
+                List<Suggestion> result = found;
+                SwingUtilities.invokeLater(() -> suggestionsLoaded(result));
+            }, "recommended-sources").start();
+        }
+
+        private void suggestionsLoaded(List<Suggestion> found) {
+            suggestionsFailed = found == null;
+            suggestions = found == null ? List.of() : new ArrayList<>(found);
+            buildRecommended();
+            if (showingRecommended && isShowing()) markSeen(); else countUnseen();
+        }
+
+        /** The Sources section came on screen: recommended ones on view count as seen. */
+        void shown() {
+            if (showingRecommended) markSeen();
+        }
+
+        private void showView(boolean recommendedView) {
+            showingRecommended = recommendedView;
+            listTab.putClientProperty("current", !recommendedView);
+            recommendedTab.putClientProperty("current", recommendedView);
+            listTab.repaint();
+            recommendedTab.repaint();
+            views.show(viewCards, recommendedView ? "recommended" : "list");
+            listActions.setVisible(!recommendedView);
+            if (recommendedView) markSeen();
+        }
+
+        private Set<String> seen() {
+            return new HashSet<>(List.of(String.valueOf(I18n.setting("sourcesSeen")).split(",")));
+        }
+
+        /** The red count on the Polecane tab and on the Sources tab: recommended sources not looked at yet. */
+        private void countUnseen() {
+            Set<String> seen = seen();
+            int n = suggestions == null ? 0 : (int) suggestions.stream().filter(x -> !seen.contains(x.repo())).count();
+            recommendedTab.putClientProperty("badge", n);
+            recommendedTab.getAccessibleContext().setAccessibleDescription(n > 0 ? PatchbayLauncher.t("Nowe: ", "New: ") + n : null);
+            recommendedTab.revalidate();
+            recommendedTab.repaint();
+            unseen.accept(n);
+        }
+
+        private void markSeen() {
+            if (suggestions == null) return;
+            Set<String> seen = seen();
+            for (Suggestion x : suggestions) seen.add(x.repo());
+            seen.remove("null");
+            I18n.remember("sourcesSeen", String.join(",", seen));
+            countUnseen();
+        }
+
+        /** Polecane: one framed list like a group of sources, each with what it is and Add; a line when there are none. */
+        private void buildRecommended() {
+            recommended.removeAll();
+            JPanel box = new JPanel(new BorderLayout());
+            box.setOpaque(false);
+            box.setBorder(BorderFactory.createLineBorder(Theme.HAIR));
+            box.setAlignmentX(LEFT_ALIGNMENT);
+            JPanel head = new JPanel(new BorderLayout(12, 0));
+            head.setBackground(Theme.FRAME);
+            head.setBorder(new EmptyBorder(8, 14, 8, 10));
+            head.add(Theme.row(10, Theme.label(PatchbayLauncher.t("Polecane", "Recommended"), Theme.bold(15f), Theme.TEXT),
+                Theme.label(PatchbayLauncher.t("sprawdzone przez autora Launchera, jeszcze nie na Twojej liście", "checked by the launcher's author, not on your list yet"),
+                    Theme.text(12f), Theme.MUTED)), BorderLayout.WEST);
+            box.add(head, BorderLayout.NORTH);
+            JPanel list = new JPanel();
+            list.setOpaque(false);
+            list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
+            if (suggestions == null || suggestions.isEmpty()) {
+                String text = suggestions == null ? PatchbayLauncher.t("Sprawdzam polecane źródła…", "Checking the recommended sources…")
+                    : suggestionsFailed ? PatchbayLauncher.t("Nie udało się pobrać listy polecanych źródeł.", "Couldn't get the list of recommended sources.")
+                    : PatchbayLauncher.t("Brak nowych źródeł. Masz wszystkie polecane.", "No new sources. You have all the recommended ones.");
+                JLabel none = Theme.label(text, Theme.text(12f), Theme.MUTED);
+                none.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(10, 14, 10, 12)));
+                none.setAlignmentX(LEFT_ALIGNMENT);
+                none.setMaximumSize(new Dimension(Integer.MAX_VALUE, none.getPreferredSize().height));
+                list.add(none);
+            } else {
+                for (Suggestion x : suggestions) list.add(recommendedRow(x));
+            }
+            box.add(list, BorderLayout.CENTER);
+            box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
+            recommended.add(box);
+            recommended.revalidate();
+            recommended.repaint();
+        }
+
+        private JComponent recommendedRow(Suggestion x) {
+            JPanel row = new JPanel(new BorderLayout(12, 0));
+            row.setBackground(Theme.WELL);
+            row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(8, 14, 8, 12)));
+            JPanel text = new JPanel();
+            text.setOpaque(false);
+            text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+            JPanel top = Theme.row(8, Theme.label(x.repo(), Theme.mono(13f), Theme.TEXT), badge(groupName(x.group())));
+            top.setAlignmentX(LEFT_ALIGNMENT);
+            text.add(top);
+            if (x.note() != null && !x.note().isBlank()) {
+                text.add(Box.createVerticalStrut(3));
+                JLabel note = Theme.label(x.note(), Theme.text(12f), Theme.MUTED);
+                note.setAlignmentX(LEFT_ALIGNMENT);
+                text.add(note);
+            }
+            row.add(text, BorderLayout.CENTER);
+            JButton add = Theme.button(PatchbayLauncher.t("Dodaj", "Add"), "secondary");
+            add.putClientProperty("small", true);
+            add.setFont(Theme.text(12f));
+            add.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Dodaj źródło: ", "Add source: ") + x.repo());
+            add.addActionListener(e -> {
+                try {
+                    Sources.add(x);
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(row, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                suggestions.remove(x);
+                sources = all();
+                rebuild();
+                buildRecommended();
+                countUnseen();
+                changed.run();
+            });
+            JPanel right = new JPanel(new GridBagLayout());
+            right.setOpaque(false);
+            right.add(add);
+            row.add(right, BorderLayout.EAST);
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, row.getPreferredSize().height));
+            return row;
         }
 
         private void rebuild() {
