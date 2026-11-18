@@ -171,6 +171,14 @@ final class I18n {
         add("Patchbay version", "Patchbay-Version", "Version de Patchbay");
         add("Language", "Sprache", "Langue");
         add("Show the data folder", "Datenordner zeigen", "Afficher le dossier des données");
+        add("New version ", "Neue Version ", "Nouvelle version ");
+        add("New Patchbay Launcher version: ", "Neue Patchbay-Launcher-Version: ", "Nouvelle version de Patchbay Launcher : ");
+        add("What's new, and updating the launcher", "Neuerungen und Aktualisierung des Launchers", "Nouveautés et mise à jour du lanceur");
+        add("What's new in Patchbay Launcher ", "Neu in Patchbay Launcher ", "Nouveautés de Patchbay Launcher ");
+        add("You have version ", "Du hast Version ", "Vous avez la version ");
+        add("The changes are described on the release page.", "Die Änderungen stehen auf der Release-Seite.", "Les changements sont décrits sur la page de la version.");
+        add("The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are.", "Der Launcher schließt sich kurz und startet neu. Patchbay, Mods und Einstellungen bleiben unverändert.", "Le lanceur se ferme un instant et redémarre. Patchbay, les mods et les réglages restent tels quels.");
+        add("This copy can't update itself: get the new version from the release page.", "Diese Kopie kann sich nicht selbst aktualisieren: Lade die neue Version von der Release-Seite.", "Cette copie ne peut pas se mettre à jour seule : téléchargez la nouvelle version depuis la page de la version.");
         add("Report a problem", "Problem melden", "Signaler un problème");
         add("All", "Alle", "Tous");
         add("Compatible", "Kompatibel", "Compatibles");
@@ -385,16 +393,8 @@ final class I18n {
         add("Paste", "Einfügen", "Coller");
         add("Select all", "Alles auswählen", "Tout sélectionner");
         add("Wait until the launcher finishes what it is doing.", "Warte, bis der Launcher fertig ist.", "Attendez que le lanceur ait terminé.");
-        add("Update the launcher", "Launcher aktualisieren", "Mettre à jour le lanceur");
         add("What's new", "Was ist neu", "Nouveautés");
-        add("New launcher version", "Neue Launcher-Version", "Nouvelle version du lanceur");
-        add("Download from the page", "Von der Seite laden", "Télécharger depuis la page");
-        add("This copy can't update itself.", "Diese Kopie kann sich nicht selbst aktualisieren.", "Cette copie ne peut pas se mettre à jour elle-même.");
         add("A new Patchbay Launcher version is available: ", "Eine neue Version von Patchbay Launcher ist verfügbar: ", "Une nouvelle version de Patchbay Launcher est disponible : ");
-        add("Download Patchbay Launcher ", "Patchbay Launcher ", "Télécharger Patchbay Launcher ");
-        add("? The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are.",
-            " herunterladen? Der Launcher schließt sich kurz und startet neu. Patchbay, Mods und Einstellungen bleiben, wie sie sind.",
-            " ? Le lanceur se ferme un instant puis redémarre. Patchbay, les mods et les réglages restent tels quels.");
         add("Starting the new version…", "Neue Version wird gestartet…", "Démarrage de la nouvelle version…");
         add("No permission to write in the folder ", "Keine Schreibrechte im Ordner ", "Pas le droit d'écrire dans le dossier ");
         add(". Download the new version from the project page.", ". Lade die neue Version von der Projektseite.", ". Téléchargez la nouvelle version depuis la page du projet.");

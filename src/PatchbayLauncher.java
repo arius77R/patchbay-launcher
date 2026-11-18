@@ -459,7 +459,7 @@ public final class PatchbayLauncher {
         brand.add(name, g);
         g.gridy = 1;
         g.insets = new Insets(1, 0, 0, 0);
-        brand.add(version, g);
+        brand.add(Theme.row(10, version, launcherLink), g);
         bar.add(brand, BorderLayout.WEST);
 
         JPanel tabs = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0)) {
@@ -593,6 +593,23 @@ public final class PatchbayLauncher {
         g2.drawImage(raw, 0, 0, w, h, null);
         g2.dispose();
         return out;
+    }
+
+    /** An arrow into a tray, for "New version" in the top bar. */
+    private static final class DownloadIcon implements Icon {
+        @Override public int getIconWidth() { return 12; }
+        @Override public int getIconHeight() { return 12; }
+        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.translate(x, y);
+            g2.setColor(Theme.ACCENT);
+            g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine(6, 1, 6, 8);
+            g2.drawPolyline(new int[] { 3, 6, 9 }, new int[] { 5, 8, 5 }, 3);
+            g2.drawPolyline(new int[] { 1, 1, 11, 11 }, new int[] { 8, 11, 11, 8 }, 4);
+            g2.dispose();
+        }
     }
 
     /** "</>" for the project's page (drawn; res/github.png replaces it when supplied). */
@@ -816,7 +833,6 @@ public final class PatchbayLauncher {
         statusLabel.addPropertyChangeListener("text", e -> statusLabel.setVisible(!statusLabel.getText().isBlank()));
         v.add(statusLabel);
         latestLabel.setFont(Theme.text(13f));
-        col.add(launcherSection());
         col.add(section(latestLabel, patchbayCount, v));
 
         // the page follows the window's width, so the buttons on the right never fall off a narrow window
@@ -1130,11 +1146,11 @@ public final class PatchbayLauncher {
 
     private boolean patchbayUpdate;
 
-    /** The red count on the Patchbay tab: a new Patchbay and a new launcher each count one. */
+    /** The red count on the Patchbay tab: a new Patchbay (a new launcher is shown in the top bar instead). */
     private void patchbayTabBadge() {
         JButton tab = nav.get("patchbay");
         if (tab == null) return;
-        tab.putClientProperty("badge", (patchbayUpdate ? 1 : 0) + (launcherUpdate != null ? 1 : 0));
+        tab.putClientProperty("badge", patchbayUpdate ? 1 : 0);
         tab.revalidate();
         tab.repaint();
     }
@@ -1142,28 +1158,19 @@ public final class PatchbayLauncher {
     // ---------- the launcher's own updates ----------
 
     private SelfUpdate.Release launcherUpdate;
-    private final JLabel launcherHead = Theme.label(" ", Theme.text(13f), Theme.TEXT);
-    private final Count launcherCount = new Count();
-    private final JLabel launcherStatus = Theme.label(" ", Theme.text(13f), Theme.MUTED);
-    private final JButton launcherButton = Theme.button(t("Zaktualizuj Launcher", "Update the launcher"), "primary");
-    private JPanel launcherSection;
-
-    /** "A new launcher version": shown on the Patchbay page only while one is out. */
-    private JPanel launcherSection() {
-        JPanel body = new JPanel(new BorderLayout(12, 0));
-        body.setOpaque(false);
-        JButton notes = Theme.button(t("Co nowego", "What's new"), "secondary");
-        notes.addActionListener(e -> browse(launcherUpdate != null && launcherUpdate.page() != null ? launcherUpdate.page() : PROJECT + "/releases"));
-        launcherButton.addActionListener(e -> updateLauncher());
-        body.add(Theme.row(10, launcherButton, notes), BorderLayout.WEST);
-        body.add(launcherStatus, BorderLayout.CENTER);
-        launcherSection = new JPanel(new BorderLayout());
-        launcherSection.setOpaque(false);
-        launcherSection.add(section(launcherHead, launcherCount, body), BorderLayout.CENTER);
-        launcherSection.add(Box.createVerticalStrut(12), BorderLayout.SOUTH);
-        launcherSection.setAlignmentX(Component.LEFT_ALIGNMENT);
-        launcherSection.setVisible(false);
-        return launcherSection;
+    /** "New version 0.9.6" beside the launcher's version in the top bar: shown only while a newer launcher is out; a click opens what's new. */
+    private final JLabel launcherLink = new JLabel();
+    {
+        launcherLink.setIcon(new DownloadIcon());
+        launcherLink.setIconTextGap(5);
+        launcherLink.setFont(Theme.text(11f));
+        launcherLink.setForeground(Theme.ACCENT);
+        launcherLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        launcherLink.setToolTipText(t("Co nowego i aktualizacja Launchera", "What's new, and updating the launcher"));
+        launcherLink.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) { showLauncherUpdate(); }
+        });
+        launcherLink.setVisible(false);
     }
 
     private void checkLauncher() {
@@ -1180,47 +1187,99 @@ public final class PatchbayLauncher {
 
     private void launcherFound(SelfUpdate.Release r) {
         launcherUpdate = r;
-        launcherHead.setText("<html>" + t("Nowa wersja Launchera", "New launcher version") + " <font color='" + Theme.hex(Theme.MUTED) + "'>· " + VERSION + " → " + r.version() + "</font></html>");
-        launcherCount.set(1);
-        if (SelfUpdate.installRoot() == null) {
-            launcherButton.setText(t("Pobierz ze strony", "Download from the page"));
-            launcherStatus.setText(t("Ta kopia nie może się zaktualizować sama.", "This copy can't update itself."));
-        }
-        launcherSection.setVisible(true);
-        launcherSection.getParent().revalidate();
-        patchbayTabBadge();
+        launcherLink.setText(t("Nowa wersja ", "New version ") + r.version());
+        launcherLink.getAccessibleContext().setAccessibleName(t("Nowa wersja Patchbay Launcher: ", "New Patchbay Launcher version: ") + r.version());
+        launcherLink.setVisible(true);
+        launcherLink.getParent().revalidate();
         if (!r.version().equals(I18n.setting("launcherNotified"))) {
             I18n.remember("launcherNotified", r.version());
             notifyUser(t("Dostępna jest nowa wersja Patchbay Launcher: ", "A new Patchbay Launcher version is available: ") + r.version());
         }
     }
 
-    /** Downloads the new launcher, then quits; a script swaps it in and starts it again. */
-    private void updateLauncher() {
+    /** The window opened from "New version" in the top bar: what's new in the release, and Update. */
+    private void showLauncherUpdate() {
         SelfUpdate.Release r = launcherUpdate;
         if (r == null) return;
+        JDialog d = new JDialog(frame, "Patchbay Launcher " + r.version(), true);
+        JPanel content = new JPanel(new BorderLayout(0, 12));
+        content.setBackground(Theme.FRAME);
+        content.setBorder(new EmptyBorder(18, 20, 16, 20));
+
+        JPanel head = new JPanel(new GridLayout(2, 1, 0, 2));
+        head.setOpaque(false);
+        head.add(Theme.label(t("Co nowego w Patchbay Launcher ", "What's new in Patchbay Launcher ") + r.version(), Theme.bold(15f), Theme.TEXT));
+        head.add(Theme.label(t("Masz wersję ", "You have version ") + VERSION, Theme.mono(11f), Theme.MUTED));
+        content.add(head, BorderLayout.NORTH);
+
+        String notes = SelfUpdate.whatsNewHtml(r.notes());
+        JEditorPane text = new JEditorPane("text/html", "<html><body style='font-family:" + Theme.text(13f).getFamily() + "; font-size:13pt; color:"
+            + Theme.hex(Theme.TEXT) + ";'>" + (notes != null ? notes : "<p>" + t("Opis zmian jest na stronie wydania.", "The changes are described on the release page.") + "</p>")
+            + "</body></html>");
+        text.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        text.setFont(Theme.text(13f));
+        text.setEditable(false);
+        text.setBackground(Theme.WELL);
+        text.setBorder(new EmptyBorder(6, 12, 6, 12));
+        text.setCaretPosition(0);
+        JScrollPane scroll = new JScrollPane(text, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setBorder(BorderFactory.createLineBorder(Theme.EDGE));
+        scroll.setPreferredSize(new Dimension(560, 300));
+        content.add(scroll, BorderLayout.CENTER);
+
+        JLabel status = Theme.label(t("Launcher zamknie się na chwilę i uruchomi ponownie. Patchbay, mody i ustawienia zostają bez zmian.",
+            "The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are."), Theme.text(12f), Theme.MUTED);
+        JButton update = Theme.button(t("Aktualizuj", "Update"), "primary");
+        JButton close = Theme.button(t("Zamknij", "Close"), "secondary");
+        JButton page = Theme.button(t("Strona wydania", "Release page"), "secondary");
+        page.addActionListener(e -> browse(r.page() != null ? r.page() : PROJECT + "/releases"));
+        close.addActionListener(e -> d.dispose());
+        update.addActionListener(e -> updateLauncher(r, d, status, update, close));
+        JPanel foot = new JPanel(new BorderLayout(0, 10));
+        foot.setOpaque(false);
+        foot.add(status, BorderLayout.NORTH);
+        JPanel buttons = new JPanel(new BorderLayout());
+        buttons.setOpaque(false);
+        buttons.add(page, BorderLayout.WEST);
+        buttons.add(Theme.row(8, close, update), BorderLayout.EAST);
+        foot.add(buttons, BorderLayout.SOUTH);
+        content.add(foot, BorderLayout.SOUTH);
+
+        d.setContentPane(content);
+        d.getRootPane().setDefaultButton(null);
+        d.pack();
+        d.setLocationRelativeTo(frame);
+        d.setVisible(true);
+    }
+
+    /** Downloads the new launcher, then quits; a script swaps it in and starts it again. A copy that can't update itself opens the release page. */
+    private void updateLauncher(SelfUpdate.Release r, JDialog d, JLabel status, JButton update, JButton close) {
         Path root = SelfUpdate.installRoot();
-        if (root == null) { browse(r.page() != null ? r.page() : PROJECT + "/releases"); return; }
-        int ok = JOptionPane.showConfirmDialog(frame, t("Pobrać Patchbay Launcher ", "Download Patchbay Launcher ") + r.version()
-                + t("? Launcher zamknie się na chwilę i uruchomi ponownie. Patchbay, mody i ustawienia zostają bez zmian.",
-                    "? The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are."),
-            "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-        if (ok != JOptionPane.OK_OPTION) return;
-        launcherButton.setEnabled(false);
+        if (root == null) {
+            status.setText(t("Ta kopia nie może się zaktualizować sama: pobierz nową wersję ze strony wydania.",
+                "This copy can't update itself: get the new version from the release page."));
+            browse(r.page() != null ? r.page() : PROJECT + "/releases");
+            return;
+        }
+        update.setEnabled(false);
+        close.setEnabled(false);
+        d.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         new Thread(() -> {
             try {
-                SelfUpdate.prepare(r, root, text -> SwingUtilities.invokeLater(() -> launcherStatus.setText(text)));
+                SelfUpdate.prepare(r, root, line -> SwingUtilities.invokeLater(() -> status.setText(line)));
                 SwingUtilities.invokeLater(() -> {
-                    launcherStatus.setText(t("Uruchamianie nowej wersji…", "Starting the new version…"));
+                    status.setText(t("Uruchamianie nowej wersji…", "Starting the new version…"));
                     javax.swing.Timer quit = new javax.swing.Timer(600, e -> System.exit(0));
                     quit.setRepeats(false);
                     quit.start();
                 });
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> {
-                    launcherButton.setEnabled(true);
-                    launcherStatus.setText(" ");
-                    JOptionPane.showMessageDialog(frame, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+                    update.setEnabled(true);
+                    close.setEnabled(true);
+                    d.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+                    status.setText(" ");
+                    JOptionPane.showMessageDialog(d, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
                 });
             }
         }, "launcher-self-update").start();
@@ -1571,7 +1630,7 @@ public final class PatchbayLauncher {
             SelfUpdate.Release r = SelfUpdate.parse(json);
             check(r != null && r.version().equals("9.9.9") && r.url().endsWith(SelfUpdate.assetSuffix()), "launcher release: this system's package " + (r == null ? null : r.url()));
             check(!Platform.MAC || "ab12".equals(r.sha256()), "launcher release: SHA-256 from GitHub's digest");
-            check(SelfUpdate.newer(r) && !SelfUpdate.newer(new SelfUpdate.Release(VERSION, null, "x", null)), "a newer launcher is offered, the same one is not");
+            check(SelfUpdate.newer(r) && !SelfUpdate.newer(new SelfUpdate.Release(VERSION, null, "x", null, null)), "a newer launcher is offered, the same one is not");
             Path tmp = Files.createTempDirectory("su");
             Path root;
             if (Platform.MAC) {

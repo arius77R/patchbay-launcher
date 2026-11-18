@@ -20,7 +20,8 @@ final class SelfUpdate {
     static final String REPO = "arius77R/patchbay-launcher";
 
     /** A launcher release: its version, its page, and this system's package. */
-    record Release(String version, String page, String url, String sha256) { }
+    /** notes: the release's description as written on GitHub (Markdown), or null. */
+    record Release(String version, String page, String url, String sha256, String notes) { }
 
     /** This system's package in a release. */
     static String assetSuffix() { return Platform.WINDOWS ? "-windows.zip" : Platform.LINUX ? "-linux.tar.gz" : "-macos.zip"; }
@@ -40,9 +41,48 @@ final class SelfUpdate {
             if (name == null || url == null || !name.startsWith("Patchbay-Launcher-") || !name.endsWith(assetSuffix())) continue;
             String digest = Mods.Json.text(asset, "digest");
             String sha = digest != null && digest.startsWith("sha256:") ? digest.substring(7).toLowerCase(Locale.ROOT) : null;
-            return new Release(version, Mods.Json.text(root, "html_url"), url, sha);
+            return new Release(version, Mods.Json.text(root, "html_url"), url, sha, Mods.Json.text(root, "body"));
         }
         return null;
+    }
+
+    /**
+     * The "What's new" part of a release description as simple HTML: the lines under a "## What's new…" heading up to the next
+     * heading (the whole description when there is no such heading). Lists, **bold**, `code`, [links](…) and > notes are kept.
+     */
+    static String whatsNewHtml(String notes) {
+        if (notes == null || notes.isBlank()) return null;
+        String[] lines = notes.replace("\r", "").split("\n");
+        int from = 0, to = lines.length;
+        for (int i = 0; i < lines.length; i++) if (lines[i].toLowerCase(Locale.ROOT).startsWith("## what's new")) { from = i + 1; break; }
+        for (int i = from; i < lines.length; i++) if (from > 0 && lines[i].startsWith("## ")) { to = i; break; }
+        StringBuilder html = new StringBuilder();
+        boolean list = false;
+        for (int i = from; i < to; i++) {
+            String line = lines[i].strip();
+            boolean item = line.startsWith("- ") || line.startsWith("* ");
+            if (list && !item) { html.append("</ul>"); list = false; }
+            if (line.isEmpty()) continue;
+            if (item) {
+                if (!list) { html.append("<ul style='margin-left:16px'>"); list = true; }
+                html.append("<li>").append(inline(line.substring(2))).append("</li>");
+            } else if (line.startsWith(">")) {
+                html.append("<p><i>").append(inline(line.substring(1).strip())).append("</i></p>");
+            } else if (line.startsWith("#")) {
+                html.append("<p><b>").append(inline(line.replaceFirst("^#+\\s*", ""))).append("</b></p>");
+            } else {
+                html.append("<p>").append(inline(line)).append("</p>");
+            }
+        }
+        if (list) html.append("</ul>");
+        return html.toString();
+    }
+
+    private static String inline(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            .replaceAll("\\*\\*(.+?)\\*\\*", "<b>$1</b>")
+            .replaceAll("`(.+?)`", "<code>$1</code>")
+            .replaceAll("\\[([^\\]]+)\\]\\([^)]+\\)", "$1");
     }
 
     /** The newest release, or null; a GitHub error is passed on. */
