@@ -179,8 +179,10 @@ final class Themes {
         for (Sources.Source s : Sources.enabled(Sources.THEMES)) {
             try {
                 all.addAll(fetchRepo(s.repo(), s.filter()));
+                Sources.answered(Sources.THEMES, s.repo(), null);
             } catch (IOException | RuntimeException ex) {
                 failure = ex instanceof IOException io ? io : new IOException(s.repo() + ": " + ex.getMessage());
+                Sources.answered(Sources.THEMES, s.repo(), failure);
                 failed.add(s.repo() + ": " + ex.getMessage());
             }
         }

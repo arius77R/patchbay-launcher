@@ -134,6 +134,28 @@ final class Sources {
 
     // ---------- recommended sources ----------
 
+    // ---------- sources whose repository is gone ----------
+
+    /** "group repo" of the sources GitHub said don't exist (HTTP 404) the last time each was read. */
+    private static final Set<String> MISSING = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Runs (on the event thread) when the set above changes, so the Sources section can show it. */
+    static volatile Runnable missingChanged = () -> { };
+
+    /** Notes what reading a source's repository said: gone (404) or there; anything else (no network, rate limit) leaves it as it was. */
+    static void answered(String group, String repo, IOException failure) {
+        String key = group + " " + repo.toLowerCase(Locale.ROOT);
+        boolean change = failure instanceof PatchbayLauncher.Gone ? MISSING.add(key) : failure == null && MISSING.remove(key);
+        if (change) SwingUtilities.invokeLater(missingChanged);
+    }
+
+    static boolean missing(Source s) { return MISSING.contains(s.group() + " " + s.repo().toLowerCase(Locale.ROOT)); }
+
+    static Set<String> missingRepos(String group) {
+        Set<String> out = new HashSet<>();
+        for (Source s : enabled(group)) if (missing(s)) out.add(s.repo());
+        return out;
+    }
+
     /** The list of sources the launcher's author keeps on GitHub: sources.json in this repository (Polecane). */
     static final String LIST_REPO = "arius77R/bitwig-mods-list";
 
@@ -467,6 +489,7 @@ final class Sources {
                 actions, both, null, null), BorderLayout.CENTER);
             showView("active");
             buildOnline();
+            missingChanged = () -> { rebuild(); countUnseen(); };
             repoField.setFont(Theme.mono(13f));
             filterField.setFont(Theme.mono(13f));
             rebuild();
@@ -566,7 +589,7 @@ final class Sources {
             recommendedTab.getAccessibleContext().setAccessibleDescription(n > 0 ? PatchbayLauncher.t("Nowe: ", "New: ") + n : null);
             recommendedTab.revalidate();
             recommendedTab.repaint();
-            unseen.accept(n);
+            unseen.accept(n + (int) sources.stream().filter(x -> x.enabled() && missing(x)).count());
         }
 
         private void markSeen() {
@@ -872,8 +895,10 @@ final class Sources {
             text.setOpaque(false);
             text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
             JLabel repo = Theme.label(s.repo(), Theme.mono(13f), s.enabled() ? Theme.TEXT : Theme.MUTED);
-            JPanel top = s.builtin() ? Theme.row(8, repo, badge(changed(s) ? PatchbayLauncher.t("wbudowane · zmienione", "built-in · changed")
-                : PatchbayLauncher.t("wbudowane", "built-in"))) : Theme.row(0, repo);
+            List<Component> parts = new ArrayList<>(List.of(repo));
+            if (s.builtin()) parts.add(badge(changed(s) ? PatchbayLauncher.t("wbudowane · zmienione", "built-in · changed") : PatchbayLauncher.t("wbudowane", "built-in")));
+            if (missing(s)) parts.add(fault(PatchbayLauncher.t("nie istnieje", "doesn't exist")));
+            JPanel top = Theme.row(8, parts.toArray(new Component[0]));
             top.setAlignmentX(LEFT_ALIGNMENT);
             text.add(top);
             text.add(Box.createVerticalStrut(3));
@@ -906,6 +931,15 @@ final class Sources {
 
         /** A subtitle that is a sentence keeps the text face (numbers and versions get the mono one). */
         private static JLabel prose(JLabel l) { l.putClientProperty("prose", true); return l; }
+
+        /** A badge in the fault colour: a source whose repository is gone. */
+        private static JComponent fault(String text) {
+            JLabel l = Theme.label(text, Theme.text(11f), Theme.FAULT_TEXT);
+            l.setOpaque(true);
+            l.setBackground(Theme.CONTROL);
+            l.setBorder(new EmptyBorder(1, 7, 1, 7));
+            return l;
+        }
 
         private static JComponent badge(String text) {
             JLabel l = Theme.label(text, Theme.text(11f), Theme.MUTED);
@@ -968,6 +1002,15 @@ final class Sources {
             col.setOpaque(false);
             col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
             add(col, Theme.label(isNew ? PatchbayLauncher.t("Nowe źródło: ", "New source: ") + groupName(draftGroup) : PatchbayLauncher.t("Edytuj źródło", "Edit source"), Theme.bold(18f), Theme.TEXT), 14);
+            if (!isNew && missing(draft)) {
+                add(col, note(PatchbayLauncher.t("Repozytorium zostało usunięte, jest prywatne albo zmieniło nazwę. Mody i urządzenia z niego działają dalej, ale nie dostaną aktualizacji. Sprawdź konto autora albo usuń źródło z listy.",
+                    "The repository was deleted, made private or renamed. Mods and devices from it still work, but won't get updates. Check the author's account, or remove the source from the list.")), 8);
+                String owner = draft.repo().substring(0, draft.repo().indexOf('/'));
+                JButton author = Theme.button(PatchbayLauncher.t("Strona autora", "Author's page"), "secondary");
+                author.addActionListener(e -> Platform.open("https://github.com/" + owner));
+                author.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+                add(col, author, 14);
+            }
 
             add(col, Theme.label(PatchbayLauncher.t("Grupa", "Group"), Theme.text(12f), Theme.MUTED), 6);
             JPanel picks = new JPanel(new GridLayout(2, 2, 2, 2));

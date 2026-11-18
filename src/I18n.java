@@ -187,6 +187,12 @@ final class I18n {
         add(", not active yet", ", noch nicht aktiv", ", pas encore actives");
         add("Already active", "Bereits aktiv", "Déjà active");
         add("Keep", "Behalten", "Garder");
+        add("doesn't exist", "existiert nicht", "n'existe pas");
+        add("The repository was deleted, made private or renamed. Mods and devices from it still work, but won't get updates. Check the author's account, or remove the source from the list.", "Das Repository wurde gelöscht, privat gemacht oder umbenannt. Mods und Geräte daraus funktionieren weiter, bekommen aber keine Aktualisierungen. Sieh im Konto des Autors nach oder entferne die Quelle aus der Liste.", "Le dépôt a été supprimé, rendu privé ou renommé. Les mods et appareils qui en viennent fonctionnent toujours, mais ne recevront plus de mises à jour. Vérifiez le compte de l'auteur ou retirez la source de la liste.");
+        add("Author's page", "Seite des Autors", "Page de l'auteur");
+        add("not in sources", "nicht in Quellen", "hors sources");
+        add("Not in your sources", "Nicht in deinen Quellen", "Hors de vos sources");
+        add("No source you have switched on offers this mod: it came with Patchbay, was added by hand, or its repository is gone. It still works, but the launcher won't update it.", "Keine eingeschaltete Quelle bietet diesen Mod an: Er kam mit Patchbay, wurde von Hand hinzugefügt, oder sein Repository gibt es nicht mehr. Er funktioniert weiter, aber der Launcher aktualisiert ihn nicht.", "Aucune source activée ne propose ce mod : il est venu avec Patchbay, a été ajouté à la main, ou son dépôt n'existe plus. Il fonctionne toujours, mais le lanceur ne le mettra pas à jour.");
         add("a list: ", "eine Liste: ", "une liste : ");
         add(" theme repositories", " Theme-Repositorys", " dépôts de thèmes");
         add("withdrawn", "zurückgezogen", "retiré");

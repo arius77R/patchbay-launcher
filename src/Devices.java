@@ -122,8 +122,10 @@ final class Devices {
         for (Sources.Source s : Sources.enabled(Sources.DEVICES)) {
             try {
                 all.addAll(fetchRepo(s.repo(), s.filter()));
+                Sources.answered(Sources.DEVICES, s.repo(), null);
             } catch (IOException | RuntimeException ex) {
                 failure = ex instanceof IOException io ? io : new IOException(s.repo() + ": " + ex.getMessage());
+                Sources.answered(Sources.DEVICES, s.repo(), failure);
             }
         }
         if (all.isEmpty() && failure != null) throw failure;
@@ -137,9 +139,10 @@ final class Devices {
     static List<Item> leftovers(List<Item> listed) {
         Set<String> known = new HashSet<>(), answered = new HashSet<>();
         for (Item i : listed) { known.add(i.repo() + " " + i.build() + " " + i.fileName()); answered.add(i.repo()); }
+        answered.addAll(Sources.missingRepos(Sources.DEVICES)); // a repository that is gone holds none of them any more
         List<Item> out = new ArrayList<>();
         for (Sources.Source s : Sources.enabled(Sources.DEVICES)) {
-            if (!answered.contains(s.repo())) continue; // its list couldn't be had: nothing can be called removed
+            if (!answered.contains(s.repo())) continue; // its list couldn't be had (no network, rate limit): nothing can be called removed
             Path folder = root().resolve(s.repo().replace('/', '_'));
             if (!Files.isDirectory(folder)) continue;
             try (var builds = Files.list(folder)) {

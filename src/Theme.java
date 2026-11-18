@@ -1253,6 +1253,10 @@ public final class Theme {
                 g2.drawLine(x + 1, cy - 4, x + 8, cy + 3);
                 g2.drawLine(x + 8, cy - 4, x + 1, cy + 3);
             }
+            case "outside" -> { // a short dash: installed, but no source offers it
+                g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.drawLine(x + 2, cy, x + 8, cy);
+            }
             case "removed", "withdrawn" -> { // an exclamation mark: gone from its repository
                 g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2.drawLine(x + 5, cy - 5, x + 5, cy + 1);
@@ -1328,6 +1332,18 @@ public final class Theme {
             : thisOne + PatchbayLauncher.t(" działa dalej, ale nie dostanie już aktualizacji. Możesz go zostawić albo odinstalować.",
                 " still works, but won't get updates. You can keep it or uninstall it.");
         box.add(wrapped(text, width, SOFT, 13f), BorderLayout.CENTER);
+        box.setAlignmentX(Component.LEFT_ALIGNMENT);
+        box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
+        return box;
+    }
+
+    /** The note on an installed mod no enabled source offers: added by hand, or its repository is gone. */
+    static JComponent outsideNote(int width) {
+        JPanel box = new Card(new BorderLayout(0, 6), WELL);
+        box.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(LINE, 1, true), new EmptyBorder(10, 10, 10, 10)));
+        box.add(label(PatchbayLauncher.t("Spoza źródeł", "Not in your sources"), bold(13f), TEXT), BorderLayout.NORTH);
+        box.add(wrapped(PatchbayLauncher.t("Tego moda nie ma w żadnym włączonym źródle: przyszedł razem z Patchbay, dodano go ręcznie albo jego repozytorium zostało usunięte. Działa dalej, ale Launcher go nie zaktualizuje.",
+            "No source you have switched on offers this mod: it came with Patchbay, was added by hand, or its repository is gone. It still works, but the launcher won't update it."), width, SOFT, 13f), BorderLayout.CENTER);
         box.setAlignmentX(Component.LEFT_ALIGNMENT);
         box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
         return box;

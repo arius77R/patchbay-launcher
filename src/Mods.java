@@ -297,7 +297,10 @@ final class Mods {
 
     /** A repository's releases, page by page, until a page comes back less than full. */
     static List<String> releasePages(String repo, String offline) throws IOException {
-        if (offline != null) return List.of(Files.readString(Path.of(offline, repo.replace('/', '_') + ".json")));
+        if (offline != null) {
+            if (Files.exists(Path.of(offline, repo.replace('/', '_') + ".gone"))) throw new PatchbayLauncher.Gone(repo); // offline test: a deleted repository
+            return List.of(Files.readString(Path.of(offline, repo.replace('/', '_') + ".json")));
+        }
         List<String> pages = new ArrayList<>();
         for (int page = 1; page <= MAX_PAGES; page++) {
             String json;
@@ -359,8 +362,10 @@ final class Mods {
                         if (inRepo != null && !inRepo.contains(a.id())) removed.add(a.id());
                         merge(all, a);
                     }
+                Sources.answered(Sources.MODS, repo, null);
             } catch (IOException | RuntimeException ex) {
                 failure = ex instanceof IOException io ? io : new IOException(repo + ": " + ex.getMessage());
+                Sources.answered(Sources.MODS, repo, failure);
             }
         }
         if (all.isEmpty() && failure != null) throw failure;
@@ -644,6 +649,7 @@ final class Mods {
                     case 5 -> row.available() == null ? "" : row.available().version();
                     default -> withdrawn.containsKey(row.id()) && row.installed() != null ? "withdrawn|" + PatchbayLauncher.t("wycofany", "withdrawn")
                         : removed.contains(row.id()) && row.installed() != null ? "removed|" + PatchbayLauncher.t("usunięty", "removed")
+                        : row.available() == null ? "outside|" + PatchbayLauncher.t("spoza źródeł", "not in sources")
                         : unavailable(row) ? "off|" + PatchbayLauncher.t("niezgodny", "incompatible") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> switchedOn.contains(row.id()) ? "installed|" + PatchbayLauncher.t("włączony", "on")
@@ -907,7 +913,10 @@ final class Mods {
             col.add(left(Theme.wrapped(name, 190, Theme.TEXT, 20f)));
             ((JLabel) col.getComponent(col.getComponentCount() - 1)).setFont(Theme.bold(20f));
             col.add(Box.createVerticalStrut(12));
-            if (row.installed() != null && gone(row)) {
+            if (row.installed() != null && row.available() == null) {
+                col.add(Theme.outsideNote(166));
+                col.add(Box.createVerticalStrut(12));
+            } else if (row.installed() != null && gone(row)) {
                 col.add(Theme.goneNote(withdrawn.containsKey(row.id()), withdrawn.get(row.id()), PatchbayLauncher.t("Ten mod", "This mod"), 166));
                 col.add(Box.createVerticalStrut(12));
             }
@@ -1099,6 +1108,9 @@ final class Mods {
                 int rank = i == null ? 2 : !gone && PatchbayLauncher.compareVersions(a.version(), i.version()) > 0 ? 0 : 1;
                 all.add(new Row(a.id(), i == null ? a.id() : i.name(), i == null ? null : i.version(), a, rank));
             }
+            // installed mods no enabled source offers (added by hand in Patchbay, or their repository is gone): kept so they can be switched off or uninstalled
+            if (!catalog.isEmpty())
+                for (Installed i : have.values()) if (!catalog.containsKey(i.id())) all.add(new Row(i.id(), i.name(), i.version(), null, 1));
             String v = PatchbayLauncher.currentVersion();
             Path root = v == null ? null : PatchbayLauncher.folderOf(v);
             target = Compat.target(root, bitwig(), Platform.suffix());
