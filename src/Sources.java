@@ -317,12 +317,17 @@ final class Sources {
             m.get("stargazers_count") instanceof Number n ? n.intValue() : 0, Mods.Json.text(licence, "spdx_id"));
     }
 
-    /** How many mods, devices or themes a repository found on GitHub holds for its group (0: nothing the launcher can use). */
-    static int found(Suggestion x) throws IOException {
+    /** What a repository holds for its group: how many mods, devices or themes (0: nothing the launcher can use), or, for a list of theme repositories, how many it links to. */
+    record Holds(int count, boolean list) { }
+
+    static Holds found(Suggestion x) throws IOException {
         return switch (x.group()) {
-            case MODS -> Mods.parseCatalog(Mods.releasePages(x.repo(), System.getProperty("launcher.fixtures")).get(0), x.repo(), glob("*.zip")).size();
-            case THEMES -> Themes.fetchRepo(x.repo(), "").size();
-            default -> Devices.fetchRepo(x.repo(), "").size();
+            case MODS -> new Holds(Mods.parseCatalog(Mods.releasePages(x.repo(), System.getProperty("launcher.fixtures")).get(0), x.repo(), glob("*.zip")).size(), false);
+            case THEMES -> {
+                int own = Themes.fetchRepo(x.repo(), "", false).size();
+                yield own > 0 ? new Holds(own, false) : new Holds(Themes.listLinks(x.repo()), true);
+            }
+            default -> new Holds(Devices.fetchRepo(x.repo(), "").size(), false);
         };
     }
 
@@ -393,6 +398,8 @@ final class Sources {
         private final JPanel foundList = new JPanel();
         private final JPanel recommended = new JPanel();
         private JComponent listActions;
+        /** Refresh, beside the lists from GitHub (Lista źródeł, Polecane): asks GitHub again. */
+        private JButton refreshOnline;
         /** "active", "found" or "recommended": the tab on view. */
         private String view = "active";
         /** The author's list of sources (Polecane: the ones not active yet); null until loaded, or when it can't be had (failed). */
@@ -407,7 +414,7 @@ final class Sources {
         private final JPanel recommendedCard = new Theme.Card(new BorderLayout(), Theme.FRAME);
         /** What GitHub said about a repository, and how many things it holds (-1: couldn't check); filled as they are picked. */
         private final Map<String, RepoInfo> infos = new HashMap<>();
-        private final Map<String, Integer> counts = new HashMap<>();
+        private final Map<String, Holds> counts = new HashMap<>();
         /** Gets how many recommended sources the user hasn't looked at yet: the red count on the Sources tab. */
         private final java.util.function.IntConsumer unseen;
 
@@ -433,7 +440,11 @@ final class Sources {
             JButton add = Theme.button(PatchbayLauncher.t("Dodaj źródło", "Add source"), "secondary");
             add.addActionListener(e -> startNew(MODS));
             restoreButton.addActionListener(e -> restoreBuiltins());
+            JButton refresh = Theme.button(PatchbayLauncher.t("Odśwież", "Refresh"), "secondary");
+            refresh.addActionListener(e -> refreshOnline());
+            refreshOnline = refresh;
             listActions = Theme.row(8, restoreButton, add);
+            JPanel actions = Theme.row(8, listActions, refresh);
 
             viewCards.setOpaque(false);
             viewCards.add(body, "active");
@@ -453,7 +464,7 @@ final class Sources {
             add(Theme.page(PatchbayLauncher.t("Źródła", "Sources"),
                 prose(Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody, urządzenia i motywy.",
                     "GitHub repositories the launcher gets Patchbay, mods, devices and themes from."), Theme.text(13f), Theme.MUTED)),
-                listActions, both, null, null), BorderLayout.CENTER);
+                actions, both, null, null), BorderLayout.CENTER);
             showView("active");
             buildOnline();
             repoField.setFont(Theme.mono(13f));
@@ -513,6 +524,16 @@ final class Sources {
             if (view.equals("recommended") && isShowing()) markSeen(); else countUnseen();
         }
 
+        /** Refresh: the author's list, the topic search and the repositories' cards, from GitHub again. */
+        private void refreshOnline() {
+            infos.clear();
+            counts.clear();
+            listed = null;
+            discovered = null;
+            buildOnline();
+            loadOnline();
+        }
+
         /** The Sources section came on screen: recommended ones on view count as seen. */
         void shown() {
             if (view.equals("recommended")) markSeen();
@@ -528,6 +549,7 @@ final class Sources {
             recommendedTab.repaint();
             views.show(viewCards, which);
             listActions.setVisible(which.equals("active"));
+            refreshOnline.setVisible(!which.equals("active"));
             if (which.equals("recommended")) markSeen();
         }
 
@@ -694,14 +716,14 @@ final class Sources {
                 } catch (IOException | RuntimeException ex) {
                     info = null;
                 }
-                int n;
+                Holds n;
                 try {
                     n = found(x);
                 } catch (IOException | RuntimeException ex) {
-                    n = -1;
+                    n = new Holds(-1, false);
                 }
                 RepoInfo i = info;
-                int count = n;
+                Holds count = n;
                 SwingUtilities.invokeLater(() -> {
                     if (i != null) infos.put(key(x), i);
                     counts.put(key(x), count);
@@ -727,7 +749,8 @@ final class Sources {
             }
             String k = key(x);
             RepoInfo info = infos.get(k);
-            Integer count = counts.get(k);
+            Holds held = counts.get(k);
+            Integer count = held == null ? null : held.count();
             boolean on = active.contains(k);
             add(col, tags(null, x.group(), picked.contains(k), on), 8);
             add(col, Theme.wrapped(x.repo().replace("/", "/\u200B"), 230, Theme.TEXT, 18f), 10);
@@ -736,6 +759,7 @@ final class Sources {
             String holds = count == null ? PatchbayLauncher.t("sprawdzam…", "checking…")
                 : count < 0 ? PatchbayLauncher.t("nie udało się sprawdzić", "couldn't check")
                 : count == 0 ? PatchbayLauncher.t("nic, co Launcher umie pobrać", "nothing the launcher can get")
+                : held.list() ? PatchbayLauncher.t("lista: ", "a list: ") + count + PatchbayLauncher.t(" repozytoriów z motywami", " theme repositories")
                 : groupName(x.group()) + ": " + count;
             List<String[]> facts = new ArrayList<>();
             facts.add(new String[] { PatchbayLauncher.t("Autor", "Author"), info != null ? info.owner() : x.repo().substring(0, x.repo().indexOf('/')) });

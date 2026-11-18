@@ -187,6 +187,8 @@ final class I18n {
         add(", not active yet", ", noch nicht aktiv", ", pas encore actives");
         add("Already active", "Bereits aktiv", "Déjà active");
         add("Keep", "Behalten", "Garder");
+        add("a list: ", "eine Liste: ", "une liste : ");
+        add(" theme repositories", " Theme-Repositorys", " dépôts de thèmes");
         add("withdrawn", "zurückgezogen", "retiré");
         add("removed", "entfernt", "retiré");
         add("Removed from repo", "Aus dem Repo entfernt", "Retirés du dépôt");

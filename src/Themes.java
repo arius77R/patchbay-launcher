@@ -130,6 +130,23 @@ final class Themes {
         return all;
     }
 
+    /**
+     * For a list repository (no themes of its own, a README linking to other repositories): how many
+     * repositories it links to, found with two requests instead of opening each one. 0 when it isn't a list.
+     */
+    static int listLinks(String repo) throws IOException {
+        Path fx = fixtures();
+        String tree = fx != null
+            ? Files.readString(fx.resolve(repo.replace('/', '_') + ".tree.json"))
+            : PatchbayLauncher.httpText("https://api.github.com/repos/" + repo + "/git/trees/HEAD?recursive=1");
+        if (!parseTree(tree, repo, "").isEmpty()) return 0;
+        String readme = readmePath(tree);
+        if (readme == null) return 0;
+        String text = fx != null ? Files.readString(fx.resolve(repo.replace('/', '_')).resolve(readme))
+            : PatchbayLauncher.httpText(Devices.rawUrl(repo, readme));
+        return linkedRepos(text, repo).size();
+    }
+
     private static String readmePath(String tree) {
         for (Object e : Mods.Json.array(Mods.Json.object(Mods.Json.parse(tree)).get("tree"))) {
             String path = Mods.Json.text(Mods.Json.object(e), "path");
