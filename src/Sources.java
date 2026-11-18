@@ -481,12 +481,19 @@ final class Sources {
             tabs.add(recommendedTab);
             JPanel both = new JPanel(new BorderLayout(0, 12));
             both.setOpaque(false);
-            both.add(Theme.row(0, tabs), BorderLayout.NORTH);
+            JPanel tabsRow = new JPanel(new BorderLayout(16, 0));
+            tabsRow.setOpaque(false);
+            tabsRow.add(Theme.row(0, tabs), BorderLayout.WEST);
+            JPanel actionsBox = new JPanel(new java.awt.GridBagLayout());
+            actionsBox.setOpaque(false);
+            actionsBox.add(actions);
+            tabsRow.add(actionsBox, BorderLayout.EAST);
+            both.add(tabsRow, BorderLayout.NORTH);
             both.add(viewCards, BorderLayout.CENTER);
             add(Theme.page(PatchbayLauncher.t("Źródła", "Sources"),
                 prose(Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody, urządzenia i motywy.",
                     "GitHub repositories the launcher gets Patchbay, mods, devices and themes from."), Theme.text(13f), Theme.MUTED)),
-                actions, both, null, null), BorderLayout.CENTER);
+                null, both, null, null), BorderLayout.CENTER);
             showView("active");
             buildOnline();
             missingChanged = () -> { rebuild(); countUnseen(); };
