@@ -83,6 +83,29 @@ Repositories that don't follow these rules are not supported. The launcher does 
   The repository then shows up in Patchbay Launcher (from version 0.9.6) under Sources → "Source list". Everyone sees who made it and what it holds there, and adds it with one click. Only public repositories are shown, not archived ones and not forks.
   You can also ask for the repository to be added to the list of recommended sources, [arius77R/bitwig-mods-list](https://github.com/arius77R/bitwig-mods-list), through its Issues or a pull request. Repositories on that list are marked "recommended" in the launcher.
 
+## When a mod or device causes problems
+
+If your mod or device breaks Bitwig, a project or other mods, **withdraw it** rather than only deleting it from the repository. Add a `withdrawn.json` at the top of the repository:
+
+```json
+{
+  "mods": [
+    { "id": "scale-fold", "reason": "Crashes Bitwig 6.1.7 when saving a project." }
+  ],
+  "devices": [
+    { "file": "Example Delay.bwdevice", "reason": "Clips the output on loud input." }
+  ]
+}
+```
+
+- `id` is the mod's `mod.id`, `file` the device's full file name.
+- `reason` says briefly, in English, what is wrong. Users see it in the launcher.
+- With only mods or only devices, leave the other list out.
+
+Patchbay Launcher (from version 0.9.6) shows a withdrawn mod as red "withdrawn" with the reason and **asks once** whether to switch it off. It switches it off rather than uninstalling it, so the user can undo it. A withdrawn mod can't be installed again. When the problem is fixed, remove the entry (or the whole file).
+
+If you are simply removing a mod, with no problems, deleting its `<mod-id>/` folder is enough. The launcher stops offering it, and those who have it see "removed" beside it: the mod still works, but won't get updates.
+
 ## Checklist before a release
 
 - [ ] Every mod has one ZIP `<mod-id>-<version>.zip`, with no operating system in the name.
