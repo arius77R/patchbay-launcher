@@ -678,20 +678,6 @@ final class Devices {
             JPanel south = new JPanel(new GridLayout(0, 1, 0, 8));
             south.setOpaque(false);
             south.setBorder(new EmptyBorder(12, 0, 0, 0));
-            int rank = rows.get(r).rank();
-            if (rank != 2) {
-                boolean on = rank != 3;
-                JButton toggle = Theme.button(on ? PatchbayLauncher.t("Wyłącz", "Switch off") : PatchbayLauncher.t("Włącz", "Switch on"), "secondary");
-                toggle.setToolTipText(on ? PatchbayLauncher.t("Bitwig nie pokaże urządzenia; plik zostaje na dysku.", "Bitwig won't show the device; its file stays on disk.")
-                    : PatchbayLauncher.t("Bitwig znów pokaże urządzenie.", "Bitwig shows the device again."));
-                toggle.setEnabled(!busy);
-                toggle.addActionListener(e -> switchDevices(List.of(item), !on));
-                JButton remove = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
-                remove.setEnabled(!busy);
-                remove.addActionListener(e -> removeDevices(List.of(item)));
-                south.add(toggle);
-                south.add(remove);
-            }
             south.add(page);
             details.add(south, BorderLayout.SOUTH);
             details.revalidate();

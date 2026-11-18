@@ -11,8 +11,8 @@ Unter Mods wählst du Mods für Patchbay aus, installierst, aktualisierst, schal
 - **Kategorie:** ergibt sich aus dem Namen des Mods („Kategorie: Name“). Ein Mod ohne Kategorie aus der Liste landet unter Other.
 - **Anzeigen:** Alle, Kompatibel, Installiert, Updates, Inkompatibel, Aus dem Repo entfernt und Nicht in Quellen. Um alle Mods, die nicht in Quellen sind, auf einmal loszuwerden: Anzeigen → Nicht in Quellen, „Alle auswählen“, dann „Deinstallieren“.
 - **Installieren:** Mods auswählen und „Ausgewählte installieren“ klicken. „Alle auswählen“ wählt nur die aus, die installiert oder aktualisiert werden können.
-- **Ausschalten / Einschalten:** Der Mod bleibt auf dem Datenträger, Patchbay lädt ihn nicht. Wähle mehrere aus und nutze die Schaltfläche unter der Liste.
-- **Deinstallieren:** entfernt den Mod nach Bestätigung vom Datenträger. Der Launcher warnt, wenn ein anderer eingeschalteter Mod ihn braucht.
+- **Ausschalten / Einschalten:** Der Mod bleibt auf dem Datenträger, Patchbay lädt ihn nicht. Markiere einen oder mehrere mit Häkchen und nutze die Schaltfläche unter der Liste.
+- **Deinstallieren:** entfernt die Mods mit Häkchen nach Bestätigung vom Datenträger. Der Launcher warnt, wenn ein anderer eingeschalteter Mod sie braucht.
 
 Zum Ausschalten und Deinstallieren müssen Bitwig und das Patchbay-Fenster geschlossen sein.
 
@@ -32,7 +32,7 @@ Unter Geräte lädst du Bitwig-Gerätedateien (.bwdevice, .bwmodulator, Grid-Mod
 - **Dateiversion:** Der Launcher wählt ihn passend zu deinem Bitwig. Du kannst ihn im Feld oben links ändern.
 - **Seitenleiste:** Jeder Typ hat sein eigenes Symbol (Audio FX, Instrument, Note FX, Note generator, Modulator, Grid module). Der Stern fügt zu den Favoriten hinzu.
 - **Laden:** auswählen und „Ausgewählte laden“ klicken.
-- **Ausschalten / Einschalten:** Die Datei bleibt mit der Endung .off auf dem Datenträger, und Bitwig zeigt sie nicht an.
+- **Ausschalten / Einschalten:** Die Datei bleibt mit der Endung .off auf dem Datenträger, und Bitwig zeigt sie nicht an. Die Schaltflächen sind unter der Liste und wirken auf die Geräte mit Häkchen.
 - **Deinstallieren:** entfernt die Datei vom Datenträger.
 - **entfernt / zurückgezogen:** wie bei Mods. Eine Datei, die ihr Repository nicht mehr hat, bleibt in der Liste, damit sie deinstalliert werden kann.
 

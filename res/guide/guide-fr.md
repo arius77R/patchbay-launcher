@@ -11,8 +11,8 @@ Dans Mods, vous choisissez, installez, mettez à jour, désactivez et désinstal
 - **Catégorie :** elle vient du nom du mod (« Catégorie : Nom »). Un mod sans catégorie de la liste va dans Other.
 - **Afficher :** Tous, Compatibles, Installés, Mises à jour, Incompatibles, Supprimés du dépôt et Hors sources. Pour retirer d'un coup tous les mods hors sources : Afficher → Hors sources, « Tout cocher », puis « Désinstaller ».
 - **Installer :** cochez des mods et cliquez sur « Installer la sélection ». « Tout cocher » ne coche que ceux à installer ou à mettre à jour.
-- **Désactiver / Activer :** le mod reste sur le disque, Patchbay ne le charge pas. Cochez-en plusieurs et utilisez le bouton sous la liste.
-- **Désinstaller :** supprime le mod du disque, après confirmation. Le lanceur prévient quand un autre mod activé en a besoin.
+- **Désactiver / Activer :** le mod reste sur le disque, Patchbay ne le charge pas. Cochez-en un ou plusieurs et utilisez le bouton sous la liste.
+- **Désinstaller :** supprime les mods cochés du disque, après confirmation. Le lanceur prévient quand un autre mod activé en a besoin.
 
 Pour désactiver et désinstaller, Bitwig et la fenêtre de Patchbay doivent être fermés.
 
@@ -32,7 +32,7 @@ Appareils récupère les fichiers d'appareils Bitwig (.bwdevice, .bwmodulator, m
 - **Version des fichiers :** le lanceur la choisit pour votre Bitwig. Vous pouvez la changer dans le champ en haut à gauche.
 - **Panneau latéral :** chaque type a son icône (Audio FX, Instrument, Note FX, Note generator, Modulator, Grid module). L'étoile ajoute aux Favoris.
 - **Télécharger :** cochez et cliquez sur « Télécharger la sélection ».
-- **Désactiver / Activer :** le fichier reste sur le disque avec .off ajouté, et Bitwig ne l'affiche pas.
+- **Désactiver / Activer :** le fichier reste sur le disque avec .off ajouté, et Bitwig ne l'affiche pas. Les boutons sont sous la liste et agissent sur les appareils cochés.
 - **Désinstaller :** supprime le fichier du disque.
 - **supprimé / retiré :** comme dans Mods. Un fichier que son dépôt n'a plus reste dans la liste, pour pouvoir le désinstaller.
 

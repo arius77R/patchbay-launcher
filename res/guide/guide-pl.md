@@ -11,8 +11,8 @@ W zakładce Mody wybierasz, instalujesz, aktualizujesz, wyłączasz i odinstalow
 - **Kategoria:** wynika z nazwy moda („Kategoria: Nazwa”). Mod bez kategorii z listy trafia do Other.
 - **Pokaż:** Wszystkie, Zgodne, Zainstalowane, Aktualizacje, Niezgodne, Usunięte z repo i Spoza źródeł. Żeby pozbyć się wszystkich modów spoza źródeł naraz: Pokaż → Spoza źródeł, „Zaznacz wszystkie”, potem „Odinstaluj”.
 - **Instalacja:** zaznacz mody i kliknij „Zainstaluj zaznaczone”. „Zaznacz wszystkie” zaznacza tylko te do zainstalowania albo aktualizacji.
-- **Wyłącz / Włącz:** mod zostaje na dysku, Patchbay go nie ładuje. Zaznacz kilka i użyj przycisku pod listą.
-- **Odinstaluj:** usuwa mod z dysku, po potwierdzeniu. Launcher ostrzega, gdy inny włączony mod go potrzebuje.
+- **Wyłącz / Włącz:** mod zostaje na dysku, Patchbay go nie ładuje. Postaw ptaszek przy jednym lub kilku i użyj przycisku pod listą.
+- **Odinstaluj:** usuwa zaznaczone ptaszkiem mody z dysku, po potwierdzeniu. Launcher ostrzega, gdy inny włączony mod go potrzebuje.
 
 Wyłączanie i odinstalowanie wymaga zamkniętego Bitwiga i okna Patchbay.
 
@@ -32,7 +32,7 @@ Zakładka Urządzenia pobiera pliki urządzeń Bitwiga (.bwdevice, .bwmodulator,
 - **Wersja plików:** Launcher wybiera ją sam do Twojego Bitwiga. Możesz ją zmienić w polu po lewej u góry.
 - **Panel boczny:** każdy typ ma swoją ikonę (Audio FX, Instrument, Note FX, Note generator, Modulator, Grid module). Gwiazdka dodaje do Ulubionych.
 - **Pobierz:** zaznacz i kliknij „Pobierz zaznaczone”.
-- **Wyłącz / Włącz:** plik zostaje na dysku z dopiskiem .off, a Bitwig go nie pokazuje.
+- **Wyłącz / Włącz:** plik zostaje na dysku z dopiskiem .off, a Bitwig go nie pokazuje. Przyciski są pod listą i działają na urządzeniach z ptaszkiem.
 - **Odinstaluj:** usuwa plik z dysku.
 - **usunięte / wycofane:** jak w Modach. Plik, którego repozytorium już nie ma, zostaje na liście, żeby dało się go odinstalować.
 

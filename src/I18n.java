@@ -252,8 +252,6 @@ final class I18n {
         add("Switch off", "Ausschalten", "Désactiver");
         add("Switch on", "Einschalten", "Activer");
         add("Uninstall", "Deinstallieren", "Désinstaller");
-        add("Patchbay won't load the mod; its files stay on disk.", "Patchbay lädt den Mod nicht; seine Dateien bleiben auf der Festplatte.", "Patchbay ne chargera pas le mod ; ses fichiers restent sur le disque.");
-        add("Ticks the mod in Patchbay, as in its window.", "Hakt den Mod in Patchbay an, wie in dessen Fenster.", "Coche le mod dans Patchbay, comme dans sa fenêtre.");
         add("Switched-on mods that need them and will stop working: ", "Eingeschaltete Mods, die sie brauchen und nicht mehr funktionieren: ", "Mods activés qui en ont besoin et cesseront de fonctionner : ");
         add(" mods: ", " Mods: ", " mods : ");
         add(" devices: ", " Geräte: ", " appareils : ");
@@ -274,8 +272,6 @@ final class I18n {
         add("The files are deleted from disk. To bring a mod back, install it again. To only stop loading it, choose Switch off.",
             "Die Dateien werden von der Festplatte gelöscht. Um einen Mod zurückzuholen, installiere ihn erneut. Um ihn nur nicht mehr zu laden, wähle Ausschalten.",
             "Les fichiers sont supprimés du disque. Pour récupérer un mod, réinstallez-le. Pour seulement ne plus le charger, choisissez Désactiver.");
-        add("Bitwig won't show the device; its file stays on disk.", "Bitwig zeigt das Gerät nicht; seine Datei bleibt auf der Festplatte.", "Bitwig n'affichera pas l'appareil ; son fichier reste sur le disque.");
-        add("Bitwig shows the device again.", "Bitwig zeigt das Gerät wieder.", "Bitwig affiche à nouveau l'appareil.");
         add("The files are deleted from disk. To bring a device back, download it again. To only hide it, choose Switch off.",
             "Die Dateien werden von der Festplatte gelöscht. Um ein Gerät zurückzuholen, lade es erneut herunter. Um es nur auszublenden, wähle Ausschalten.",
             "Les fichiers sont supprimés du disque. Pour récupérer un appareil, téléchargez-le à nouveau. Pour seulement le masquer, choisissez Désactiver.");

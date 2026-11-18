@@ -11,8 +11,8 @@ In Mods you choose, install, update, switch off and uninstall mods for Patchbay.
 - **Category:** comes from the mod's name ("Category: Name"). A mod without a category from the list goes under Other.
 - **Show:** All, Compatible, Installed, Updates, Incompatible, Removed from repo and Not in sources. To get rid of all mods not in sources at once: Show → Not in sources, "Tick all", then "Uninstall".
 - **Install:** tick mods and click "Install ticked". "Tick all" ticks only the ones to install or update.
-- **Switch off / Switch on:** the mod stays on disk, Patchbay doesn't load it. Tick several and use the button under the list.
-- **Uninstall:** removes the mod from disk, after you confirm. The launcher warns when another switched-on mod needs it.
+- **Switch off / Switch on:** the mod stays on disk, Patchbay doesn't load it. Tick one or more and use the button under the list.
+- **Uninstall:** removes the ticked mods from disk, after you confirm. The launcher warns when another switched-on mod needs it.
 
 Switching off and uninstalling need Bitwig and the Patchbay window closed.
 
@@ -32,7 +32,7 @@ Devices gets Bitwig device files (.bwdevice, .bwmodulator, Grid modules) and reg
 - **Build:** the launcher picks it for your Bitwig. You can change it in the box at the top left.
 - **Side panel:** each type has its own icon (Audio FX, Instrument, Note FX, Note generator, Modulator, Grid module). The star adds to Favourites.
 - **Download:** tick and click "Download ticked".
-- **Switch off / Switch on:** the file stays on disk with .off added, and Bitwig doesn't show it.
+- **Switch off / Switch on:** the file stays on disk with .off added, and Bitwig doesn't show it. The buttons are under the list and act on the ticked devices.
 - **Uninstall:** removes the file from disk.
 - **removed / withdrawn:** as in Mods. A file its repository no longer has stays in the list, so it can be uninstalled.
 

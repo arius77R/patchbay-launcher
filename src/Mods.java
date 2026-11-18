@@ -1011,19 +1011,6 @@ final class Mods {
                 });
                 south.add(anyway);
             }
-            if (row.installed() != null && modsDir() != null) {
-                boolean on = switchedOn.contains(row.id());
-                JButton toggle = Theme.button(on ? PatchbayLauncher.t("Wyłącz", "Switch off") : PatchbayLauncher.t("Włącz", "Switch on"), "secondary");
-                toggle.setToolTipText(on ? PatchbayLauncher.t("Patchbay nie załaduje moda; pliki zostają na dysku.", "Patchbay won't load the mod; its files stay on disk.")
-                    : PatchbayLauncher.t("Zaznacza mod w Patchbay, jak w jego oknie.", "Ticks the mod in Patchbay, as in its window."));
-                toggle.setEnabled(!busy);
-                toggle.addActionListener(e -> switchMods(List.of(row), !on));
-                JButton remove = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
-                remove.setEnabled(!busy);
-                remove.addActionListener(e -> uninstallMods(List.of(row)));
-                south.add(toggle);
-                south.add(remove);
-            }
             if (row.available() != null && row.available().page() != null) {
                 JButton page = Theme.button(PatchbayLauncher.t("Strona wydania", "Release page"), "secondary");
                 String url = row.available().page();
