@@ -301,7 +301,7 @@ final class Devices {
             @Override public int getColumnCount() { return columns.length; }
             @Override public String getColumnName(int c) { return columns[c]; }
             @Override public Class<?> getColumnClass(int c) { return c == 0 ? Boolean.class : String.class; }
-            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy && tickable(rows.get(r)); }
+            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy; }
             @Override public void setValueAt(Object v, int r, int c) {
                 if (c != 0) return;
                 if (Boolean.TRUE.equals(v)) checked.add(key(rows.get(r).item())); else checked.remove(key(rows.get(r).item()));
@@ -332,6 +332,8 @@ final class Devices {
         private final JPanel details = new Theme.Card(new BorderLayout(), Theme.FRAME);
         private final JButton checkAllButton = Theme.button(" ", "secondary");
         private final JButton installButton = Theme.button(" ", "primary");
+        private final JButton switchButton = Theme.button(PatchbayLauncher.t("Wyłącz", "Switch off"), "secondary");
+        private final JButton removeButton = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
         private final JButton folderButton = Theme.button(PatchbayLauncher.t("Pokaż folder", "Show folder"), "secondary");
         private final JButton refreshButton = Theme.button(PatchbayLauncher.t("Odśwież", "Refresh"), "secondary");
         private final JLabel status = Theme.label(" ", Theme.text(14f), Theme.MUTED);
@@ -384,11 +386,16 @@ final class Devices {
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
             JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), null, refreshButton, details);
-            add(Theme.listPage(PatchbayLauncher.t("Urządzenia", "Devices"), subtitle, null, body, left, Theme.row(8, folderButton, installButton)), BorderLayout.CENTER);
+            add(Theme.listPage(PatchbayLauncher.t("Urządzenia", "Devices"), subtitle, null, body, left, Theme.row(8, switchButton, removeButton, Box.createHorizontalStrut(16), folderButton, installButton)), BorderLayout.CENTER);
 
             buildBox.addActionListener(e -> { if (!filling) rebuild(); });
             checkAllButton.addActionListener(e -> checkAll());
             installButton.addActionListener(e -> installChecked());
+            switchButton.addActionListener(e -> {
+                List<Row> mine = checkedRows().stream().filter(r -> r.rank() != 2).toList();
+                switchDevices(mine.stream().map(Row::item).toList(), mine.stream().allMatch(r -> r.rank() == 3));
+            });
+            removeButton.addActionListener(e -> removeDevices(checkedRows().stream().filter(r -> r.rank() != 2).map(Row::item).toList()));
             refreshButton.addActionListener(e -> reload());
             folderButton.addActionListener(e -> {
                 try { Files.createDirectories(root()); } catch (Exception ignored) { }
@@ -463,7 +470,7 @@ final class Devices {
                     rows.addAll(fresh);
                     categories.reset(items.stream().map(Item::type));
                     Set<String> canTick = new HashSet<>();
-                    for (Row r : rows) if (tickable(r)) canTick.add(key(r.item()));
+                    for (Row r : rows) canTick.add(key(r.item()));
                     checked.retainAll(canTick);
                     model.fireTableDataChanged();
                     long have = rows.stream().filter(r -> r.rank() != 2).count();
@@ -481,9 +488,9 @@ final class Devices {
             }, "devices-rows").start();
         }
 
-        /** Rows that can be ticked for Download: new ones and ones with another version (not up to date or switched off). */
-        private static boolean tickable(Row r) { return r.rank() == 0 || r.rank() == 2; }
-        private List<Row> checkable() { return rows.stream().filter(Panel::tickable).toList(); }
+        /** Rows Download takes and Tick all ticks: new ones and ones with another version (not up to date or switched off). */
+        private static boolean downloadable(Row r) { return r.rank() == 0 || r.rank() == 2; }
+        private List<Row> checkable() { return rows.stream().filter(Panel::downloadable).toList(); }
         private List<Row> checkedRows() { return rows.stream().filter(r -> checked.contains(key(r.item()))).toList(); }
 
         private void checkAll() {
@@ -497,12 +504,18 @@ final class Devices {
 
         private void refreshButtons() {
             List<Row> all = checkable();
-            int ticked = checkedRows().size();
-            boolean allTicked = !all.isEmpty() && ticked == all.size();
+            List<Row> ticked = checkedRows();
+            int toGet = (int) ticked.stream().filter(Panel::downloadable).count();
+            List<Row> mine = ticked.stream().filter(r -> r.rank() != 2).toList();
+            boolean allTicked = !all.isEmpty() && all.stream().allMatch(r -> checked.contains(key(r.item())));
             checkAllButton.setText(allTicked ? PatchbayLauncher.t("Odznacz wszystkie", "Untick all") : PatchbayLauncher.t("Zaznacz wszystkie", "Tick all"));
             checkAllButton.setEnabled(!busy && !all.isEmpty());
-            installButton.setText(PatchbayLauncher.t("Pobierz zaznaczone (", "Download ticked (") + ticked + ")");
-            installButton.setEnabled(!busy && ticked > 0);
+            installButton.setText(PatchbayLauncher.t("Pobierz zaznaczone (", "Download ticked (") + toGet + ")");
+            installButton.setEnabled(!busy && toGet > 0);
+            boolean allOff = !mine.isEmpty() && mine.stream().allMatch(r -> r.rank() == 3);
+            switchButton.setText(allOff ? PatchbayLauncher.t("Włącz", "Switch on") : PatchbayLauncher.t("Wyłącz", "Switch off"));
+            switchButton.setEnabled(!busy && !mine.isEmpty());
+            removeButton.setEnabled(!busy && !mine.isEmpty());
             refreshButton.setEnabled(!busy);
             buildBox.setEnabled(!busy && buildBox.getItemCount() > 0);
         }
@@ -571,10 +584,10 @@ final class Devices {
                 toggle.setToolTipText(on ? PatchbayLauncher.t("Bitwig nie pokaże urządzenia; plik zostaje na dysku.", "Bitwig won't show the device; its file stays on disk.")
                     : PatchbayLauncher.t("Bitwig znów pokaże urządzenie.", "Bitwig shows the device again."));
                 toggle.setEnabled(!busy);
-                toggle.addActionListener(e -> switchDevice(item, !on));
+                toggle.addActionListener(e -> switchDevices(List.of(item), !on));
                 JButton remove = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
                 remove.setEnabled(!busy);
-                remove.addActionListener(e -> removeDevice(item));
+                remove.addActionListener(e -> removeDevices(List.of(item)));
                 south.add(toggle);
                 south.add(remove);
             }
@@ -628,29 +641,39 @@ final class Devices {
             return false;
         }
 
-        private void switchDevice(Item item, boolean on) {
-            if (!bitwigClosed()) return;
+        /** "Name" for one device, "N devices: a, b, c" for several. */
+        private static String named(List<Item> chosen) {
+            if (chosen.size() == 1) return chosen.get(0).name();
+            List<String> names = chosen.stream().map(Item::name).limit(8).toList();
+            return chosen.size() + PatchbayLauncher.t(" urządzeń: ", " devices: ") + String.join(", ", names) + (chosen.size() > 8 ? ", …" : "");
+        }
+
+        /** Switches devices on or off; one already in that state is left as it is. */
+        private void switchDevices(List<Item> chosen, boolean on) {
+            if (chosen.isEmpty() || !bitwigClosed()) return;
             try {
-                setOn(item, on);
-                status.setText(on ? PatchbayLauncher.t("Włączono: ", "Switched on: ") + item.name() : PatchbayLauncher.t("Wyłączono: ", "Switched off: ") + item.name());
+                for (Item item : chosen) if ((rank(item) == 3) == on) setOn(item, on);
+                for (Item item : chosen) checked.remove(key(item));
+                status.setText((on ? PatchbayLauncher.t("Włączono: ", "Switched on: ") : PatchbayLauncher.t("Wyłączono: ", "Switched off: ")) + named(chosen));
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
             }
             rebuild();
         }
 
-        private void removeDevice(Item item) {
-            if (!bitwigClosed()) return;
-            String question = PatchbayLauncher.t("Odinstalować ", "Uninstall ") + item.name() + "?\n\n"
-                + PatchbayLauncher.t("Plik urządzenia zostanie usunięty z dysku. Żeby go przywrócić, trzeba go pobrać ponownie. Żeby tylko go nie pokazywać, wybierz Wyłącz.",
-                    "The device's file is deleted from disk. To bring it back, download it again. To only hide it, choose Switch off.");
+        private void removeDevices(List<Item> chosen) {
+            if (chosen.isEmpty() || !bitwigClosed()) return;
+            String question = PatchbayLauncher.t("Odinstalować ", "Uninstall ") + named(chosen) + "?\n\n"
+                + PatchbayLauncher.t("Pliki zostaną usunięte z dysku. Żeby przywrócić urządzenie, trzeba je pobrać ponownie. Żeby tylko go nie pokazywać, wybierz Wyłącz.",
+                    "The files are deleted from disk. To bring a device back, download it again. To only hide it, choose Switch off.");
             String remove = PatchbayLauncher.t("Odinstaluj", "Uninstall"), cancel = PatchbayLauncher.t("Anuluj", "Cancel");
             if (JOptionPane.showOptionDialog(this, question, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
                     null, new String[] { remove, cancel }, cancel) != 0) return;
             try {
-                Devices.remove(item);
+                for (Item item : chosen) Devices.remove(item);
+                for (Item item : chosen) checked.remove(key(item));
                 register(foldersFor(visible(items, build())));
-                status.setText(PatchbayLauncher.t("Odinstalowano: ", "Uninstalled: ") + item.name());
+                status.setText(PatchbayLauncher.t("Odinstalowano: ", "Uninstalled: ") + named(chosen));
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
             }
@@ -658,7 +681,7 @@ final class Devices {
         }
 
         private void installChecked() {
-            List<Item> picks = checkedRows().stream().map(Row::item).toList();
+            List<Item> picks = checkedRows().stream().filter(Panel::downloadable).map(Row::item).toList();
             if (picks.isEmpty()) return;
             if (!bitwigClosed()) return;
             List<Item> shown = visible(items, build());

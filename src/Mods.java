@@ -577,7 +577,7 @@ final class Mods {
         private boolean detecting = true, filling;
         private Compat.Target target;
         private final javax.swing.Timer refilterSoon = new javax.swing.Timer(250, e -> refilter());
-        /** IDs of the ticked rows; only rows that can be installed or updated can be ticked. */
+        /** IDs of the ticked rows: ones to install or update, and installed ones to switch off or uninstall. */
         private final Set<String> checked = new HashSet<>();
         private final AbstractTableModel model = new AbstractTableModel() {
             private final String[] columns = {
@@ -587,7 +587,7 @@ final class Mods {
             @Override public int getColumnCount() { return columns.length; }
             @Override public String getColumnName(int c) { return columns[c]; }
             @Override public Class<?> getColumnClass(int c) { return c == 0 ? Boolean.class : String.class; }
-            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy && rows.get(r).rank() != 1 && !unavailable(rows.get(r)); }
+            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy && tickable(rows.get(r)); }
             @Override public void setValueAt(Object v, int r, int c) {
                 if (c != 0) return;
                 if (Boolean.TRUE.equals(v)) checked.add(rows.get(r).id()); else checked.remove(rows.get(r).id());
@@ -617,6 +617,8 @@ final class Mods {
         private final JLabel subtitle = Theme.label(" ", Theme.text(14f), Theme.MUTED);
         private final JPanel details = new Theme.Card(new BorderLayout(), Theme.FRAME);
         private final JButton installButton = Theme.button(" ", "primary");
+        private final JButton switchButton = Theme.button(PatchbayLauncher.t("Wyłącz", "Switch off"), "secondary");
+        private final JButton removeButton = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
         private final JButton checkAllButton = Theme.button(" ", "secondary");
         private final JButton updateAllButton = Theme.button(" ", "secondary");
         private final JButton refreshButton = Theme.button(PatchbayLauncher.t("Odśwież", "Refresh"), "secondary");
@@ -709,9 +711,14 @@ final class Mods {
             JPanel tools = Theme.row(8, showBox, sortBox, searchField);
             JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), Theme.row(8, bitwigLabel, bitwigBox), refreshButton, details);
             add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, updateBar, body,
-                left, Theme.row(8, updateAllButton, installButton)), BorderLayout.CENTER);
+                left, Theme.row(8, switchButton, removeButton, Box.createHorizontalStrut(16), updateAllButton, installButton)), BorderLayout.CENTER);
 
-            installButton.addActionListener(e -> installRows(checkedRows()));
+            installButton.addActionListener(e -> installRows(checkedRows().stream().filter(this::installable).toList()));
+            switchButton.addActionListener(e -> {
+                List<Row> mine = checkedRows().stream().filter(r -> r.installed() != null).toList();
+                switchMods(mine, mine.stream().noneMatch(r -> switchedOn.contains(r.id())));
+            });
+            removeButton.addActionListener(e -> uninstallMods(checkedRows().stream().filter(r -> r.installed() != null).toList()));
             checkAllButton.addActionListener(e -> checkAll());
             updateAllButton.addActionListener(e -> installRows(all.stream().filter(r -> r.rank() == 0 && !unavailable(r)).toList()));
             refreshButton.addActionListener(e -> reload());
@@ -728,9 +735,15 @@ final class Mods {
             return rows.stream().filter(r -> checked.contains(r.id())).toList();
         }
 
+        /** Rows Tick all ticks: the ones that can be installed or updated. */
         private List<Row> checkable() {
-            return rows.stream().filter(r -> r.rank() != 1 && !unavailable(r)).toList();
+            return rows.stream().filter(this::installable).toList();
         }
+
+        private boolean installable(Row r) { return r.rank() != 1 && r.available() != null && !unavailable(r); }
+
+        /** A row can be ticked to install or update it, or, when installed, to switch it off or uninstall it. */
+        private boolean tickable(Row r) { return installable(r) || r.installed() != null; }
 
         // ---------- compatibility with the user's Bitwig ----------
 
@@ -884,10 +897,10 @@ final class Mods {
                 toggle.setToolTipText(on ? PatchbayLauncher.t("Patchbay nie załaduje moda; pliki zostają na dysku.", "Patchbay won't load the mod; its files stay on disk.")
                     : PatchbayLauncher.t("Zaznacza mod w Patchbay, jak w jego oknie.", "Ticks the mod in Patchbay, as in its window."));
                 toggle.setEnabled(!busy);
-                toggle.addActionListener(e -> switchMod(row, !on));
+                toggle.addActionListener(e -> switchMods(List.of(row), !on));
                 JButton remove = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
                 remove.setEnabled(!busy);
-                remove.addActionListener(e -> uninstallMod(row));
+                remove.addActionListener(e -> uninstallMods(List.of(row)));
                 south.add(toggle);
                 south.add(remove);
             }
@@ -1031,7 +1044,7 @@ final class Mods {
             }
             rows.sort(order(sortBox.getSelectedIndex()));
             Set<String> canTick = new HashSet<>();
-            for (Row r : checkable()) canTick.add(r.id());
+            for (Row r : rows) if (tickable(r)) canTick.add(r.id());
             checked.retainAll(canTick);
             model.fireTableDataChanged();
 
@@ -1073,12 +1086,18 @@ final class Mods {
         private void refreshButtons() {
             boolean ready = !busy && modsDir() != null;
             List<Row> tickable = checkable();
-            int ticked = checkedRows().size();
-            boolean allTicked = !tickable.isEmpty() && ticked == tickable.size();
+            List<Row> ticked = checkedRows();
+            int toInstall = (int) ticked.stream().filter(this::installable).count();
+            List<Row> mine = ticked.stream().filter(r -> r.installed() != null).toList();
+            boolean allTicked = !tickable.isEmpty() && tickable.stream().allMatch(r -> checked.contains(r.id()));
             checkAllButton.setText(allTicked ? PatchbayLauncher.t("Odznacz wszystkie", "Untick all") : PatchbayLauncher.t("Zaznacz wszystkie", "Tick all"));
             checkAllButton.setEnabled(ready && !tickable.isEmpty());
-            installButton.setText(PatchbayLauncher.t("Zainstaluj zaznaczone (", "Install ticked (") + ticked + ")");
-            installButton.setEnabled(ready && ticked > 0);
+            installButton.setText(PatchbayLauncher.t("Zainstaluj zaznaczone (", "Install ticked (") + toInstall + ")");
+            installButton.setEnabled(ready && toInstall > 0);
+            boolean allOff = !mine.isEmpty() && mine.stream().noneMatch(r -> switchedOn.contains(r.id()));
+            switchButton.setText(allOff ? PatchbayLauncher.t("Włącz", "Switch on") : PatchbayLauncher.t("Wyłącz", "Switch off"));
+            switchButton.setEnabled(ready && !mine.isEmpty());
+            removeButton.setEnabled(ready && !mine.isEmpty());
             updateAllButton.setEnabled(ready && all.stream().anyMatch(r -> r.rank() == 0 && !unavailable(r)));
             refreshButton.setEnabled(!busy);
         }
@@ -1101,42 +1120,56 @@ final class Mods {
             return false;
         }
 
-        /** The warning for switching off or removing a mod others need; "" when none do. */
-        private String neededWarning(Row row) {
-            List<String> users = neededBy(row.id(), modsDir());
-            return users.isEmpty() ? "" : "\n\n" + PatchbayLauncher.t("Potrzebują go włączone mody, które przestaną działać: ",
-                "Switched-on mods that need it and will stop working: ") + String.join(", ", users);
+        /** The warning for switching off or removing mods that other switched-on mods need; "" when none do. */
+        private String neededWarning(List<Row> going) {
+            Set<String> ids = new HashSet<>();
+            for (Row r : going) ids.add(r.id());
+            Set<String> users = new TreeSet<>();
+            for (Row r : going) users.addAll(neededBy(r.id(), modsDir()));
+            for (Row r : going) users.remove(onDisk.containsKey(r.id()) ? onDisk.get(r.id()).name() : r.name());
+            return users.isEmpty() ? "" : "\n\n" + PatchbayLauncher.t("Potrzebują ich włączone mody, które przestaną działać: ",
+                "Switched-on mods that need them and will stop working: ") + String.join(", ", users);
         }
 
-        private void switchMod(Row row, boolean on) {
-            if (!patchbayClosed()) return;
+        /** "Name" for one mod, "N mods: a, b, c" for several. */
+        private String named(List<Row> chosen) {
+            if (chosen.size() == 1) return nameOf(chosen.get(0));
+            List<String> names = chosen.stream().map(this::nameOf).limit(8).toList();
+            return chosen.size() + PatchbayLauncher.t(" modów: ", " mods: ") + String.join(", ", names) + (chosen.size() > 8 ? ", …" : "");
+        }
+
+        private void switchMods(List<Row> chosen, boolean on) {
+            if (chosen.isEmpty() || !patchbayClosed()) return;
             if (!on) {
-                String warning = neededWarning(row);
-                if (!warning.isEmpty() && JOptionPane.showConfirmDialog(this, PatchbayLauncher.t("Wyłączyć ", "Switch off ") + nameOf(row) + "?" + warning,
+                String warning = neededWarning(chosen);
+                if (!warning.isEmpty() && JOptionPane.showConfirmDialog(this, PatchbayLauncher.t("Wyłączyć ", "Switch off ") + named(chosen) + "?" + warning,
                         "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
             }
             try {
-                Mods.setEnabled(row.id(), on);
+                for (Row r : chosen) Mods.setEnabled(r.id(), on);
+                for (Row r : chosen) checked.remove(r.id());
                 rebuild();
-                status.setText(on ? PatchbayLauncher.t("Włączono: ", "Switched on: ") + nameOf(row) : PatchbayLauncher.t("Wyłączono: ", "Switched off: ") + nameOf(row));
+                status.setText((on ? PatchbayLauncher.t("Włączono: ", "Switched on: ") : PatchbayLauncher.t("Wyłączono: ", "Switched off: ")) + named(chosen));
             } catch (IOException ex) {
+                rebuild();
                 JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
             }
         }
 
-        private void uninstallMod(Row row) {
-            if (!patchbayClosed()) return;
-            String question = PatchbayLauncher.t("Odinstalować ", "Uninstall ") + nameOf(row) + "?\n\n"
-                + PatchbayLauncher.t("Pliki moda zostaną usunięte z dysku. Żeby go przywrócić, trzeba go zainstalować ponownie. Żeby tylko go nie ładować, wybierz Wyłącz.",
-                    "The mod's files are deleted from disk. To bring it back, install it again. To only stop loading it, choose Switch off.")
-                + neededWarning(row);
+        private void uninstallMods(List<Row> chosen) {
+            if (chosen.isEmpty() || !patchbayClosed()) return;
+            String question = PatchbayLauncher.t("Odinstalować ", "Uninstall ") + named(chosen) + "?\n\n"
+                + PatchbayLauncher.t("Pliki zostaną usunięte z dysku. Żeby przywrócić mod, trzeba go zainstalować ponownie. Żeby tylko go nie ładować, wybierz Wyłącz.",
+                    "The files are deleted from disk. To bring a mod back, install it again. To only stop loading it, choose Switch off.")
+                + neededWarning(chosen);
             String remove = PatchbayLauncher.t("Odinstaluj", "Uninstall"), cancel = PatchbayLauncher.t("Anuluj", "Cancel");
             if (JOptionPane.showOptionDialog(this, question, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
                     null, new String[] { remove, cancel }, cancel) != 0) return;
             try {
-                uninstall(row.id(), modsDir());
+                for (Row r : chosen) uninstall(r.id(), modsDir());
+                for (Row r : chosen) checked.remove(r.id());
                 rebuild();
-                status.setText(PatchbayLauncher.t("Odinstalowano: ", "Uninstalled: ") + nameOf(row));
+                status.setText(PatchbayLauncher.t("Odinstalowano: ", "Uninstalled: ") + named(chosen));
             } catch (IOException ex) {
                 rebuild();
                 JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
