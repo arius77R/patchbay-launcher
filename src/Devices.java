@@ -292,11 +292,14 @@ final class Devices {
         private record Row(Item item, int rank) { }
 
         private final List<Row> rows = new ArrayList<>();
-        private final Theme.Categories categories = new Theme.Categories();
+        private final Theme.TypeColours categories = new Theme.TypeColours();
+        /** Keys of the devices marked with a star. */
+        private final Set<String> favourites = SidePanel.favourites("favouriteDevices");
+        private final SidePanel side = new SidePanel("devicesSide", key -> rebuild());
         private final Set<String> checked = new HashSet<>();
         private final AbstractTableModel model = new AbstractTableModel() {
-            private final String[] columns = { "",
-                PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Urządzenie", "Device"), PatchbayLauncher.t("Stan", "Status") };
+            private final String[] columns = { "", "",
+                PatchbayLauncher.t("Kategoria", "Category"), PatchbayLauncher.t("Urządzenie", "Device"), PatchbayLauncher.t("Stan", "Status") };
             @Override public int getRowCount() { return rows.size(); }
             @Override public int getColumnCount() { return columns.length; }
             @Override public String getColumnName(int c) { return columns[c]; }
@@ -312,8 +315,9 @@ final class Devices {
                 Row row = rows.get(r);
                 return switch (c) {
                     case 0 -> checked.contains(key(row.item()));
-                    case 1 -> row.item().type();
-                    case 2 -> row.item().name();
+                    case 1 -> favourites.contains(key(row.item()));
+                    case 2 -> row.item().type();
+                    case 3 -> row.item().name();
                     default -> switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("pobrane", "downloaded");
@@ -352,11 +356,15 @@ final class Devices {
             table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             table.getColumnModel().getColumn(0).setMinWidth(40);
             table.getColumnModel().getColumn(0).setMaxWidth(40);
-            table.getColumnModel().getColumn(2).setPreferredWidth(260);
-            table.getColumnModel().getColumn(3).setMinWidth(130);
-            table.getColumnModel().getColumn(3).setMaxWidth(140);
-            Theme.typeColumn(table.getColumnModel().getColumn(1), categories);
-            table.getColumnModel().getColumn(3).setCellRenderer(Theme.pillCells());
+            table.getColumnModel().getColumn(1).setMinWidth(30);
+            table.getColumnModel().getColumn(1).setMaxWidth(30);
+            table.getColumnModel().getColumn(1).setCellRenderer(Theme.starCells());
+            table.getColumnModel().getColumn(3).setPreferredWidth(260);
+            table.getColumnModel().getColumn(4).setMinWidth(130);
+            table.getColumnModel().getColumn(4).setMaxWidth(140);
+            Theme.typeColumn(table.getColumnModel().getColumn(2), categories::colour);
+            table.getColumnModel().getColumn(4).setCellRenderer(Theme.pillCells());
+            SidePanel.starClicks(table, 1, r -> key(rows.get(r).item()), favourites, "favouriteDevices", this::rebuild);
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
@@ -374,7 +382,7 @@ final class Devices {
                 @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { }
             });
             JPanel tools = Theme.row(8, buildBox, sortBox, searchField);
-            for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Nazwa", "Name") })
+            for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Kategoria", "Category"), PatchbayLauncher.t("Nazwa", "Name") })
                 sortBox.addItem(o);
             try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("devicesSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
             sortBox.addActionListener(e -> { I18n.remember("devicesSort", String.valueOf(sortBox.getSelectedIndex())); if (loaded) rebuild(); });
@@ -385,7 +393,7 @@ final class Devices {
             left.setOpaque(false);
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
-            JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), null, refreshButton, details,
+            JComponent body = Theme.split(tools, checkAllButton, SidePanel.beside(side, Theme.framed(table)), null, refreshButton, details,
                 left, Theme.row(8, switchButton, removeButton), Theme.row(8, folderButton, installButton));
             add(Theme.listPage(PatchbayLauncher.t("Urządzenia", "Devices"), subtitle, null, body, null, null), BorderLayout.CENTER);
 
@@ -460,7 +468,12 @@ final class Devices {
         /** Rebuilds the rows for the chosen build; hashing the downloaded files happens off the event thread. */
         private void rebuild() {
             String typed = searchField.getText();
-            List<Item> shown = visible(items, build()).stream().filter(i -> Mods.matches(typed, i.name(), i.type(), i.repo().substring(0, i.repo().indexOf('/')))).toList();
+            List<Item> found = visible(items, build()).stream().filter(i -> Mods.matches(typed, i.name(), i.type(), i.repo().substring(0, i.repo().indexOf('/')))).toList();
+            categories.reset(items.stream().map(Item::type));
+            showSide(found);
+            String part = side.selected();
+            List<Item> shown = found.stream().filter(i -> part.equals(SidePanel.ALL)
+                || part.equals(SidePanel.FAVOURITES) && favourites.contains(key(i)) || part.equals(SidePanel.categoryKey(i.type()))).toList();
             int sort = sortBox.getSelectedIndex();
             new Thread(() -> {
                 List<Row> fresh = new ArrayList<>();
@@ -469,7 +482,6 @@ final class Devices {
                 SwingUtilities.invokeLater(() -> {
                     rows.clear();
                     rows.addAll(fresh);
-                    categories.reset(items.stream().map(Item::type));
                     Set<String> canTick = new HashSet<>();
                     for (Row r : rows) canTick.add(key(r.item()));
                     checked.retainAll(canTick);
@@ -491,6 +503,16 @@ final class Devices {
 
         /** Rows Download takes and Tick all ticks: new ones and ones with another version (not up to date or switched off). */
         private static boolean downloadable(Row r) { return r.rank() == 0 || r.rank() == 2; }
+        /** The side panel: the device types in the list (by name), with their counts. Types have no icons of their own: a dot in their colour. */
+        private void showSide(List<Item> found) {
+            Map<String, Integer> count = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            for (Item i : found) count.merge(i.type(), 1, Integer::sum);
+            List<SidePanel.Entry> parts = new ArrayList<>();
+            for (Map.Entry<String, Integer> e : count.entrySet())
+                parts.add(new SidePanel.Entry(SidePanel.categoryKey(e.getKey()), e.getKey(), Categories.icon(null, categories.colour(e.getKey()), 20), e.getValue()));
+            side.show(SidePanel.top(found.size(), (int) found.stream().filter(i -> favourites.contains(key(i))).count()), parts);
+        }
+
         private List<Row> checkable() { return rows.stream().filter(Panel::downloadable).toList(); }
         private List<Row> checkedRows() { return rows.stream().filter(r -> checked.contains(key(r.item()))).toList(); }
 

@@ -1736,6 +1736,12 @@ public final class PatchbayLauncher {
             List<Themes.Item> mine = Themes.localThemes(comps, List.of());
             check(oldRefused && wrongType && mine.size() == 1 && mine.get(0).name().equals("My Theme") && mine.get(0).isLocal()
                 && Themes.rank(comps, mine.get(0)) == 1 && Themes.idOf(comps, mine.get(0)).equals("my-theme"), "a theme added from a file is listed as a local one; old and non-.bte files are refused");
+            check(Categories.of("Arranger: Add Automation Points").equals("Arranger") && Categories.of("piano roll: Strum").equals("Piano Roll")
+                && Categories.of("Browser (side): Hide Parts").equals("Browser") && Categories.of("Helper: X").equals("Framework")
+                && Categories.of("Superpowers: Y").equals("Other") && Categories.of("Scale Fold").equals("Other"),
+                "categories: the fixed list first, earlier names put in their place, anything else Other");
+            check(Categories.ALL.size() == 15 && Categories.ALL.stream().allMatch(c -> Categories.class.getResource("/icons/" + c.icon() + ".png") != null)
+                && Categories.class.getResource("/icons/favorites.png") != null && Categories.class.getResource("/icons/all.png") != null, "every category has its icon in the jar");
             check(Mods.category("Arranger: Add Automation Points").equals("Arranger") && Mods.category("Scale Fold").isEmpty() && Mods.category(null).isEmpty(), "a mod's category is what stands before the colon in its name");
             Mods.Available dated = Mods.parseCatalog("[{\"html_url\":\"https://x\",\"published_at\":\"2026-01-02T00:00:00Z\",\"assets\":[{\"name\":\"a-mod-1.0.0.zip\",\"browser_download_url\":\"https://x/a-mod-1.0.0.zip\",\"created_at\":\"2026-03-04T05:06:07Z\"},"
                 + "{\"name\":\"b-mod-1.0.0.zip\",\"browser_download_url\":\"https://x/b-mod-1.0.0.zip\"}]}]", "o/r").get("a-mod");

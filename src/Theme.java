@@ -904,7 +904,13 @@ public final class Theme {
         new Color(0x12876A), new Color(0x0A8592), new Color(0x2F6FB8), new Color(0x8A3FC7), new Color(0xC23A86) };
 
     /** A colour for each category of a list: the categories in alphabetical order take the palette in turn, so neighbours never share one. */
-    static final class Categories {
+    /** A colour from the category palette, by position: neighbours never share one. */
+    static Color categoryColour(int i) {
+        Color[] palette = light ? CATEGORY_LIGHT : CATEGORY_DARK;
+        return palette[Math.floorMod(i, palette.length)];
+    }
+
+    static final class TypeColours {
         private final java.util.Map<String, Integer> order = new java.util.HashMap<>();
 
         void reset(java.util.stream.Stream<String> categories) {
@@ -914,8 +920,7 @@ public final class Theme {
 
         Color colour(String category) {
             Integer i = order.get(category.toLowerCase(Locale.ROOT));
-            Color[] palette = light ? CATEGORY_LIGHT : CATEGORY_DARK;
-            return i == null ? MUTED : palette[i % palette.length];
+            return i == null ? MUTED : categoryColour(i);
         }
     }
 
@@ -1155,14 +1160,14 @@ public final class Theme {
     }
 
     /** The Type column of Mods and Devices: the same width in both, values in their category colours. */
-    static void typeColumn(javax.swing.table.TableColumn column, Categories categories) {
-        column.setMinWidth(118);
+    static void typeColumn(javax.swing.table.TableColumn column, java.util.function.Function<String, Color> colours) {
+        column.setMinWidth(104);
         column.setMaxWidth(130);
-        column.setCellRenderer(categoryCells(categories));
+        column.setCellRenderer(categoryCells(colours));
     }
 
-    /** A Type column in its category colour; a value starting with "~" is dimmed (a mod that can't run here). */
-    private static DefaultTableCellRenderer categoryCells(Categories categories) {
+    /** A Category column in its category colour; a value starting with "~" is dimmed (a mod that can't run here). */
+    private static DefaultTableCellRenderer categoryCells(java.util.function.Function<String, Color> colours) {
         return new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
                 String category = v == null ? "" : v.toString();
@@ -1172,7 +1177,21 @@ public final class Theme {
                 l.setToolTipText(category.isEmpty() ? null : category);
                 l.setBorder(new EmptyBorder(0, 10, 0, 6));
                 l.setFont(text(13f));
-                l.setForeground(dim ? DIM : categories.colour(category));
+                l.setForeground(dim ? DIM : colours.apply(category));
+                return l;
+            }
+        };
+    }
+
+    /** The favourite mark: a star, filled in the accent when on, an outline otherwise. Clicks are the table's to handle. */
+    static TableCellRenderer starCells() {
+        return new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+                JLabel l = (JLabel) super.getTableCellRendererComponent(t, "", s, false, r, c);
+                boolean on = Boolean.TRUE.equals(v);
+                l.setIcon(Categories.icon(on ? "favorites-filled" : "favorites", on ? ACCENT : DIM, 16));
+                l.setHorizontalAlignment(SwingConstants.CENTER);
+                l.setToolTipText(on ? PatchbayLauncher.t("Usuń z ulubionych", "Remove from favourites") : PatchbayLauncher.t("Dodaj do ulubionych", "Add to favourites"));
                 return l;
             }
         };

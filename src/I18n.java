@@ -149,7 +149,6 @@ final class I18n {
         // devices tab
         add("Devices", "Geräte", "Périphériques");
         add("Device", "Gerät", "Périphérique");
-        add("Type", "Typ", "Type");
         add("downloaded", "geladen", "téléchargé");
         add("Show folder", "Ordner zeigen", "Afficher le dossier");
         add("Project page", "Projektseite", "Page du projet");
@@ -208,6 +207,13 @@ final class I18n {
         add(" mods: ", " Mods: ", " mods : ");
         add(" devices: ", " Geräte: ", " appareils : ");
         add(" themes: ", " Themes: ", " thèmes : ");
+        add("Category", "Kategorie", "Catégorie");
+        add("CATEGORIES", "KATEGORIEN", "CATÉGORIES");
+        add("Favourites", "Favoriten", "Favoris");
+        add("Open the panel", "Leiste öffnen", "Ouvrir le panneau");
+        add("Fold the panel to icons", "Leiste auf Symbole einklappen", "Réduire le panneau aux icônes");
+        add("Add to favourites", "Zu Favoriten hinzufügen", "Ajouter aux favoris");
+        add("Remove from favourites", "Aus Favoriten entfernen", "Retirer des favoris");
         add("The files are deleted from Patchbay. To bring a theme back, install it again.", "Die Dateien werden aus Patchbay gelöscht. Um ein Theme zurückzuholen, installiere es erneut.", "Les fichiers sont supprimés de Patchbay. Pour récupérer un thème, réinstallez-le.");
         add("Switch off ", "Ausschalten: ", "Désactiver ");
         add("Switched on: ", "Eingeschaltet: ", "Activé : ");

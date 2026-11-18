@@ -1,3 +1,4 @@
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,7 +17,7 @@ import java.util.zip.ZipOutputStream;
 /**
  * One file with what the user set up, to bring back later or on another computer: which mods are switched on
  * and which theme is picked (Patchbay's two settings files), the theme files in the active Patchbay's
- * components/ folder, and the launcher's sources. Mods and Patchbay themselves are not in it: the launcher
+ * components/ folder, the launcher's sources and the starred mods and devices. Mods and Patchbay themselves are not in it: the launcher
  * downloads those.
  */
 final class Backup {
@@ -24,6 +25,8 @@ final class Backup {
 
     static final String MARK = "patchbay-launcher-backup.properties";
     private static final List<String> PATCHBAY_FILES = List.of("enabled-mods.properties", "selected-components.properties");
+    /** The launcher's own settings that go in the mark: the starred mods and devices. */
+    private static final List<String> FAVOURITES = List.of("favouriteMods", "favouriteDevices");
     private static final long BIGGEST = 5L * 1024 * 1024; // a theme file is a few KB; nothing bigger belongs here
 
     static String defaultName() { return "Patchbay-Launcher-settings-" + LocalDate.now() + ".zip"; }
@@ -37,6 +40,7 @@ final class Backup {
             mark.setProperty("format", "1");
             mark.setProperty("launcher", PatchbayLauncher.VERSION);
             mark.setProperty("saved", LocalDate.now().toString());
+            for (String key : FAVOURITES) { String kept = I18n.setting(key); if (kept != null) mark.setProperty(key, kept); }
             out.putNextEntry(new ZipEntry(MARK));
             mark.store(out, "Patchbay Launcher settings backup");
             out.closeEntry();
@@ -82,7 +86,13 @@ final class Backup {
         try (ZipInputStream in = new ZipInputStream(Files.newInputStream(zip))) {
             for (ZipEntry e; (e = in.getNextEntry()) != null; ) {
                 String name = e.getName();
-                if (e.isDirectory() || name.equals(MARK)) continue;
+                if (name.equals(MARK)) {
+                    Properties mark = new Properties();
+                    mark.load(new ByteArrayInputStream(in.readNBytes(64 * 1024)));
+                    for (String key : FAVOURITES) if (mark.getProperty(key) != null) I18n.remember(key, mark.getProperty(key));
+                    continue;
+                }
+                if (e.isDirectory()) continue;
                 Path target = target(name, patchbaySettings, components, sources);
                 if (target == null) continue;
                 Files.createDirectories(target.getParent());

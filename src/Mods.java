@@ -556,10 +556,12 @@ final class Mods {
         /** Every catalogue row; rows holds the ones the Show filter lets through, in display order. */
         private final List<Row> all = new ArrayList<>();
         private final List<Row> rows = new ArrayList<>();
-        private final Theme.Categories categories = new Theme.Categories();
+        /** IDs of the mods marked with a star. */
+        private final Set<String> favourites = SidePanel.favourites("favouriteMods");
+        private final SidePanel side = new SidePanel("modsSide", key -> refilter());
         /** Show: 0 all, 1 works on my Bitwig, 2 installed, 3 updates, 4 not available. */
         private final JComboBox<String> showBox = new JComboBox<>();
-        /** Sort: 0 by status (updates, installed, new), 1 by type then name, 2 newest version first. */
+        /** Sort: 0 by status (updates, installed, new), 1 by category then name, 2 newest version first. */
         private final JComboBox<String> sortBox = new JComboBox<>();
         private final Theme.HintField searchField = new Theme.HintField(PatchbayLauncher.t("Szukaj", "Search"));
         /** "Update available" above the list; a click shows only the mods with updates. */
@@ -581,7 +583,7 @@ final class Mods {
         private final Set<String> checked = new HashSet<>();
         private final AbstractTableModel model = new AbstractTableModel() {
             private final String[] columns = {
-                "", PatchbayLauncher.t("Typ", "Type"), "Mod", PatchbayLauncher.t("Zainstalowana", "Installed"),
+                "", "", PatchbayLauncher.t("Kategoria", "Category"), "Mod", PatchbayLauncher.t("Zainstalowana", "Installed"),
                 PatchbayLauncher.t("Dostępna", "Available"), PatchbayLauncher.t("Stan", "Status") };
             @Override public int getRowCount() { return rows.size(); }
             @Override public int getColumnCount() { return columns.length; }
@@ -598,10 +600,11 @@ final class Mods {
                 Row row = rows.get(r);
                 return switch (c) {
                     case 0 -> checked.contains(row.id());
-                    case 1 -> (unavailable(row) ? "~" : "") + category(nameOf(row));
-                    case 2 -> (unavailable(row) ? "~" : "") + withoutCategory(nameOf(row));
-                    case 3 -> row.installed() == null ? "–" : row.installed();
-                    case 4 -> row.available() == null ? "" : row.available().version();
+                    case 1 -> favourites.contains(row.id());
+                    case 2 -> (unavailable(row) ? "~" : "") + Categories.of(nameOf(row));
+                    case 3 -> (unavailable(row) ? "~" : "") + withoutCategory(nameOf(row));
+                    case 4 -> row.installed() == null ? "–" : row.installed();
+                    case 5 -> row.available() == null ? "" : row.available().version();
                     default -> unavailable(row) ? "off|" + PatchbayLauncher.t("niezgodny", "incompatible") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> switchedOn.contains(row.id()) ? "installed|" + PatchbayLauncher.t("włączony", "on")
@@ -654,18 +657,22 @@ final class Mods {
             table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             table.getColumnModel().getColumn(0).setMinWidth(40);
             table.getColumnModel().getColumn(0).setMaxWidth(40);
-            Theme.typeColumn(table.getColumnModel().getColumn(1), categories);
-            table.getColumnModel().getColumn(2).setPreferredWidth(260);
-            table.getColumnModel().getColumn(2).setCellRenderer(Theme.nameCells());
-            table.getColumnModel().getColumn(3).setCellRenderer(Theme.monoCells(Theme.MUTED));
-            table.getColumnModel().getColumn(4).setCellRenderer(Theme.monoCells(Theme.SOFT));
-            table.getColumnModel().getColumn(5).setCellRenderer(Theme.pillCells());
-            for (int c = 3; c <= 4; c++) {
-                table.getColumnModel().getColumn(c).setMinWidth(108);
+            table.getColumnModel().getColumn(1).setMinWidth(30);
+            table.getColumnModel().getColumn(1).setMaxWidth(30);
+            table.getColumnModel().getColumn(1).setCellRenderer(Theme.starCells());
+            Theme.typeColumn(table.getColumnModel().getColumn(2), Categories::colour);
+            table.getColumnModel().getColumn(3).setPreferredWidth(260);
+            table.getColumnModel().getColumn(3).setCellRenderer(Theme.nameCells());
+            table.getColumnModel().getColumn(4).setCellRenderer(Theme.monoCells(Theme.MUTED));
+            table.getColumnModel().getColumn(5).setCellRenderer(Theme.monoCells(Theme.SOFT));
+            table.getColumnModel().getColumn(6).setCellRenderer(Theme.pillCells());
+            for (int c = 4; c <= 5; c++) {
+                table.getColumnModel().getColumn(c).setMinWidth(100);
                 table.getColumnModel().getColumn(c).setMaxWidth(112);
             }
-            table.getColumnModel().getColumn(5).setMinWidth(140);
-            table.getColumnModel().getColumn(5).setMaxWidth(150);
+            table.getColumnModel().getColumn(6).setMinWidth(118);
+            table.getColumnModel().getColumn(6).setMaxWidth(150);
+            SidePanel.starClicks(table, 1, r -> rows.get(r).id(), favourites, "favouriteMods", this::refilter);
             table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
@@ -684,7 +691,7 @@ final class Mods {
             try { showBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsShow")))); } catch (RuntimeException none) { showBox.setSelectedIndex(1); } // first time: only the mods that can run
             showBox.addActionListener(e -> { if (!filling) { I18n.remember("modsShow", String.valueOf(showBox.getSelectedIndex())); refilter(); } });
             showBox.setPreferredSize(new Dimension(140, 32));
-            for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Typ", "Type"), PatchbayLauncher.t("Najnowsze", "Newest") })
+            for (String o : new String[] { PatchbayLauncher.t("Stan", "Status"), PatchbayLauncher.t("Kategoria", "Category"), PatchbayLauncher.t("Najnowsze", "Newest") })
                 sortBox.addItem(o);
             try { sortBox.setSelectedIndex(Integer.parseInt(String.valueOf(I18n.setting("modsSort")))); } catch (RuntimeException none) { sortBox.setSelectedIndex(0); }
             sortBox.addActionListener(e -> { I18n.remember("modsSort", String.valueOf(sortBox.getSelectedIndex())); refilter(); });
@@ -709,7 +716,7 @@ final class Mods {
                 @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { refilter(); }
             });
             JPanel tools = Theme.row(8, showBox, sortBox, searchField);
-            JComponent body = Theme.split(tools, checkAllButton, Theme.framed(table), Theme.row(8, bitwigLabel, bitwigBox), refreshButton, details,
+            JComponent body = Theme.split(tools, checkAllButton, SidePanel.beside(side, Theme.framed(table)), Theme.row(8, bitwigLabel, bitwigBox), refreshButton, details,
                 left, Theme.row(8, switchButton, removeButton), Theme.row(8, updateAllButton, installButton));
             add(Theme.listPage(PatchbayLauncher.t("Mody", "Mods"), subtitle, updateBar, body, null, null), BorderLayout.CENTER);
 
@@ -795,13 +802,13 @@ final class Mods {
             }
             Row row = rows.get(r);
             Info info = infos.get(row.id());
-            String name = nameOf(row);
-            int colon = name.indexOf(':');
-            if (colon > 0 && colon < 30) {
-                col.add(left(Theme.label(name.substring(0, colon + 1), Theme.text(13f), Theme.MUTED)));
-                col.add(Box.createVerticalStrut(4));
-                name = name.substring(colon + 1).strip();
-            }
+            String name = withoutCategory(nameOf(row));
+            String part = Categories.of(nameOf(row));
+            JLabel heading = Theme.label(part, Theme.text(13f), Categories.colour(part));
+            heading.setIcon(Categories.icon(Categories.find(part).icon(), Categories.colour(part), 16));
+            heading.setIconTextGap(6);
+            col.add(left(heading));
+            col.add(Box.createVerticalStrut(4));
             col.add(left(Theme.wrapped(name, 190, Theme.TEXT, 20f)));
             ((JLabel) col.getComponent(col.getComponentCount() - 1)).setFont(Theme.bold(20f));
             col.add(Box.createVerticalStrut(12));
@@ -1019,7 +1026,7 @@ final class Mods {
             Comparator<Row> byName = Comparator.comparing(this::nameOf, String.CASE_INSENSITIVE_ORDER);
             return switch (sort) {
                 // a mod without a category goes after the named ones
-                case 1 -> usable.thenComparing((Row r) -> category(nameOf(r)).isEmpty()).thenComparing(r -> category(nameOf(r)), String.CASE_INSENSITIVE_ORDER).thenComparing(byName);
+                case 1 -> usable.thenComparingInt((Row r) -> Categories.ALL.indexOf(Categories.find(Categories.of(nameOf(r))))).thenComparing(byName);
                 case 2 -> usable.thenComparing((Row r) -> r.available() == null ? "" : r.available().published(), Comparator.reverseOrder()).thenComparing(byName);
                 default -> usable.thenComparingInt(Row::rank).thenComparing(Row::id);
             };
@@ -1030,7 +1037,7 @@ final class Mods {
             String keep = table.getSelectedRow() >= 0 && table.getSelectedRow() < rows.size() ? rows.get(table.getSelectedRow()).id() : null;
             int show = showBox.getSelectedIndex();
             rows.clear();
-            categories.reset(all.stream().map(r -> category(nameOf(r))));
+            List<Row> shown = new ArrayList<>();
             for (Row r : all) {
                 boolean off = unavailable(r);
                 boolean pass = switch (show) {
@@ -1040,8 +1047,13 @@ final class Mods {
                     case 4 -> off;
                     default -> true;
                 };
-                if (pass && matches(searchField.getText(), nameOf(r), r.id(), authorOf(r))) rows.add(r);
+                if (pass && matches(searchField.getText(), nameOf(r), r.id(), authorOf(r))) shown.add(r);
             }
+            showSide(shown);
+            String part = side.selected();
+            for (Row r : shown)
+                if (part.equals(SidePanel.ALL) || part.equals(SidePanel.FAVOURITES) && favourites.contains(r.id())
+                    || part.equals(SidePanel.categoryKey(Categories.of(nameOf(r))))) rows.add(r);
             rows.sort(order(sortBox.getSelectedIndex()));
             Set<String> canTick = new HashSet<>();
             for (Row r : rows) if (tickable(r)) canTick.add(r.id());
@@ -1081,6 +1093,17 @@ final class Mods {
             }
             showSelected();
             refreshButtons();
+        }
+
+        /** The side panel's counts for the rows the Show filter and Search let through. */
+        private void showSide(List<Row> shown) {
+            Map<String, Integer> count = new HashMap<>();
+            for (Row r : shown) count.merge(Categories.of(nameOf(r)), 1, Integer::sum);
+            List<SidePanel.Entry> parts = new ArrayList<>();
+            for (Categories.Category c : Categories.ALL)
+                if (count.containsKey(c.name()))
+                    parts.add(new SidePanel.Entry(SidePanel.categoryKey(c.name()), c.name(), Categories.icon(c.icon(), Categories.colour(c.name()), 20), count.get(c.name())));
+            side.show(SidePanel.top(shown.size(), (int) shown.stream().filter(r -> favourites.contains(r.id())).count()), parts);
         }
 
         private void refreshButtons() {
