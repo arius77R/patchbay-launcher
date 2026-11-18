@@ -43,9 +43,31 @@ Repositories that don't follow these rules are not supported. The launcher does 
 7. **Don't change Bitwig's files.**
    A mod works through Patchbay only. Installers that patch `bitwig.jar` break Patchbay ("No installed map supports bitwig.jar").
 
+8. **The mod's name starts with a category from the list: `Category: Name`.**
+   For example `Arranger: Add Automation Points`. The category says where in Bitwig the mod works. Pick exactly one from the list, spelled exactly the same way (capital letters included):
+
+   | Category | Where in Bitwig |
+   |---|---|
+   | `Arranger` | the timeline, tracks, track headers |
+   | `Clip Launcher` | clips in the clip launcher |
+   | `Piano Roll` | editing notes |
+   | `Audio Editor` | editing audio clips |
+   | `Automation` | automation |
+   | `Mixer` | the mixer |
+   | `Devices` | the device chain and device parameters |
+   | `Browser` | the browser |
+   | `Inspector` | the inspector |
+   | `Transport` | transport, tempo |
+   | `Interface` | panels, notifications, appearance |
+   | `Commands` | commands and keyboard shortcuts |
+   | `Project` | the project, export |
+   | `Framework` | libraries other mods need |
+   | `Other` | anything that fits none of the above |
+
+   Don't make up your own categories or collection names. When no category fits, use `Other`. The launcher also shows a mod with a category outside the list under `Other`. If you think a category is missing, ask the author of Patchbay Launcher (Marius R) to add it: in the [Issues](https://github.com/arius77R/patchbay-launcher/issues) or on the Bitwig Discord in the #launcher channel.
+
 ## Recommended
 
-- **Name in the form "Category: Name"**, for example `Arranger: Add Automation Points`. The launcher shows the category in its Type column and sorts by it. The category is the place in Bitwig (Arranger, Piano Roll, Browser, Mixer…), not the name of your collection.
 - **A table in the release description:**
   ```
   | Mod | Download |
@@ -59,6 +81,7 @@ Repositories that don't follow these rules are not supported. The launcher does 
 - [ ] Every mod has one ZIP `<mod-id>-<version>.zip`, with no operating system in the name.
 - [ ] `mod.id` and `mod.version` inside the ZIP match the file name.
 - [ ] `<mod-id>/mod.json` in the repository matches the one in the ZIP.
+- [ ] Every mod's name starts with a category from the list (`Category: Name`).
 - [ ] Every dependency is in `requires`.
 - [ ] No `mod.id` repeats someone else's.
 - [ ] The release is published (not a draft) and the packages are in Assets.
@@ -70,12 +93,12 @@ Copy this and paste it to the agent that prepares your release:
 
 > Prepare a release of my Patchbay mod (or mods) that is compatible with Patchbay Launcher. Follow these rules without exception:
 > 1. Each mod is one ZIP file, the same for every operating system, named `<mod-id>-<version>.zip`, where the version is `MAJOR.MINOR.PATCH` or `MAJOR.MINOR.PATCH-dev.N`. No operating system or other words in the file name.
-> 2. The ZIP contains `mod.json`; `mod.id` and `mod.version` must be exactly as in the file name. Fill in `mod.name` (as "Category: Name", where the category is the place in Bitwig), `mod.author`, `mod.description` and `built_against`.
+> 2. The ZIP contains `mod.json`; `mod.id` and `mod.version` must be exactly as in the file name. Fill in `mod.name` as `Category: Name`, where Category is exactly one of: Arranger, Clip Launcher, Piano Roll, Audio Editor, Automation, Mixer, Devices, Browser, Inspector, Transport, Interface, Commands, Project, Framework, Other — no categories of your own. Also fill in `mod.author`, `mod.description` and `built_against`.
 > 3. Save the same `mod.json` in the repository at `<mod-id>/mod.json` on the default branch.
 > 4. List every dependency (frameworks, other mods) in `requires` with `id` and `min_version`. Don't publish copies of other authors' frameworks under their `mod.id`.
 > 5. Create a published GitHub release (not a draft) and add each ZIP as a separate file in Assets. In the release description add a `| Mod | Download |` table with the mod name and the file name in backticks.
 > 6. Don't change Bitwig's files and don't include installers that do.
-> Finally check: file names, `mod.id` and `mod.version` matching the names, `<mod-id>/mod.json` present in the repository, `requires`, release not a draft. List what you checked and anything that couldn't be met.
+> Finally check: file names, the categories in `mod.name`, `mod.id` and `mod.version` matching the names, `<mod-id>/mod.json` present in the repository, `requires`, release not a draft. List what you checked and anything that couldn't be met.
 
 ## How to check in the launcher
 
