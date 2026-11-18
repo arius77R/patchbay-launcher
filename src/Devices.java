@@ -503,13 +503,13 @@ final class Devices {
 
         /** Rows Download takes and Tick all ticks: new ones and ones with another version (not up to date or switched off). */
         private static boolean downloadable(Row r) { return r.rank() == 0 || r.rank() == 2; }
-        /** The side panel: the device types in the list (by name), with their counts. Types have no icons of their own: a dot in their colour. */
+        /** The side panel: the device types in the list (by name), with their icons and counts. */
         private void showSide(List<Item> found) {
             Map<String, Integer> count = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             for (Item i : found) count.merge(i.type(), 1, Integer::sum);
             List<SidePanel.Entry> parts = new ArrayList<>();
             for (Map.Entry<String, Integer> e : count.entrySet())
-                parts.add(new SidePanel.Entry(SidePanel.categoryKey(e.getKey()), e.getKey(), Categories.icon(null, categories.colour(e.getKey()), 20), e.getValue()));
+                parts.add(new SidePanel.Entry(SidePanel.categoryKey(e.getKey()), e.getKey(), Categories.icon(Categories.deviceIcon(e.getKey()), categories.colour(e.getKey()), 20), e.getValue()));
             side.show(SidePanel.top(found.size(), (int) found.stream().filter(i -> favourites.contains(key(i))).count()), parts);
         }
 
@@ -570,7 +570,9 @@ final class Devices {
             preview.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Podgląd panelu: ", "Panel preview: ") + item.name());
             col.add(preview);
             col.add(Box.createVerticalStrut(14));
-            JLabel type = Theme.label(item.type(), Theme.text(13f), Theme.MUTED);
+            JLabel type = Theme.label(item.type(), Theme.text(13f), categories.colour(item.type()));
+            type.setIcon(Categories.icon(Categories.deviceIcon(item.type()), categories.colour(item.type()), 16));
+            type.setIconTextGap(6);
             type.setAlignmentX(LEFT_ALIGNMENT);
             col.add(type);
             col.add(Box.createVerticalStrut(4));

@@ -51,6 +51,14 @@ final class Categories {
         return c == null ? Theme.MUTED : Theme.categoryColour(ALL.indexOf(c));
     }
 
+    private static final java.util.Set<String> DEVICE_TYPES = java.util.Set.of("audio-fx", "instrument", "note-fx", "note-generator", "modulator", "grid-module");
+
+    /** The icon of a device type ("Audio FX" → audio-fx); a type without its own icon gets the devices one. */
+    static String deviceIcon(String type) {
+        String name = type == null ? "" : type.strip().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "-");
+        return DEVICE_TYPES.contains(name) ? name : "devices";
+    }
+
     private static final Map<String, BufferedImage> PICTURES = new HashMap<>();
 
     /** An icon from res/icons (white, 40 px) drawn in a colour at size×size; a small dot when there's no such icon. */
