@@ -546,6 +546,14 @@ public final class PatchbayLauncher {
     /** The tab on screen, so a rebuilt window opens on the same one. */
     private String shownTab = "patchbay";
     /** Where the previous window was, for a window rebuilt after a language or appearance change; null on start. */
+    /** The first size of the window: most of the screen's free space (without the menu bar and Dock), 1200×760 at least and 1600×1000 at most, never beyond the screen. */
+    static Dimension startSize() {
+        Rectangle free = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        int w = Math.max(1200, Math.min(1600, free.width * 8 / 10));
+        int h = Math.max(760, Math.min(1000, free.height * 85 / 100));
+        return new Dimension(Math.min(w, free.width), Math.min(h, free.height));
+    }
+
     private Rectangle keptBounds;
     private int keptState = Frame.NORMAL;
     private String keptTab;
@@ -984,7 +992,7 @@ public final class PatchbayLauncher {
             frame.setBounds(keptBounds);
             if (keptState != Frame.NORMAL) frame.setExtendedState(keptState);
         } else {
-            frame.setSize(1200, 760);
+            frame.setSize(startSize());
             frame.setLocationRelativeTo(null);
         }
         refreshLocal();
