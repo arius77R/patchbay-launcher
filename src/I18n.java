@@ -174,8 +174,28 @@ final class I18n {
         add("New version ", "Neue Version ", "Nouvelle version ");
         add("New Patchbay Launcher version: ", "Neue Patchbay-Launcher-Version: ", "Nouvelle version de Patchbay Launcher : ");
         add("What's new, and updating the launcher", "Neuerungen und Aktualisierung des Launchers", "Nouveautés et mise à jour du lanceur");
-        add("What's new in Patchbay Launcher ", "Neu in Patchbay Launcher ", "Nouveautés de Patchbay Launcher ");
-        add("You have version ", "Du hast Version ", "Vous avez la version ");
+        add("What's new in ", "Neu in ", "Nouveautés de la version ");
+        add("Version, what's new, new sources and system information", "Version, Neuerungen, neue Quellen und Systeminformationen", "Version, nouveautés, nouvelles sources et informations système");
+        add("New sources", "Neue Quellen", "Nouvelles sources");
+        add("A new version is available: ", "Eine neue Version ist verfügbar: ", "Une nouvelle version est disponible : ");
+        add("You have the newest version.", "Du hast die neueste Version.", "Vous avez la version la plus récente.");
+        add("Couldn't check for a new version.", "Neue Version konnte nicht geprüft werden.", "Impossible de vérifier s'il existe une nouvelle version.");
+        add("Copy", "Kopieren", "Copier");
+        add("Copied", "Kopiert", "Copié");
+        add("System information", "Systeminformationen", "Informations système");
+        add("Paste this into a problem report. Versions and names only, nothing personal.", "Füge das in eine Problemmeldung ein. Nur Versionen und Namen, nichts Persönliches.", "Collez ceci dans un signalement. Uniquement des versions et des noms, rien de personnel.");
+        add("Couldn't get the list of recommended sources.", "Die Liste empfohlener Quellen konnte nicht geladen werden.", "Impossible d'obtenir la liste des sources recommandées.");
+        add("No new sources. You have all the recommended ones.", "Keine neuen Quellen. Du hast alle empfohlenen.", "Aucune nouvelle source. Vous avez toutes les sources recommandées.");
+        add("Add", "Hinzufügen", "Ajouter");
+        add("Added", "Hinzugefügt", "Ajoutée");
+        add("Checking the Bitwig version…", "Bitwig-Version wird geprüft…", "Vérification de la version de Bitwig…");
+        add(" doesn't support your Bitwig ", " unterstützt dein Bitwig nicht: ", " ne prend pas en charge votre Bitwig ");
+        add("Supported Bitwig versions (", "Unterstützte Bitwig-Versionen (", "Versions de Bitwig prises en charge (");
+        add("Patchbay won't start with this Bitwig (it stops with \"exit code 1\"). Check the Patchbay section for a newer version, or install a supported Bitwig version.",
+            "Mit diesem Bitwig startet Patchbay nicht (es endet mit „exit code 1“). Sieh im Bereich Patchbay nach einer neueren Version oder installiere eine unterstützte Bitwig-Version.",
+            "Patchbay ne démarrera pas avec ce Bitwig (il s'arrête avec « exit code 1 »). Cherchez une version plus récente dans la section Patchbay, ou installez une version de Bitwig prise en charge.");
+        add("Start anyway", "Trotzdem starten", "Démarrer quand même");
+        add("Cancel", "Abbrechen", "Annuler");
         add("The changes are described on the release page.", "Die Änderungen stehen auf der Release-Seite.", "Les changements sont décrits sur la page de la version.");
         add("The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are.", "Der Launcher schließt sich kurz und startet neu. Patchbay, Mods und Einstellungen bleiben unverändert.", "Le lanceur se ferme un instant et redémarre. Patchbay, les mods et les réglages restent tels quels.");
         add("This copy can't update itself: get the new version from the release page.", "Diese Kopie kann sich nicht selbst aktualisieren: Lade die neue Version von der Release-Seite.", "Cette copie ne peut pas se mettre à jour seule : téléchargez la nouvelle version depuis la page de la version.");

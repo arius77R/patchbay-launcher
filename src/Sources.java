@@ -132,6 +132,50 @@ final class Sources {
         Files.move(temp, file(), StandardCopyOption.REPLACE_EXISTING);
     }
 
+    // ---------- recommended sources ----------
+
+    /** A repository the launcher's author recommends, from sources.json in the launcher's own repository. */
+    record Suggestion(String group, String repo, String note) { }
+
+    /**
+     * The recommended sources the user doesn't have yet (in any group, switched on or off). The list lives
+     * in the launcher's repository, so a new source reaches everyone without a new launcher version.
+     * No list there yet means none: an empty list, not an error.
+     */
+    static List<Suggestion> suggested() throws IOException {
+        String f = System.getProperty("launcher.fixtures"); // offline test
+        String json;
+        if (f != null) {
+            Path fx = Path.of(f).resolve("launcher-sources.json");
+            if (!Files.isRegularFile(fx)) return List.of();
+            json = Files.readString(fx);
+        } else {
+            try {
+                json = PatchbayLauncher.httpText("https://raw.githubusercontent.com/" + SelfUpdate.REPO + "/HEAD/sources.json");
+            } catch (IOException none) {
+                if (String.valueOf(none.getMessage()).contains("HTTP 404")) return List.of();
+                throw none;
+            }
+        }
+        Set<String> have = new HashSet<>();
+        for (Source s : all()) have.add(s.group() + " " + s.repo().toLowerCase(Locale.ROOT));
+        List<Suggestion> out = new ArrayList<>();
+        for (Object o : Mods.Json.array(Mods.Json.object(Mods.Json.parse(json)).get("sources"))) {
+            Map<String, Object> m = Mods.Json.object(o);
+            String group = Mods.Json.text(m, "group"), repo = normalizeRepo(String.valueOf(Mods.Json.text(m, "repo")));
+            if (group == null || group.equals(PATCHBAY) || !GROUPS.contains(group) || repo == null) continue;
+            if (have.add(group + " " + repo.toLowerCase(Locale.ROOT))) out.add(new Suggestion(group, repo, Mods.Json.text(m, "note")));
+        }
+        return out;
+    }
+
+    /** Adds a recommended source, switched on, with the usual files for its group. */
+    static void add(Suggestion s) throws IOException {
+        List<Source> list = new ArrayList<>(all());
+        list.add(new Source("own-" + System.currentTimeMillis(), s.group(), s.repo(), inRepository(s.group()) ? "" : "*.zip", false, true));
+        save(list);
+    }
+
     static List<Source> enabled(String group) {
         return all().stream().filter(s -> s.group().equals(group) && s.enabled()).toList();
     }
@@ -274,6 +318,12 @@ final class Sources {
                 Theme.row(8, restoreButton, add), body, null, null), BorderLayout.CENTER);
             repoField.setFont(Theme.mono(13f));
             filterField.setFont(Theme.mono(13f));
+            rebuild();
+        }
+
+        /** The list was changed outside this section (a recommended source added): shows it as saved. */
+        void reloadFromDisk() {
+            sources = all();
             rebuild();
         }
 
