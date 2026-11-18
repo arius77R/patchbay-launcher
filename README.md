@@ -26,13 +26,14 @@ The app is not signed (no Apple Developer ID, no Windows code-signing certificat
 
 ## What it does
 
-- **Patchbay:** lists Patchbay releases, downloads and unpacks the one for your system, carries your mods and themes over to the new version, keeps the previous version, and starts Patchbay. It notifies you when a new version is out.
+- **Patchbay:** lists Patchbay releases, downloads and unpacks the one for your system, carries your mods and themes over to the new version, keeps the previous version, and starts Patchbay. It notifies you when a new version is out. **Restore Patchbay's mods** puts back the frameworks that came with Patchbay if one was uninstalled.
 - **Mods:** a catalogue from the mod repositories with checkboxes, "Select all", "Update all" and details. It checks each mod against your Bitwig the way Patchbay does (with the map packs in the installed Patchbay), shows which mods won't run on your Bitwig and why, and lets you show only the ones that work. Mods are installed the same way as Patchbay's own **Add Mod…**, with a SHA-256 check and their required mods.
 - **Devices:** `.bwdevice`, `.bwmodulator` and `.bwmodule` files, picked for your Bitwig version, checked against GitHub and added to Patchbay's Device Folders.
 - **Themes:** `.bte` colour themes for Patchbay's **Framework: Themes**, with a preview, installed into the active Patchbay's `components/` folder. "Use this theme" picks it in Patchbay's settings (Patchbay must be closed); restart Bitwig from Patchbay to see it.
-- **Sources:** built-in and your own GitHub repositories for Patchbay, mods, devices and themes (a theme list such as `Berikai/awesome-bitwig-themes` works too); switch them on and off, add, edit, remove.
+- **Sources:** built-in and your own GitHub repositories for Patchbay, mods, devices and themes; switch them on and off, add, edit, remove. **Source list** finds repositories by topic (`patchbay-mod`, `patchbay-devices`, `patchbay-themes`), **Recommended** shows the list in [arius77R/bitwig-mods-list](https://github.com/arius77R/bitwig-mods-list).
 - **Updates itself:** shows when a new Patchbay Launcher release is out and installs it with one click (from 0.9.3 on).
 - **Languages:** English, Polski, Deutsch, Français. Other system languages use English.
+- **Guide:** a Guide button on the bottom bar opens the guide in the app, offline. Read it here too: [Guide](docs/GUIDE.md).
 
 | Patchbay | Devices |
 |---|---|

@@ -9,13 +9,16 @@
 - **A source that no longer exists** on GitHub is marked "doesn't exist", with a button to the author's page. Nothing disappears by itself.
 - **Mods and devices removed from their repository:** installed ones are marked "removed" (with a one-time notice) and are no longer offered for install.
 - **Withdrawn by the author** (a `withdrawn.json` file): marked "withdrawn" with the reason, and the launcher offers once to switch them off.
-- **Installed mods not in any source** show in the list, so they can be switched off or uninstalled.
+- **Installed mods not in any source** show in the list as "not in sources". Show → Not in sources, Tick all and Uninstall remove them in three clicks.
+- **Mods that came with Patchbay** (its frameworks) are marked "from Patchbay": kept out of Not in sources and Tick all, with a clear warning before switching one off or uninstalling it. **Restore Patchbay's mods** in the Patchbay tab puts back the missing ones from the same version; nothing is overwritten.
 - **Side panel in Mods and Devices:** All, Favourites and the categories with icons and counts; a star marks favourites; favourites are kept in the settings backup.
 - **Device type icons:** Audio FX, Instrument, Note FX, Note generator, Modulator, Grid module.
-- **Switch off and uninstall several at once:** tick mods, devices or themes and do it with one button; it works from a single item's details too.
+- **Switch off and uninstall several at once:** tick mods, devices or themes and use the buttons under the list; they stay grey until something is ticked. Confirmations list what changes and stay narrow, however many items there are.
 - **Launcher page in the main window:** version, update, what's new, and system information with Copy. "Report a problem" adds the system information. A warning before starting Patchbay on a Bitwig its maps don't cover.
+- **Settings → Clear the GitHub memory:** a last resort when the launcher still shows something a repository no longer has after Refresh; it fetches everything again, installed things stay.
 - **The window** opens scaled to the screen, and after that where and as big as it was closed.
 - **Fix:** a mod that is no longer in its repository isn't shown again from an old kept copy.
+- **Fix:** a repository that keeps its mods' files elsewhere (no `<mod-id>/mod.json` folders) no longer makes all its mods look removed.
 
 ## 0.9.5
 
