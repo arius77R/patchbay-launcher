@@ -667,9 +667,24 @@ final class Mods {
             table.getColumnModel().getColumn(5).setCellRenderer(Theme.monoCells(Theme.SOFT));
             table.getColumnModel().getColumn(6).setCellRenderer(Theme.pillCells());
             for (int c = 4; c <= 5; c++) {
-                table.getColumnModel().getColumn(c).setMinWidth(100);
+                table.getColumnModel().getColumn(c).setMinWidth(112);
                 table.getColumnModel().getColumn(c).setMaxWidth(112);
             }
+            // version columns wide enough for "6.0.0-dev.2.linux" only when the mod names keep 260 px
+            table.addComponentListener(new java.awt.event.ComponentAdapter() {
+                @Override public void componentResized(java.awt.event.ComponentEvent e) {
+                    javax.swing.table.TableColumnModel m = table.getColumnModel();
+                    int others = m.getColumn(0).getWidth() + m.getColumn(1).getWidth() + m.getColumn(2).getWidth() + m.getColumn(6).getWidth();
+                    int width = table.getWidth() - others - 2 * 140 >= 260 ? 140 : 112;
+                    for (int c = 4; c <= 5; c++) {
+                        javax.swing.table.TableColumn column = table.getColumnModel().getColumn(c);
+                        if (column.getMaxWidth() == width) continue;
+                        column.setMinWidth(Math.min(width, column.getMinWidth()));
+                        column.setMaxWidth(width);
+                        column.setMinWidth(width);
+                    }
+                }
+            });
             table.getColumnModel().getColumn(6).setMinWidth(118);
             table.getColumnModel().getColumn(6).setMaxWidth(150);
             SidePanel.starClicks(table, 1, r -> rows.get(r).id(), favourites, "favouriteMods", this::refilter);

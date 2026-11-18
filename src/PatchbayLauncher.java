@@ -545,7 +545,6 @@ public final class PatchbayLauncher {
 
     /** The tab on screen, so a rebuilt window opens on the same one. */
     private String shownTab = "patchbay";
-    /** Where the previous window was, for a window rebuilt after a language or appearance change; null on start. */
     /** The first size of the window: most of the screen's free space (without the menu bar and Dock), 1200×760 at least and 1600×1000 at most, never beyond the screen. */
     static Dimension startSize() {
         Rectangle free = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
@@ -554,6 +553,37 @@ public final class PatchbayLauncher {
         return new Dimension(Math.min(w, free.width), Math.min(h, free.height));
     }
 
+    /** The window's place and size from the last time, if its top still lies on a screen; else null (the start size). */
+    static Rectangle savedWindow() {
+        String kept = I18n.setting("window");
+        if (kept == null) return null;
+        try {
+            String[] n = kept.split(",");
+            Rectangle r = new Rectangle(Integer.parseInt(n[0].strip()), Integer.parseInt(n[1].strip()), Integer.parseInt(n[2].strip()), Integer.parseInt(n[3].strip()));
+            for (GraphicsDevice screen : GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()) {
+                Rectangle on = screen.getDefaultConfiguration().getBounds();
+                if (on.contains(r.x + Math.min(r.width, 200) / 2, r.y + 10)) {
+                    r.width = Math.max(980, Math.min(r.width, on.width));
+                    r.height = Math.max(640, Math.min(r.height, on.height));
+                    return r;
+                }
+            }
+        } catch (RuntimeException unreadable) { }
+        return null;
+    }
+
+    /** The window's last place and size while not maximized. */
+    private Rectangle normalBounds;
+
+    /** Keeps the window's place and size (as it is when not maximized) for the next start. */
+    private void saveWindow() {
+        boolean max = (frame.getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH;
+        Rectangle r = max && normalBounds != null ? normalBounds : frame.getBounds();
+        I18n.remember("window", r.x + "," + r.y + "," + r.width + "," + r.height);
+        I18n.remember("windowState", max ? "max" : "normal");
+    }
+
+    /** Where the previous window was, for a window rebuilt after a language or appearance change; null on start. */
     private Rectangle keptBounds;
     private int keptState = Frame.NORMAL;
     private String keptTab;
@@ -991,10 +1021,21 @@ public final class PatchbayLauncher {
         if (keptBounds != null) {
             frame.setBounds(keptBounds);
             if (keptState != Frame.NORMAL) frame.setExtendedState(keptState);
+        } else if (savedWindow() != null) {
+            frame.setBounds(savedWindow());
+            if ("max".equals(I18n.setting("windowState"))) frame.setExtendedState(Frame.MAXIMIZED_BOTH);
         } else {
             frame.setSize(startSize());
             frame.setLocationRelativeTo(null);
         }
+        frame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent e) { saveWindow(); }
+        });
+        frame.addComponentListener(new java.awt.event.ComponentAdapter() {
+            private void note() { if (frame.getExtendedState() == Frame.NORMAL) normalBounds = frame.getBounds(); }
+            @Override public void componentMoved(java.awt.event.ComponentEvent e) { note(); }
+            @Override public void componentResized(java.awt.event.ComponentEvent e) { note(); }
+        });
         refreshLocal();
         String tab = keptTab != null ? keptTab : System.getProperty("launcher.tab", currentVersion() == null ? "patchbay" : "mods");
         select(nav.containsKey(tab) ? tab : "patchbay");
