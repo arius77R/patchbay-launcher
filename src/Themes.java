@@ -470,7 +470,7 @@ final class Themes {
             @Override public int getColumnCount() { return columns.length; }
             @Override public String getColumnName(int c) { return columns[c]; }
             @Override public Class<?> getColumnClass(int c) { return c == 0 ? Boolean.class : String.class; }
-            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy && rows.get(r).rank() != 1; }
+            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy; }
             @Override public void setValueAt(Object v, int r, int c) {
                 if (c != 0) return;
                 if (Boolean.TRUE.equals(v)) checked.add(key(rows.get(r).item())); else checked.remove(key(rows.get(r).item()));
@@ -496,6 +496,7 @@ final class Themes {
         private final JPanel details = new Theme.Card(new BorderLayout(), Theme.FRAME);
         private final JButton checkAllButton = Theme.button(" ", "secondary");
         private final JButton installButton = Theme.button(" ", "primary");
+        private final JButton removeButton = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
         private final JButton folderButton = Theme.button(PatchbayLauncher.t("Pokaż folder", "Show folder"), "secondary");
         private final JButton refreshButton = Theme.button(PatchbayLauncher.t("Odśwież", "Refresh"), "secondary");
         private final JButton addFileButton = Theme.button(PatchbayLauncher.t("Dodaj plik…", "Add a file…"), "secondary");
@@ -532,11 +533,12 @@ final class Themes {
             left.add(status, BorderLayout.CENTER);
             left.add(bar, BorderLayout.SOUTH);
             JComponent body = Theme.split(Theme.row(8, addFileButton), checkAllButton, Theme.framed(table), null, refreshButton, details,
-                left, null, Theme.row(8, folderButton, installButton));
+                left, removeButton, Theme.row(8, folderButton, installButton));
             add(Theme.listPage(PatchbayLauncher.t("Motywy", "Themes"), subtitle, null, body, null, null), BorderLayout.CENTER);
 
             checkAllButton.addActionListener(e -> checkAll());
             installButton.addActionListener(e -> installChecked());
+            removeButton.addActionListener(e -> removeThemes(checkedRows()));
             refreshButton.addActionListener(e -> reload());
             addFileButton.setToolTipText(PatchbayLauncher.t("Dodaj motyw z pliku .bte na tym komputerze (tylko motywy dla Bitwiga 6)",
                 "Add a theme from a .bte file on this computer (themes for Bitwig 6 only)"));
@@ -591,7 +593,7 @@ final class Themes {
                     rows.clear();
                     rows.addAll(fresh);
                     Set<String> canTick = new HashSet<>();
-                    for (Row r : rows) if (r.rank() != 1) canTick.add(key(r.item()));
+                    for (Row r : rows) canTick.add(key(r.item()));
                     checked.retainAll(canTick);
                     model.fireTableDataChanged();
                     long have = rows.stream().filter(r -> r.rank() != 2).count();
@@ -629,12 +631,14 @@ final class Themes {
         private void refreshButtons() {
             boolean ready = !busy && components() != null;
             List<Row> tickable = checkable();
-            int ticked = checkedRows().size();
-            boolean allTicked = !tickable.isEmpty() && ticked == tickable.size();
+            List<Row> ticked = checkedRows();
+            int toInstall = (int) ticked.stream().filter(r -> r.rank() != 1).count();
+            boolean allTicked = !tickable.isEmpty() && tickable.stream().allMatch(r -> checked.contains(key(r.item())));
             checkAllButton.setText(allTicked ? PatchbayLauncher.t("Odznacz wszystkie", "Untick all") : PatchbayLauncher.t("Zaznacz wszystkie", "Tick all"));
             checkAllButton.setEnabled(ready && !tickable.isEmpty());
-            installButton.setText(PatchbayLauncher.t("Zainstaluj zaznaczone (", "Install ticked (") + ticked + ")");
-            installButton.setEnabled(ready && ticked > 0);
+            installButton.setText(PatchbayLauncher.t("Zainstaluj zaznaczone (", "Install ticked (") + toInstall + ")");
+            installButton.setEnabled(ready && toInstall > 0);
+            removeButton.setEnabled(ready && ticked.stream().anyMatch(r -> r.rank() != 2));
             folderButton.setEnabled(components() != null);
             addFileButton.setEnabled(ready);
             refreshButton.setEnabled(!busy);
@@ -707,9 +711,9 @@ final class Themes {
                     off.addActionListener(e -> turnOff());
                     south.add(off);
                 }
-                JButton delete = Theme.button(PatchbayLauncher.t("Usuń", "Remove"), "danger");
+                JButton delete = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
                 delete.setEnabled(!busy);
-                delete.addActionListener(e -> removeTheme(item, components, row.active()));
+                delete.addActionListener(e -> removeThemes(List.of(row)));
                 south.add(delete);
             }
             if (!item.isLocal()) {
@@ -800,16 +804,27 @@ final class Themes {
             rebuild();
         }
 
-        private void removeTheme(Item item, Path components, boolean active) {
-            int answer = JOptionPane.showConfirmDialog(this,
-                PatchbayLauncher.t("Usunąć motyw „", "Remove the theme \"") + item.name() + PatchbayLauncher.t("” z Patchbay?", "\" from Patchbay?"),
-                "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-            if (answer != JOptionPane.OK_OPTION) return;
+        /** Deletes installed themes from Patchbay; when the active one goes, themes are turned off. */
+        private void removeThemes(List<Row> chosen) {
+            Path components = components();
+            List<Row> mine = chosen.stream().filter(r -> r.rank() != 2).toList();
+            if (mine.isEmpty() || components == null) return;
+            List<String> names = mine.stream().map(r -> r.item().name()).limit(8).toList();
+            String named = mine.size() == 1 ? names.get(0)
+                : mine.size() + PatchbayLauncher.t(" motywów: ", " themes: ") + String.join(", ", names) + (mine.size() > 8 ? ", …" : "");
+            String question = PatchbayLauncher.t("Odinstalować ", "Uninstall ") + named + "?\n\n"
+                + PatchbayLauncher.t("Pliki zostaną usunięte z Patchbay. Żeby przywrócić motyw, trzeba go zainstalować ponownie.",
+                    "The files are deleted from Patchbay. To bring a theme back, install it again.");
+            String remove = PatchbayLauncher.t("Odinstaluj", "Uninstall"), cancel = PatchbayLauncher.t("Anuluj", "Cancel");
+            if (JOptionPane.showOptionDialog(this, question, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                    null, new String[] { remove, cancel }, cancel) != 0) return;
+            boolean active = mine.stream().anyMatch(Row::active);
             if (active && !patchbayClosed()) return;
             try {
-                Themes.remove(target(components, item));
+                for (Row r : mine) Themes.remove(target(components, r.item()));
+                for (Row r : mine) checked.remove(key(r.item()));
                 if (active) Themes.choose(null);
-                status.setText(PatchbayLauncher.t("Usunięto: ", "Removed: ") + item.name());
+                status.setText(PatchbayLauncher.t("Odinstalowano: ", "Uninstalled: ") + named);
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
             }
@@ -847,7 +862,7 @@ final class Themes {
         }
 
         private void installChecked() {
-            List<Item> picks = checkedRows().stream().map(Row::item).toList();
+            List<Item> picks = checkedRows().stream().filter(r -> r.rank() != 1).map(Row::item).toList();
             Path components = components();
             if (picks.isEmpty() || components == null) return;
             setBusy(true, "");

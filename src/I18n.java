@@ -207,6 +207,8 @@ final class I18n {
         add("Switched-on mods that need them and will stop working: ", "Eingeschaltete Mods, die sie brauchen und nicht mehr funktionieren: ", "Mods activés qui en ont besoin et cesseront de fonctionner : ");
         add(" mods: ", " Mods: ", " mods : ");
         add(" devices: ", " Geräte: ", " appareils : ");
+        add(" themes: ", " Themes: ", " thèmes : ");
+        add("The files are deleted from Patchbay. To bring a theme back, install it again.", "Die Dateien werden aus Patchbay gelöscht. Um ein Theme zurückzuholen, installiere es erneut.", "Les fichiers sont supprimés de Patchbay. Pour récupérer un thème, réinstallez-le.");
         add("Switch off ", "Ausschalten: ", "Désactiver ");
         add("Switched on: ", "Eingeschaltet: ", "Activé : ");
         add("Switched off: ", "Ausgeschaltet: ", "Désactivé : ");
@@ -366,16 +368,12 @@ final class I18n {
             "Après un changement de thème, relancez Bitwig depuis Patchbay (Load).");
         add("Use this theme", "Dieses Theme verwenden", "Utiliser ce thème");
         add("Turn themes off", "Themes ausschalten", "Désactiver les thèmes");
-        add("Remove", "Entfernen", "Supprimer");
         add("Close the Patchbay window, then try again.", "Schließe das Patchbay-Fenster und versuche es erneut.", "Fermez la fenêtre Patchbay, puis réessayez.");
         add("Theme set: \"", "Theme gesetzt: „", "Thème choisi : « ");
         add("\". Start Patchbay and click Load.", "“. Starte Patchbay und klicke auf Load.", " ». Lancez Patchbay et cliquez sur Load.");
         add("Themes are off. Bitwig gets its own colours back at the next start.",
             "Themes sind aus. Bitwig bekommt beim nächsten Start seine eigenen Farben zurück.",
             "Les thèmes sont désactivés. Bitwig retrouve ses couleurs au prochain démarrage.");
-        add("Remove the theme \"", "Das Theme „", "Supprimer le thème « ");
-        add("\" from Patchbay?", "“ aus Patchbay entfernen?", " » de Patchbay ?");
-        add("Removed: ", "Entfernt: ", "Supprimé : ");
         add("Installed. Click \"Use this theme\" to turn it on.",
             "Installiert. Klicke auf „Dieses Theme verwenden“, um es einzuschalten.",
             "Installé. Cliquez sur « Utiliser ce thème » pour l'activer.");
