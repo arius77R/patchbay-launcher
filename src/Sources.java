@@ -420,7 +420,7 @@ final class Sources {
         private final JPanel foundList = new JPanel();
         private final JPanel recommended = new JPanel();
         private JComponent listActions;
-        /** Refresh, beside the lists from GitHub (Lista źródeł, Polecane): asks GitHub again. */
+        /** Refresh, on every tab: asks GitHub again about the sources and the lists. */
         private JButton refreshOnline;
         /** "active", "found" or "recommended": the tab on view. */
         private String view = "active";
@@ -547,8 +547,12 @@ final class Sources {
             if (view.equals("recommended") && isShowing()) markSeen(); else countUnseen();
         }
 
-        /** Refresh: the author's list, the topic search and the repositories' cards, from GitHub again. */
+        /**
+         * Refresh: the active sources (Patchbay, mods, devices, themes, so a repository that is gone or back shows),
+         * the author's list, the topic search and the repositories' cards, from GitHub again.
+         */
         private void refreshOnline() {
+            changed.run();
             infos.clear();
             counts.clear();
             listed = null;
@@ -572,7 +576,6 @@ final class Sources {
             recommendedTab.repaint();
             views.show(viewCards, which);
             listActions.setVisible(which.equals("active"));
-            refreshOnline.setVisible(!which.equals("active"));
             if (which.equals("recommended")) markSeen();
         }
 

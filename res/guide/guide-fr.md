@@ -49,7 +49,7 @@ Les sources sont les dépôts GitHub d'où le lanceur récupère Patchbay, les m
 | Recommandées | Les dépôts de la liste arius77R/bitwig-mods-list que vous n'avez pas encore. Le nombre rouge compte les nouveaux. | Cliquer sur un dépôt et l'ajouter aux actives. |
 
 - **Fiche d'un dépôt :** un clic montre l'auteur, la description, ce qu'il contient (par ex. « Mods : 7 »), la dernière modification, la licence et les étoiles. « Ajouter aux actives » fonctionne quand il y a quelque chose à récupérer. « Page du dépôt » l'ouvre sur GitHub.
-- **Actualiser :** dans Liste des sources et Recommandées, tout est repris depuis GitHub. Un changement de la liste peut mettre quelques minutes à apparaître.
+- **Actualiser :** sur chaque onglet, les sources, la liste des recommandations et la recherche par sujet sont reprises depuis GitHub, et le lanceur vérifie que les dépôts existent toujours. Un changement de la liste peut mettre quelques minutes à apparaître.
 - **n'existe pas :** un badge rouge à côté d'une source dans Actives quand son dépôt a été supprimé, rendu privé ou renommé. La source ne disparaît pas d'elle-même. « Modifier » propose « Page de l'auteur » et « Supprimer la source ».
 
 GitHub autorise 60 requêtes par heure depuis une même adresse. Quand elles sont épuisées, le lanceur montre ce qu'il a obtenu en dernier et ne marque rien comme supprimé.

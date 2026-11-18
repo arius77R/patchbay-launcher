@@ -49,7 +49,7 @@ Zmiany wymagają zamkniętego Bitwiga.
 | Polecane | Repozytoria z listy arius77R/bitwig-mods-list, których jeszcze nie masz. Czerwona liczba to nowe. | Kliknąć repozytorium i dodać je do aktywnych. |
 
 - **Karta repozytorium:** po kliknięciu widzisz autora, opis, co zawiera (np. „Mody: 7”), ostatnią zmianę, licencję i gwiazdki. „Dodaj do aktywnych” działa, gdy jest co pobrać. „Strona repozytorium” otwiera je na GitHubie.
-- **Odśwież:** w Liście źródeł i Polecanych pobiera wszystko z GitHuba od nowa. Zmiana na liście może pojawić się po kilku minutach.
+- **Odśwież:** na każdej zakładce pobiera z GitHuba od nowa źródła, listę polecanych i wyszukiwanie po tematach, i sprawdza, czy repozytoria nadal istnieją. Zmiana na liście może pojawić się po kilku minutach.
 - **nie istnieje:** czerwona plakietka przy źródle w Aktywnych, gdy jego repozytorium usunięto, ukryto albo zmieniło nazwę. Źródło nie znika samo. W „Edytuj” jest „Strona autora” i „Usuń źródło”.
 
 GitHub pozwala na 60 zapytań na godzinę z jednego adresu. Gdy limit się skończy, Launcher pokazuje ostatnio pobrane dane i niczego nie oznacza jako usuniętego.

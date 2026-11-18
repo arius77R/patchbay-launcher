@@ -49,7 +49,7 @@ Sources are the GitHub repositories the launcher gets Patchbay, mods, devices an
 | Recommended | Repositories from the list arius77R/bitwig-mods-list that you don't have yet. The red number counts the new ones. | Click a repository and add it to the active ones. |
 
 - **Repository card:** a click shows the author, the description, what it holds (e.g. "Mods: 7"), the last change, the licence and stars. "Add to active" works when there is something to get. "Repository page" opens it on GitHub.
-- **Refresh:** in Source list and Recommended, gets everything from GitHub again. A change to the list can take a few minutes to show.
+- **Refresh:** on every tab, gets the sources, the recommended list and the topic search from GitHub again, and checks that the repositories still exist. A change to the list can take a few minutes to show.
 - **doesn't exist:** a red badge beside a source in Active when its repository was deleted, made private or renamed. The source doesn't go by itself. "Edit" has "Author's page" and "Remove source".
 
 GitHub allows 60 requests an hour from one address. When they run out, the launcher shows what it got last and marks nothing as removed.

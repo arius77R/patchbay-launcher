@@ -49,7 +49,7 @@ Quellen sind die GitHub-Repositorys, aus denen der Launcher Patchbay, Mods, Ger�
 | Empfohlen | Repositorys aus der Liste arius77R/bitwig-mods-list, die du noch nicht hast. Die rote Zahl zählt die neuen. | Ein Repository anklicken und zu den aktiven hinzufügen. |
 
 - **Karte eines Repositorys:** Ein Klick zeigt Autor, Beschreibung, Inhalt (z. B. „Mods: 7“), letzte Änderung, Lizenz und Sterne. „Zu den aktiven hinzufügen“ geht, wenn es etwas zu laden gibt. „Repository-Seite“ öffnet es auf GitHub.
-- **Neu laden:** In Quellenliste und Empfohlen wird alles neu von GitHub geholt. Eine Änderung an der Liste kann ein paar Minuten brauchen, bis sie erscheint.
+- **Neu laden:** Auf jedem Reiter werden die Quellen, die Liste der Empfehlungen und die Suche nach Themen neu von GitHub geholt, und es wird geprüft, ob die Repositorys noch existieren. Eine Änderung an der Liste kann ein paar Minuten brauchen, bis sie erscheint.
 - **existiert nicht:** ein rotes Abzeichen neben einer Quelle unter Aktiv, wenn ihr Repository gelöscht, privat gemacht oder umbenannt wurde. Die Quelle verschwindet nicht von selbst. „Bearbeiten“ hat „Seite des Autors“ und „Quelle entfernen“.
 
 GitHub erlaubt 60 Anfragen pro Stunde von einer Adresse. Sind sie aufgebraucht, zeigt der Launcher die zuletzt geladenen Daten und markiert nichts als entfernt.
