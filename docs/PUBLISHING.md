@@ -75,6 +75,13 @@ Repositories that don't follow these rules are not supported. The launcher does 
   | Arranger: Add Automation Points | `add-automation-points-1.1.0-dev.2.zip` |
   ```
 - **Bundles and installers** may sit in the release alongside the individual packages, not instead of them.
+- **So the launcher finds the repository:** on the repository's page click ⚙ next to **About** and add one topic under **Topics**:
+  - `patchbay-mod` for mods,
+  - `patchbay-devices` for devices (.bwdevice, .bwmodulator, Grid modules),
+  - `patchbay-themes` for themes (.bte).
+
+  The repository then shows up in Patchbay Launcher (from version 0.9.6) under Sources → "Source list". Everyone sees who made it and what it holds there, and adds it with one click. Only public repositories are shown, not archived ones and not forks.
+  You can also ask for the repository to be added to the list of recommended sources, [arius77R/bitwig-mods-list](https://github.com/arius77R/bitwig-mods-list), through its Issues or a pull request. Repositories on that list are marked "recommended" in the launcher.
 
 ## Checklist before a release
 
@@ -86,6 +93,7 @@ Repositories that don't follow these rules are not supported. The launcher does 
 - [ ] No `mod.id` repeats someone else's.
 - [ ] The release is published (not a draft) and the packages are in Assets.
 - [ ] The package can be added in Patchbay through Mods → Add Mod… and switched on with Load.
+- [ ] The repository has the topic `patchbay-mod` (or `patchbay-devices` / `patchbay-themes`).
 
 ## Ready-made prompt for an AI agent (Claude, Codex…)
 
