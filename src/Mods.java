@@ -318,7 +318,7 @@ final class Mods {
 
     /**
      * The mods a repository still holds: the ids with an <id>/mod.json on its default branch (PUBLISHING
-     * rule 3). Null when the repository's files can't be had: then every mod in its releases counts.
+     * rule 3). Null when the repository's files can't be had, or it has no such folder at all: then every mod in its releases counts.
      */
     static Set<String> modFolders(String repo, String offline) {
         try {
@@ -338,7 +338,7 @@ final class Mods {
                 if (path != null && path.endsWith("/mod.json") && path.indexOf('/') == path.length() - "/mod.json".length())
                     out.add(path.substring(0, path.indexOf('/')));
             }
-            return out;
+            return out.isEmpty() ? null : out; // keeps its mods' files elsewhere (src/, say): its folders say nothing about what was removed
         } catch (IOException | RuntimeException unknown) {
             return null;
         }

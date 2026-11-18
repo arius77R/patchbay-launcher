@@ -1623,6 +1623,11 @@ public final class PatchbayLauncher {
                     "Linux: menu entry quotes the script's path");
             }
             check(I18n.CODES.size() == 4 && I18n.needs("A", "b", "1.0", null).contains("b"), "four languages, requirement note built");
+            Path trees = Files.createTempDirectory("trees");
+            Files.writeString(trees.resolve("a_folders.tree.json"), "{\"tree\":[{\"path\":\"one/mod.json\"},{\"path\":\"src/two/mod.json\"}]}");
+            Files.writeString(trees.resolve("a_elsewhere.tree.json"), "{\"tree\":[{\"path\":\"src/two/mod.json\"},{\"path\":\"README.md\"}]}");
+            check(Set.of("one").equals(Mods.modFolders("a/folders", trees.toString())) && Mods.modFolders("a/elsewhere", trees.toString()) == null,
+                "a repository with no <id>/mod.json folders doesn't make its mods removed");
             if (args.length < 3) { System.out.println("SELFTEST_OK (logic only)"); return; }
 
             Path zip = Path.of(args[1]);
