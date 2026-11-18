@@ -177,9 +177,9 @@ final class I18n {
         add("What's new in ", "Neu in ", "Nouveautés de la version ");
         add("Version, what's new, new sources and system information", "Version, Neuerungen, neue Quellen und Systeminformationen", "Version, nouveautés, nouvelles sources et informations système");
         add("New sources", "Neue Quellen", "Nouvelles sources");
-        add("A new version is available: ", "Eine neue Version ist verfügbar: ", "Une nouvelle version est disponible : ");
-        add("You have the newest version.", "Du hast die neueste Version.", "Vous avez la version la plus récente.");
-        add("Couldn't check for a new version.", "Neue Version konnte nicht geprüft werden.", "Impossible de vérifier s'il existe une nouvelle version.");
+        add("a new version is available: ", "eine neue Version ist verfügbar: ", "une nouvelle version est disponible : ");
+        add("you have the newest version", "du hast die neueste Version", "vous avez la version la plus récente");
+        add("couldn't check for a new version", "neue Version konnte nicht geprüft werden", "impossible de vérifier s'il existe une nouvelle version");
         add("Copy", "Kopieren", "Copier");
         add("Copied", "Kopiert", "Copié");
         add("System information", "Systeminformationen", "Informations système");

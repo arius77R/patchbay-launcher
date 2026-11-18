@@ -463,7 +463,7 @@ public final class PatchbayLauncher {
         brand.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         brand.setToolTipText(t("Wersja, co nowego, nowe źródła i informacje o systemie", "Version, what's new, new sources and system information"));
         brand.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) { showLauncherWindow(); }
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) { showLauncherPage(); }
             @Override public void mouseEntered(java.awt.event.MouseEvent e) { name.setForeground(Theme.ACCENT); }
             @Override public void mouseExited(java.awt.event.MouseEvent e) { name.setForeground(Theme.TEXT); }
         });
@@ -968,6 +968,8 @@ public final class PatchbayLauncher {
         content.add(themesPanel, "themes");
         content.add(sourcesPanel, "sources");
         content.add(settingsPage(), "settings");
+        content.add(launcherPage, "launcher");
+        fillLauncherPage();
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(Theme.WELL);
         root.add(topBar(), BorderLayout.NORTH);
@@ -1191,7 +1193,7 @@ public final class PatchbayLauncher {
         launcherLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         launcherLink.setToolTipText(t("Co nowego i aktualizacja Launchera", "What's new, and updating the launcher"));
         launcherLink.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) { showLauncherWindow(); }
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) { showLauncherPage(); }
         });
         launcherLink.setVisible(false);
         newSourcesDot.setFont(Theme.text(9f));
@@ -1219,6 +1221,7 @@ public final class PatchbayLauncher {
 
     private void launcherChecked(SelfUpdate.Release r) {
         launcherLatest = r;
+        fillLauncherPage();
         if (!SelfUpdate.newer(r)) return;
         launcherLink.setText(t("Nowa wersja ", "New version ") + r.version());
         launcherLink.getAccessibleContext().setAccessibleName(t("Nowa wersja Patchbay Launcher: ", "New Patchbay Launcher version: ") + r.version());
@@ -1233,43 +1236,68 @@ public final class PatchbayLauncher {
     private void suggestionsLoaded(List<Sources.Suggestion> found) {
         suggestions = found;
         Set<String> seen = new HashSet<>(List.of(String.valueOf(I18n.setting("sourcesSeen")).split(",")));
-        newSourcesDot.setVisible(found.stream().anyMatch(s -> !seen.contains(s.repo())));
+        newSourcesDot.setVisible(!"launcher".equals(shownTab) && found.stream().anyMatch(s -> !seen.contains(s.repo())));
         newSourcesDot.getParent().revalidate();
+        if ("launcher".equals(shownTab)) markSourcesSeen();
+        fillLauncherPage();
+    }
+
+    private void markSourcesSeen() {
+        if (suggestions == null) return;
+        List<String> seen = new ArrayList<>();
+        for (Sources.Suggestion s : suggestions) seen.add(s.repo());
+        I18n.remember("sourcesSeen", String.join(",", seen));
+        newSourcesDot.setVisible(false);
+    }
+
+    /** The launcher's own page, opened from its name and version in the top bar (and from "New version"). */
+    private final JPanel launcherPage = new JPanel(new BorderLayout());
+    /** The update under way: the page is not rebuilt while it runs, so its progress stays on screen. */
+    private boolean launcherUpdating;
+
+    private void showLauncherPage() {
+        select("launcher");
+        markSourcesSeen();
+        fillLauncherPage();
     }
 
     /**
-     * Opened from the launcher's name and version in the top bar (and from "New version"): this version and
-     * whether a newer one is out, with Update; what's new; the recommended sources with Add; the system
-     * information for a report, with Copy.
+     * This version and whether a newer one is out, with Update and the release page; what's new; the
+     * recommended sources with Add; the system information for a report, with Copy. Rebuilt when what it
+     * shows arrives (the release, the sources) and each time it is opened (the system information).
      */
-    private void showLauncherWindow() {
+    private void fillLauncherPage() {
+        if (launcherUpdating) return;
         SelfUpdate.Release r = launcherLatest;
         boolean newer = SelfUpdate.newer(r);
-        JDialog d = new JDialog(frame, "Patchbay Launcher", true);
-        JPanel content = new JPanel(new BorderLayout(0, 14));
-        content.setBackground(Theme.FRAME);
-        content.setBorder(new EmptyBorder(18, 20, 16, 20));
+        JLabel state = newer ? Theme.label(VERSION + " · " + t("dostępna jest nowa wersja ", "a new version is available: ") + r.version(), Theme.mono(12f), Theme.ACCENT)
+            : Theme.label(VERSION + " · " + (r != null ? t("masz najnowszą wersję", "you have the newest version")
+                : t("nie udało się sprawdzić, czy jest nowa wersja", "couldn't check for a new version")), Theme.mono(12f), Theme.MUTED);
 
-        JPanel head = new JPanel(new GridLayout(2, 1, 0, 2));
-        head.setOpaque(false);
-        head.add(Theme.label("Patchbay Launcher " + VERSION, Theme.bold(15f), Theme.TEXT));
-        head.add(newer ? Theme.label(t("Dostępna jest nowa wersja ", "A new version is available: ") + r.version(), Theme.text(12f), Theme.ACCENT)
-            : Theme.label(r != null ? t("Masz najnowszą wersję.", "You have the newest version.")
-                : t("Nie udało się sprawdzić, czy jest nowa wersja.", "Couldn't check for a new version."), Theme.text(12f), Theme.MUTED));
-        content.add(head, BorderLayout.NORTH);
+        JButton page = Theme.button(t("Strona wydania", "Release page"), "secondary");
+        page.addActionListener(e -> browse(r != null && r.page() != null ? r.page() : PROJECT + "/releases"));
+        JComponent actions = Theme.row(8, page);
+        JLabel status = Theme.label(" ", Theme.text(12f), Theme.MUTED);
+        if (newer) {
+            JButton update = Theme.button(t("Aktualizuj", "Update"), "primary");
+            update.addActionListener(e -> updateLauncher(r, status, update));
+            actions = Theme.row(8, page, update);
+            status.setText(t("Launcher zamknie się na chwilę i uruchomi ponownie. Patchbay, mody i ustawienia zostają bez zmian.",
+                "The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are."));
+        }
 
-        JPanel body = new JPanel();
-        body.setOpaque(false);
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-        String about = newer ? r.version() : VERSION;
-        section(body, t("Co nowego w ", "What's new in ") + about, whatsNew(r != null && (newer || r.version().equals(VERSION)) ? r.notes() : null), 0);
-        section(body, t("Nowe źródła", "New sources"), suggestionList(), 14);
+        JPanel notes = new JPanel(new BorderLayout());
+        notes.setOpaque(false);
+        notes.add(whatsNew(r != null && (newer || r.version().equals(VERSION)) ? r.notes() : null), BorderLayout.CENTER);
+        JPanel left = section(Theme.label(t("Co nowego w ", "What's new in ") + (newer ? r.version() : VERSION), Theme.bold(13f), Theme.TEXT), null, notes);
+
         JTextArea info = new JTextArea("…");
         info.setFont(Theme.mono(11f));
         info.setEditable(false);
-        info.setBackground(Theme.WELL);
+        info.setOpaque(false);
         info.setForeground(Theme.TEXT);
-        info.setBorder(new EmptyBorder(8, 12, 8, 12));
+        info.setLineWrap(true);
+        info.setWrapStyleWord(true);
         JButton copy = Theme.button(t("Kopiuj", "Copy"), "secondary");
         copy.setEnabled(false);
         copy.addActionListener(e -> {
@@ -1278,75 +1306,32 @@ public final class PatchbayLauncher {
         });
         new Thread(() -> {
             String text = SystemInfo.text();
-            SwingUtilities.invokeLater(() -> { info.setText(text); copy.setEnabled(true); d.pack(); });
+            SwingUtilities.invokeLater(() -> { info.setText(text); copy.setEnabled(true); });
         }, "system-info").start();
-        JPanel infoBox = new JPanel(new BorderLayout(0, 6));
-        infoBox.setOpaque(false);
-        infoBox.add(edged(info), BorderLayout.CENTER);
-        infoBox.add(Theme.label(t("Wklej to do zgłoszenia problemu. Same wersje i nazwy, bez danych osobistych.",
-            "Paste this into a problem report. Versions and names only, nothing personal."), Theme.text(11f), Theme.MUTED), BorderLayout.SOUTH);
-        JPanel infoHead = new JPanel(new BorderLayout());
-        infoHead.setOpaque(false);
-        infoHead.add(Theme.label(t("Informacje o systemie", "System information"), Theme.bold(13f), Theme.TEXT), BorderLayout.WEST);
-        infoHead.add(copy, BorderLayout.EAST);
-        infoHead.setAlignmentX(Component.LEFT_ALIGNMENT);
-        infoBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        body.add(Box.createVerticalStrut(14));
-        body.add(infoHead);
-        body.add(Box.createVerticalStrut(6));
-        body.add(infoBox);
-        content.add(body, BorderLayout.CENTER);
+        JPanel infoBody = new JPanel(new BorderLayout(0, 8));
+        infoBody.setOpaque(false);
+        infoBody.add(info, BorderLayout.CENTER);
+        infoBody.add(Theme.wrapped(t("Wklej to do zgłoszenia problemu. Same wersje i nazwy, bez danych osobistych.",
+            "Paste this into a problem report. Versions and names only, nothing personal."), 380, Theme.MUTED, 12f), BorderLayout.SOUTH);
 
-        JLabel status = Theme.label(t("Launcher zamknie się na chwilę i uruchomi ponownie. Patchbay, mody i ustawienia zostają bez zmian.",
-            "The launcher closes for a moment and starts again. Patchbay, mods and settings stay as they are."), Theme.text(12f), Theme.MUTED);
-        JButton close = Theme.button(t("Zamknij", "Close"), "secondary");
-        close.addActionListener(e -> d.dispose());
-        JPanel right = Theme.row(8, close);
-        if (newer) {
-            JButton update = Theme.button(t("Aktualizuj", "Update"), "primary");
-            update.addActionListener(e -> updateLauncher(r, d, status, update, close));
-            right = Theme.row(8, close, update);
-        }
-        JButton page = Theme.button(t("Strona wydania", "Release page"), "secondary");
-        page.addActionListener(e -> browse(r != null && r.page() != null ? r.page() : PROJECT + "/releases"));
-        JPanel foot = new JPanel(new BorderLayout(0, 10));
-        foot.setOpaque(false);
-        if (newer) foot.add(status, BorderLayout.NORTH);
-        JPanel buttons = new JPanel(new BorderLayout());
-        buttons.setOpaque(false);
-        buttons.add(page, BorderLayout.WEST);
-        buttons.add(right, BorderLayout.EAST);
-        foot.add(buttons, BorderLayout.SOUTH);
-        content.add(foot, BorderLayout.SOUTH);
+        JPanel right = new JPanel();
+        right.setOpaque(false);
+        right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
+        right.add(section(Theme.label(t("Nowe źródła", "New sources"), Theme.bold(13f), Theme.TEXT), null, suggestionList()));
+        right.add(Box.createVerticalStrut(12));
+        right.add(section(Theme.label(t("Informacje o systemie", "System information"), Theme.bold(13f), Theme.TEXT), copy, infoBody));
+        JPanel rightTop = new JPanel(new BorderLayout());
+        rightTop.setOpaque(false);
+        rightTop.add(right, BorderLayout.NORTH);
 
-        if (suggestions != null) {
-            List<String> seen = new ArrayList<>();
-            for (Sources.Suggestion s : suggestions) seen.add(s.repo());
-            I18n.remember("sourcesSeen", String.join(",", seen));
-            newSourcesDot.setVisible(false);
-        }
-        d.setContentPane(content);
-        d.getRootPane().setDefaultButton(null);
-        d.pack();
-        d.setLocationRelativeTo(frame);
-        d.setVisible(true);
-    }
-
-    private static void section(JPanel body, String title, JComponent part, int gapBefore) {
-        JLabel head = Theme.label(title, Theme.bold(13f), Theme.TEXT);
-        head.setAlignmentX(Component.LEFT_ALIGNMENT);
-        part.setAlignmentX(Component.LEFT_ALIGNMENT);
-        body.add(Box.createVerticalStrut(gapBefore));
-        body.add(head);
-        body.add(Box.createVerticalStrut(6));
-        body.add(part);
-    }
-
-    private static JComponent edged(JComponent c) {
-        JPanel box = new JPanel(new BorderLayout());
-        box.setBorder(BorderFactory.createLineBorder(Theme.EDGE));
-        box.add(c);
-        return box;
+        JPanel body = new JPanel(new GridLayout(1, 2, 12, 0));
+        body.setOpaque(false);
+        body.add(left);
+        body.add(rightTop);
+        launcherPage.removeAll();
+        launcherPage.add(Theme.page("Patchbay Launcher", state, actions, body, status, null), BorderLayout.CENTER);
+        launcherPage.revalidate();
+        launcherPage.repaint();
     }
 
     /** The release's "What's new" section, or a line pointing to the release page. */
@@ -1358,13 +1343,13 @@ public final class PatchbayLauncher {
         text.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         text.setFont(Theme.text(13f));
         text.setEditable(false);
-        text.setBackground(Theme.WELL);
-        text.setBorder(new EmptyBorder(6, 12, 6, 12));
+        text.setOpaque(false);
         text.setCaretPosition(0);
         JScrollPane scroll = new JScrollPane(text, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setBorder(BorderFactory.createLineBorder(Theme.EDGE));
-        scroll.setPreferredSize(new Dimension(560, 180));
-        scroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
         return scroll;
     }
 
@@ -1402,7 +1387,7 @@ public final class PatchbayLauncher {
     }
 
     /** Downloads the new launcher, then quits; a script swaps it in and starts it again. A copy that can't update itself opens the release page. */
-    private void updateLauncher(SelfUpdate.Release r, JDialog d, JLabel status, JButton update, JButton close) {
+    private void updateLauncher(SelfUpdate.Release r, JLabel status, JButton update) {
         Path root = SelfUpdate.installRoot();
         if (root == null) {
             status.setText(t("Ta kopia nie może się zaktualizować sama: pobierz nową wersję ze strony wydania.",
@@ -1410,9 +1395,8 @@ public final class PatchbayLauncher {
             browse(r.page() != null ? r.page() : PROJECT + "/releases");
             return;
         }
+        launcherUpdating = true;
         update.setEnabled(false);
-        close.setEnabled(false);
-        d.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         new Thread(() -> {
             try {
                 SelfUpdate.prepare(r, root, line -> SwingUtilities.invokeLater(() -> status.setText(line)));
@@ -1424,11 +1408,10 @@ public final class PatchbayLauncher {
                 });
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> {
+                    launcherUpdating = false;
                     update.setEnabled(true);
-                    close.setEnabled(true);
-                    d.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
                     status.setText(" ");
-                    JOptionPane.showMessageDialog(d, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(frame, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
                 });
             }
         }, "launcher-self-update").start();
