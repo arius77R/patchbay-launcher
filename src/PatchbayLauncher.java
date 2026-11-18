@@ -1633,6 +1633,7 @@ public final class PatchbayLauncher {
             check(installedVersions().get(0).equals(version), "newest listed first");
             if (args.length >= 4) modsTest(Path.of(args[3]), folderOf(version).resolve("mods"));
             if (args.length >= 4) devicesTest(Path.of(args[3]));
+            switchOffTest(folderOf(version).resolve("mods"));
             if (args.length >= 4 && Files.isRegularFile(Path.of(args[3], "csabacsaba_bw6themes.tree.json"))) themesTest(Path.of(args[3]));
             sourcesTest();
             selfUpdateTest();
@@ -1689,6 +1690,17 @@ public final class PatchbayLauncher {
             check(folders.equals(List.of("/Users/x/My devices", Devices.folderOf(normalizer).toAbsolutePath().normalize().toString())), "user's folder kept, other build replaced by the chosen one");
             check(written.containsKey("registrations") && Files.readString(list).contains("\"schema_version\": 1,"), "other keys kept, whole numbers stay whole");
             check(!Devices.register(wanted), "registering again changes nothing");
+
+            Devices.setOn(normalizer, false);
+            check(Devices.rank(normalizer) == 3 && !Files.exists(Devices.folderOf(normalizer).resolve("Normalizer.bwdevice")), "switched off: file renamed, shown as off");
+            Devices.setOn(normalizer, true);
+            check(Devices.rank(normalizer) == 0, "switched on again: the same file back");
+            Devices.download(normalizer, (i, target) -> Files.copy(sample, target));
+            Devices.setOn(normalizer, false);
+            Devices.download(normalizer, (i, target) -> Files.copy(sample, target));
+            check(Devices.rank(normalizer) == 1 && !Files.exists(Devices.offFile(normalizer)), "downloading a switched-off device switches it on");
+            Devices.remove(normalizer);
+            check(Devices.rank(normalizer) == 2 && !Files.exists(Devices.folderOf(normalizer)), "uninstalled: file and empty folder gone");
         }
 
         static void themesTest(Path fixtures) throws Exception {
@@ -1852,6 +1864,28 @@ public final class PatchbayLauncher {
             check(Sources.enabled(Sources.DEVICES).isEmpty() && Sources.enabled(Sources.MODS).stream().anyMatch(x -> x.repo().equals("me/bitwig-mods-fork")), "sections follow the changes");
             Sources.save(Sources.BUILTIN);
             check(Sources.all().equals(Sources.BUILTIN) && Sources.removedBuiltins().isEmpty(), "back to the built-in sources");
+        }
+
+        /** Switching mods off and on in Patchbay's list, the warning for mods others need, and uninstalling. */
+        static void switchOffTest(Path mods) throws Exception {
+            check(System.getProperty("launcher.bmlsettings") != null, "launcher.bmlsettings is set for the test");
+            Files.createDirectories(mods.resolve("needed-lib"));
+            Files.writeString(mods.resolve("needed-lib/mod.json"), "{\"mod\":{\"id\":\"needed-lib\",\"name\":\"Framework: Lib\",\"version\":\"1.0.0\"}}");
+            Files.createDirectories(mods.resolve("user-mod"));
+            Files.writeString(mods.resolve("user-mod/mod.json"), "{\"mod\":{\"id\":\"user-mod\",\"name\":\"Arranger: User\",\"version\":\"1.0.0\"},\"requires\":[{\"id\":\"needed-lib\"}]}");
+            Mods.setEnabled("needed-lib", true);
+            Mods.setEnabled("user-mod", true);
+            check(Mods.enabled("needed-lib") && Mods.enabled("user-mod"), "mods switched on in Patchbay's list");
+            check(Mods.neededBy("needed-lib", mods).equals(List.of("Arranger: User")), "a switched-on mod that needs it is named");
+            Mods.setEnabled("user-mod", false);
+            check(!Mods.enabled("user-mod") && Files.isRegularFile(mods.resolve("user-mod/mod.json")), "switched off: unticked, files kept");
+            check(Mods.neededBy("needed-lib", mods).isEmpty(), "a switched-off mod doesn't count as needing it");
+            Mods.uninstall("needed-lib", mods);
+            check(!Files.exists(mods.resolve("needed-lib")) && !Files.readString(Mods.enabledFile()).contains("needed-lib"), "uninstalled: folder and tick gone");
+            boolean refused = false;
+            try { Mods.uninstall("../x", mods); } catch (IOException e) { refused = true; }
+            check(refused, "an ID outside mods is refused");
+            Mods.uninstall("user-mod", mods);
         }
 
         static void modsTest(Path fixtures, Path mods) throws Exception {

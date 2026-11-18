@@ -424,9 +424,8 @@ final class Themes {
     }
 
     private static Path selectionFile() { return Devices.patchbaySettings().resolve("selected-components.properties"); }
-    private static Path enabledFile() { return Devices.patchbaySettings().resolve("enabled-mods.properties"); }
 
-    private static Properties load(Path file) {
+    static Properties load(Path file) {
         Properties p = new Properties();
         if (Files.isRegularFile(file)) {
             try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) { p.load(r); } catch (IOException ignored) { }
@@ -434,28 +433,28 @@ final class Themes {
         return p;
     }
 
-    private static void store(Path file, Properties p, String comment) throws IOException {
+    static void store(Path file, Properties p, String comment) throws IOException {
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) { p.store(w, comment); }
     }
 
     /** The theme ID chosen in Patchbay, when Framework: Themes is ticked; else null. */
     static String activeId() {
-        if (!"true".equals(load(enabledFile()).getProperty("mod." + FRAMEWORK_ID))) return null;
+        if (!"true".equals(load(Mods.enabledFile()).getProperty("mod." + FRAMEWORK_ID))) return null;
         String ids = load(selectionFile()).getProperty(SELECTION_KEY, "").trim();
         return ids.isEmpty() ? null : ids.split(",")[0];
     }
 
     /** Chooses a theme in Patchbay's settings and ticks Framework: Themes; id null unticks it. Patchbay must be closed. */
     static void choose(String id) throws IOException {
-        Properties enabled = load(enabledFile());
+        Properties enabled = load(Mods.enabledFile());
         enabled.setProperty("mod." + FRAMEWORK_ID, Boolean.toString(id != null));
         if (id != null) {
             Properties selection = load(selectionFile());
             selection.setProperty(SELECTION_KEY, id);
             store(selectionFile(), selection, "BML v3 requested component selections; never auto-substitute unavailable IDs.");
         }
-        store(enabledFile(), enabled, "BML enabled mods");
+        store(Mods.enabledFile(), enabled, "BML enabled mods");
     }
 
     // ---------- the section ----------

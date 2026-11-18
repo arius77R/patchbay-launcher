@@ -453,6 +453,43 @@ final class Mods {
         }
     }
 
+    // ---------- switching off and removing ----------
+
+    /** Patchbay's list of the mods ticked in its window: mod.<id>=true. */
+    static Path enabledFile() { return Devices.patchbaySettings().resolve("enabled-mods.properties"); }
+
+    static boolean enabled(String id) {
+        return "true".equals(Themes.load(enabledFile()).getProperty("mod." + id));
+    }
+
+    /** Ticks or unticks a mod the way Patchbay's own window does; the files stay. Patchbay must be closed. */
+    static void setEnabled(String id, boolean on) throws IOException {
+        Properties p = Themes.load(enabledFile());
+        p.setProperty("mod." + id, Boolean.toString(on));
+        Themes.store(enabledFile(), p, "BML enabled mods");
+    }
+
+    /** Deletes a mod's folder from mods/ and its tick from Patchbay's list. Patchbay must be closed. */
+    static void uninstall(String id, Path modsDir) throws IOException {
+        Path folder = modsDir.resolve(id).normalize();
+        if (!folder.startsWith(modsDir.normalize()) || folder.equals(modsDir.normalize())) throw new IOException("unsafe mod ID: " + id);
+        PatchbayLauncher.deleteTree(folder);
+        Properties p = Themes.load(enabledFile());
+        if (p.remove("mod." + id) != null) Themes.store(enabledFile(), p, "BML enabled mods");
+    }
+
+    /** The switched-on mods on disk that need this one: they stop working without it. */
+    static List<String> neededBy(String id, Path modsDir) {
+        List<String> out = new ArrayList<>();
+        Properties on = Themes.load(enabledFile());
+        for (Installed other : installed(modsDir).values()) {
+            if (other.id().equals(id) || !"true".equals(on.getProperty("mod." + other.id()))) continue;
+            Map<String, Object> manifest = readManifest(modsDir.resolve(other.id()).resolve("mod.json"));
+            if (manifest != null && requirements(manifest).stream().anyMatch(q -> q.id().equals(id))) out.add(other.name());
+        }
+        return out;
+    }
+
     record Requirement(String id, String minVersion) { }
 
     static List<Requirement> requirements(Map<String, Object> manifest) {
@@ -567,12 +604,15 @@ final class Mods {
                     case 4 -> row.available() == null ? "" : row.available().version();
                     default -> unavailable(row) ? "off|" + PatchbayLauncher.t("niezgodny", "incompatible") : switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
-                        case 1 -> "installed|" + PatchbayLauncher.t("zainstalowany", "installed");
+                        case 1 -> switchedOn.contains(row.id()) ? "installed|" + PatchbayLauncher.t("włączony", "on")
+                            : "off|" + PatchbayLauncher.t("wyłączony", "off");
                         default -> "new|" + PatchbayLauncher.t("nowy", "new");
                     };
                 };
             }
         };
+        /** IDs of the mods ticked in Patchbay's window, read again with the mods on disk. */
+        private final Set<String> switchedOn = new HashSet<>();
         private final JTable table = new JTable(model);
         private final JLabel subtitle = Theme.label(" ", Theme.text(14f), Theme.MUTED);
         private final JPanel details = new Theme.Card(new BorderLayout(), Theme.FRAME);
@@ -838,6 +878,19 @@ final class Mods {
                 });
                 south.add(anyway);
             }
+            if (row.installed() != null && modsDir() != null) {
+                boolean on = switchedOn.contains(row.id());
+                JButton toggle = Theme.button(on ? PatchbayLauncher.t("Wyłącz", "Switch off") : PatchbayLauncher.t("Włącz", "Switch on"), "secondary");
+                toggle.setToolTipText(on ? PatchbayLauncher.t("Patchbay nie załaduje moda; pliki zostają na dysku.", "Patchbay won't load the mod; its files stay on disk.")
+                    : PatchbayLauncher.t("Zaznacza mod w Patchbay, jak w jego oknie.", "Ticks the mod in Patchbay, as in its window."));
+                toggle.setEnabled(!busy);
+                toggle.addActionListener(e -> switchMod(row, !on));
+                JButton remove = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
+                remove.setEnabled(!busy);
+                remove.addActionListener(e -> uninstallMod(row));
+                south.add(toggle);
+                south.add(remove);
+            }
             if (row.available() != null && row.available().page() != null) {
                 JButton page = Theme.button(PatchbayLauncher.t("Strona wydania", "Release page"), "secondary");
                 String url = row.available().page();
@@ -915,6 +968,8 @@ final class Mods {
             Map<String, Installed> have = installed(modsDir());
             onDisk.clear();
             onDisk.putAll(have);
+            switchedOn.clear();
+            for (String id : have.keySet()) if (enabled(id)) switchedOn.add(id);
             all.clear();
             for (Available a : catalog.values()) {
                 Installed i = have.get(a.id());
@@ -1036,17 +1091,63 @@ final class Mods {
             refreshButtons();
         }
 
+        /** True when Bitwig and Patchbay are closed; says so otherwise. Patchbay rewrites its mod list and holds the files while it runs. */
+        private boolean patchbayClosed() {
+            if (!PatchbayLauncher.bitwigRunning() && !PatchbayLauncher.patchbayRunning()) return true;
+            JOptionPane.showMessageDialog(this,
+                PatchbayLauncher.t("Zamknij Bitwig Studio i okno Patchbay, a potem spróbuj ponownie.",
+                    "Quit Bitwig Studio and the Patchbay window, then try again."),
+                "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+
+        /** The warning for switching off or removing a mod others need; "" when none do. */
+        private String neededWarning(Row row) {
+            List<String> users = neededBy(row.id(), modsDir());
+            return users.isEmpty() ? "" : "\n\n" + PatchbayLauncher.t("Potrzebują go włączone mody, które przestaną działać: ",
+                "Switched-on mods that need it and will stop working: ") + String.join(", ", users);
+        }
+
+        private void switchMod(Row row, boolean on) {
+            if (!patchbayClosed()) return;
+            if (!on) {
+                String warning = neededWarning(row);
+                if (!warning.isEmpty() && JOptionPane.showConfirmDialog(this, PatchbayLauncher.t("Wyłączyć ", "Switch off ") + nameOf(row) + "?" + warning,
+                        "Patchbay Launcher", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) return;
+            }
+            try {
+                Mods.setEnabled(row.id(), on);
+                rebuild();
+                status.setText(on ? PatchbayLauncher.t("Włączono: ", "Switched on: ") + nameOf(row) : PatchbayLauncher.t("Wyłączono: ", "Switched off: ") + nameOf(row));
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        private void uninstallMod(Row row) {
+            if (!patchbayClosed()) return;
+            String question = PatchbayLauncher.t("Odinstalować ", "Uninstall ") + nameOf(row) + "?\n\n"
+                + PatchbayLauncher.t("Pliki moda zostaną usunięte z dysku. Żeby go przywrócić, trzeba go zainstalować ponownie. Żeby tylko go nie ładować, wybierz Wyłącz.",
+                    "The mod's files are deleted from disk. To bring it back, install it again. To only stop loading it, choose Switch off.")
+                + neededWarning(row);
+            String remove = PatchbayLauncher.t("Odinstaluj", "Uninstall"), cancel = PatchbayLauncher.t("Anuluj", "Cancel");
+            if (JOptionPane.showOptionDialog(this, question, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                    null, new String[] { remove, cancel }, cancel) != 0) return;
+            try {
+                uninstall(row.id(), modsDir());
+                rebuild();
+                status.setText(PatchbayLauncher.t("Odinstalowano: ", "Uninstalled: ") + nameOf(row));
+            } catch (IOException ex) {
+                rebuild();
+                JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
         private void installRows(List<Row> chosen) {
             List<Available> picks = chosen.stream().filter(r -> r.rank() != 1 && r.available() != null).map(Row::available).toList();
             Path mods = modsDir();
             if (picks.isEmpty() || mods == null) return;
-            if (PatchbayLauncher.bitwigRunning() || PatchbayLauncher.patchbayRunning()) {
-                JOptionPane.showMessageDialog(this,
-                    PatchbayLauncher.t("Zamknij Bitwig Studio i okno Patchbay, a potem spróbuj ponownie.",
-                        "Quit Bitwig Studio and the Patchbay window, then try again."),
-                    "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            if (!patchbayClosed()) return;
             setBusy(true, "");
             new Thread(() -> {
                 try {

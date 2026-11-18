@@ -177,14 +177,37 @@ final class Devices {
         }
     }
 
-    /** 2 = not downloaded, 0 = downloaded but the repository has another version, 1 = up to date. */
+    /** A switched-off device keeps its file under this extra ending, so Bitwig doesn't take it for a device. */
+    static final String OFF = ".off";
+
+    /** 2 = not downloaded, 0 = downloaded but the repository has another version, 1 = up to date, 3 = switched off. */
     static int rank(Item item) {
         Path file = folderOf(item).resolve(item.fileName());
-        if (!Files.isRegularFile(file)) return 2;
+        if (!Files.isRegularFile(file)) return Files.isRegularFile(offFile(item)) ? 3 : 2;
         try {
             return gitBlobSha(file).equals(item.sha()) ? 1 : 0;
         } catch (IOException e) {
             return 0;
+        }
+    }
+
+    static Path offFile(Item item) { return folderOf(item).resolve(item.fileName() + OFF); }
+
+    /** Switches a downloaded device off (its file renamed, so Bitwig skips it) or back on. */
+    static void setOn(Item item, boolean on) throws IOException {
+        Path file = folderOf(item).resolve(item.fileName()), off = offFile(item);
+        if (on) Files.move(off, file, StandardCopyOption.REPLACE_EXISTING);
+        else Files.move(file, off, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    /** Deletes a device's file (switched on or off); an emptied folder goes too. */
+    static void remove(Item item) throws IOException {
+        Files.deleteIfExists(folderOf(item).resolve(item.fileName()));
+        Files.deleteIfExists(offFile(item));
+        try (var left = Files.list(folderOf(item))) {
+            if (left.findAny().isEmpty()) Files.delete(folderOf(item));
+        } catch (NoSuchFileException gone) {
+            // nothing left to tidy
         }
     }
 
@@ -202,6 +225,7 @@ final class Devices {
                     "plik różni się od wersji z listy. Kliknij Odśwież i spróbuj ponownie.",
                     "the file differs from the listed version. Click Refresh and try again."));
             Files.move(temp, folder.resolve(item.fileName()), StandardCopyOption.REPLACE_EXISTING);
+            Files.deleteIfExists(offFile(item));
         } finally {
             Files.deleteIfExists(temp);
         }
@@ -277,7 +301,7 @@ final class Devices {
             @Override public int getColumnCount() { return columns.length; }
             @Override public String getColumnName(int c) { return columns[c]; }
             @Override public Class<?> getColumnClass(int c) { return c == 0 ? Boolean.class : String.class; }
-            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy && rows.get(r).rank() != 1; }
+            @Override public boolean isCellEditable(int r, int c) { return c == 0 && !busy && tickable(rows.get(r)); }
             @Override public void setValueAt(Object v, int r, int c) {
                 if (c != 0) return;
                 if (Boolean.TRUE.equals(v)) checked.add(key(rows.get(r).item())); else checked.remove(key(rows.get(r).item()));
@@ -293,6 +317,7 @@ final class Devices {
                     default -> switch (row.rank()) {
                         case 0 -> "update|" + PatchbayLauncher.t("aktualizacja", "update");
                         case 1 -> "installed|" + PatchbayLauncher.t("pobrane", "downloaded");
+                        case 3 -> "off|" + PatchbayLauncher.t("wyłączone", "off");
                         default -> "new|" + PatchbayLauncher.t("nowe", "new");
                     };
                 };
@@ -438,7 +463,7 @@ final class Devices {
                     rows.addAll(fresh);
                     categories.reset(items.stream().map(Item::type));
                     Set<String> canTick = new HashSet<>();
-                    for (Row r : rows) if (r.rank() != 1) canTick.add(key(r.item()));
+                    for (Row r : rows) if (tickable(r)) canTick.add(key(r.item()));
                     checked.retainAll(canTick);
                     model.fireTableDataChanged();
                     long have = rows.stream().filter(r -> r.rank() != 2).count();
@@ -456,7 +481,9 @@ final class Devices {
             }, "devices-rows").start();
         }
 
-        private List<Row> checkable() { return rows.stream().filter(r -> r.rank() != 1).toList(); }
+        /** Rows that can be ticked for Download: new ones and ones with another version (not up to date or switched off). */
+        private static boolean tickable(Row r) { return r.rank() == 0 || r.rank() == 2; }
+        private List<Row> checkable() { return rows.stream().filter(Panel::tickable).toList(); }
         private List<Row> checkedRows() { return rows.stream().filter(r -> checked.contains(key(r.item()))).toList(); }
 
         private void checkAll() {
@@ -534,7 +561,25 @@ final class Devices {
             page.addActionListener(e -> {
                 Platform.open("https://github.com/" + item.repo());
             });
-            details.add(page, BorderLayout.SOUTH);
+            JPanel south = new JPanel(new GridLayout(0, 1, 0, 8));
+            south.setOpaque(false);
+            south.setBorder(new EmptyBorder(12, 0, 0, 0));
+            int rank = rows.get(r).rank();
+            if (rank != 2) {
+                boolean on = rank != 3;
+                JButton toggle = Theme.button(on ? PatchbayLauncher.t("Wyłącz", "Switch off") : PatchbayLauncher.t("Włącz", "Switch on"), "secondary");
+                toggle.setToolTipText(on ? PatchbayLauncher.t("Bitwig nie pokaże urządzenia; plik zostaje na dysku.", "Bitwig won't show the device; its file stays on disk.")
+                    : PatchbayLauncher.t("Bitwig znów pokaże urządzenie.", "Bitwig shows the device again."));
+                toggle.setEnabled(!busy);
+                toggle.addActionListener(e -> switchDevice(item, !on));
+                JButton remove = Theme.button(PatchbayLauncher.t("Odinstaluj", "Uninstall"), "danger");
+                remove.setEnabled(!busy);
+                remove.addActionListener(e -> removeDevice(item));
+                south.add(toggle);
+                south.add(remove);
+            }
+            south.add(page);
+            details.add(south, BorderLayout.SOUTH);
             details.revalidate();
             details.repaint();
 
@@ -574,15 +619,48 @@ final class Devices {
             }
         }
 
+        /** True when Bitwig is closed; says so otherwise, since Bitwig holds the device files while it runs. */
+        private boolean bitwigClosed() {
+            if (!PatchbayLauncher.bitwigRunning()) return true;
+            JOptionPane.showMessageDialog(this,
+                PatchbayLauncher.t("Zamknij Bitwig Studio, a potem spróbuj ponownie.", "Quit Bitwig Studio, then try again."),
+                "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+
+        private void switchDevice(Item item, boolean on) {
+            if (!bitwigClosed()) return;
+            try {
+                setOn(item, on);
+                status.setText(on ? PatchbayLauncher.t("Włączono: ", "Switched on: ") + item.name() : PatchbayLauncher.t("Wyłączono: ", "Switched off: ") + item.name());
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+            }
+            rebuild();
+        }
+
+        private void removeDevice(Item item) {
+            if (!bitwigClosed()) return;
+            String question = PatchbayLauncher.t("Odinstalować ", "Uninstall ") + item.name() + "?\n\n"
+                + PatchbayLauncher.t("Plik urządzenia zostanie usunięty z dysku. Żeby go przywrócić, trzeba go pobrać ponownie. Żeby tylko go nie pokazywać, wybierz Wyłącz.",
+                    "The device's file is deleted from disk. To bring it back, download it again. To only hide it, choose Switch off.");
+            String remove = PatchbayLauncher.t("Odinstaluj", "Uninstall"), cancel = PatchbayLauncher.t("Anuluj", "Cancel");
+            if (JOptionPane.showOptionDialog(this, question, "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                    null, new String[] { remove, cancel }, cancel) != 0) return;
+            try {
+                Devices.remove(item);
+                register(foldersFor(visible(items, build())));
+                status.setText(PatchbayLauncher.t("Odinstalowano: ", "Uninstalled: ") + item.name());
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+            }
+            rebuild();
+        }
+
         private void installChecked() {
             List<Item> picks = checkedRows().stream().map(Row::item).toList();
             if (picks.isEmpty()) return;
-            if (PatchbayLauncher.bitwigRunning()) {
-                JOptionPane.showMessageDialog(this,
-                    PatchbayLauncher.t("Zamknij Bitwig Studio, a potem spróbuj ponownie.", "Quit Bitwig Studio, then try again."),
-                    "Patchbay Launcher", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            if (!bitwigClosed()) return;
             List<Item> shown = visible(items, build());
             setBusy(true, "");
             new Thread(() -> {
