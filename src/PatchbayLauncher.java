@@ -1250,7 +1250,7 @@ public final class PatchbayLauncher {
                 // no network or GitHub busy: no launcher update shown, nothing else changes
             }
         }, "launcher-update").start();
-        sourcesPanel.loadSuggestions();
+        sourcesPanel.loadOnline();
     }
 
     private void launcherChecked(SelfUpdate.Release r) {

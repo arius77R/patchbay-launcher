@@ -169,6 +169,46 @@ final class Sources {
         return out;
     }
 
+    /** GitHub topics an author puts on a repository so the launcher lists it (PUBLISHING), and the group each stands for. */
+    static final Map<String, String> TOPICS = new LinkedHashMap<>(Map.of("patchbay-mod", MODS, "patchbay-devices", DEVICES, "patchbay-themes", THEMES));
+
+    /**
+     * Repositories on GitHub with one of the launcher's topics that the user doesn't have yet, with their
+     * description. A topic that can't be searched is skipped unless all fail.
+     */
+    static List<Suggestion> discovered() throws IOException {
+        String f = System.getProperty("launcher.fixtures"); // offline test
+        Set<String> have = new HashSet<>();
+        for (Source s : all()) have.add(s.group() + " " + s.repo().toLowerCase(Locale.ROOT));
+        List<Suggestion> out = new ArrayList<>();
+        IOException failed = null;
+        int searched = 0;
+        for (Map.Entry<String, String> topic : TOPICS.entrySet()) {
+            String json;
+            try {
+                if (f != null) {
+                    Path fx = Path.of(f).resolve("launcher-topic-" + topic.getKey() + ".json");
+                    json = Files.isRegularFile(fx) ? Files.readString(fx) : "{\"items\":[]}";
+                } else {
+                    json = PatchbayLauncher.httpText("https://api.github.com/search/repositories?q=topic:" + topic.getKey() + "&sort=updated&per_page=100");
+                }
+                searched++;
+            } catch (IOException ex) {
+                failed = ex;
+                continue;
+            }
+            for (Object o : Mods.Json.array(Mods.Json.object(Mods.Json.parse(json)).get("items"))) {
+                Map<String, Object> m = Mods.Json.object(o);
+                String repo = normalizeRepo(String.valueOf(Mods.Json.text(m, "full_name")));
+                if (repo == null || Boolean.TRUE.equals(m.get("archived")) || Boolean.TRUE.equals(m.get("fork"))) continue;
+                if (have.add(topic.getValue() + " " + repo.toLowerCase(Locale.ROOT))) out.add(new Suggestion(topic.getValue(), repo, Mods.Json.text(m, "description")));
+            }
+        }
+        if (searched == 0 && failed != null) throw failed;
+        out.sort(Comparator.comparing((Suggestion x) -> GROUPS.indexOf(x.group())).thenComparing(x -> x.repo().toLowerCase(Locale.ROOT)));
+        return out;
+    }
+
     /** Adds a recommended source, switched on, with the usual files for its group. */
     static void add(Suggestion s) throws IOException {
         List<Source> list = new ArrayList<>(all());
@@ -232,6 +272,15 @@ final class Sources {
     /** Devices and themes are files in the repository itself; Patchbay and mods come from releases. */
     static boolean inRepository(String group) { return group.equals(DEVICES) || group.equals(THEMES); }
 
+    /** How many mods, devices or themes a repository found on GitHub holds for its group (0: nothing the launcher can use). */
+    static int found(Suggestion x) throws IOException {
+        return switch (x.group()) {
+            case MODS -> Mods.parseCatalog(PatchbayLauncher.httpText("https://api.github.com/repos/" + x.repo() + "/releases?per_page=100"), x.repo(), glob("*.zip")).size();
+            case THEMES -> Themes.fetchRepo(x.repo(), "").size();
+            default -> Devices.fetchRepo(x.repo(), "").size();
+        };
+    }
+
     /** What the repository holds for this group, in a sentence for the user. */
     static String check(Source s) {
         try {
@@ -293,14 +342,20 @@ final class Sources {
         /** "Lista źródeł" (the user's sources) or "Polecane" (recommended ones to add), switched by the tabs above. */
         private final CardLayout views = new CardLayout();
         private final JPanel viewCards = new JPanel(views);
-        private final JButton listTab = Theme.button(PatchbayLauncher.t("Lista źródeł", "Source list"), "nav");
+        private final JButton activeTab = Theme.button(PatchbayLauncher.t("Aktywne", "Active"), "nav");
+        private final JButton foundTab = Theme.button(PatchbayLauncher.t("Lista źródeł", "Source list"), "nav");
         private final JButton recommendedTab = Theme.button(PatchbayLauncher.t("Polecane", "Recommended"), "nav");
+        private final JPanel foundList = new JPanel();
         private final JPanel recommended = new JPanel();
         private JComponent listActions;
-        private boolean showingRecommended;
+        /** "active", "found" or "recommended": the tab on view. */
+        private String view = "active";
         /** Recommended sources the user doesn't have; null until loaded, or when the list can't be had (failed). */
         private List<Suggestion> suggestions;
         private boolean suggestionsFailed;
+        /** Repositories found on GitHub by topic that the user doesn't have; null until searched. */
+        private List<Suggestion> discovered;
+        private boolean discoveredFailed;
         /** Gets how many recommended sources the user hasn't looked at yet: the red count on the Sources tab. */
         private final java.util.function.IntConsumer unseen;
 
@@ -328,20 +383,16 @@ final class Sources {
             restoreButton.addActionListener(e -> restoreBuiltins());
             listActions = Theme.row(8, restoreButton, add);
 
-            recommended.setOpaque(false);
-            recommended.setLayout(new BoxLayout(recommended, BoxLayout.Y_AXIS));
-            JScrollPane recScroll = new JScrollPane(recommended);
-            recScroll.setBorder(BorderFactory.createEmptyBorder());
-            recScroll.getViewport().setOpaque(false);
-            recScroll.setOpaque(false);
-            recScroll.getVerticalScrollBar().setUnitIncrement(16);
             viewCards.setOpaque(false);
-            viewCards.add(body, "list");
-            viewCards.add(recScroll, "recommended");
+            viewCards.add(body, "active");
+            viewCards.add(scrolled(foundList), "found");
+            viewCards.add(scrolled(recommended), "recommended");
             JPanel tabs = Theme.tabStrip(PatchbayLauncher.t("Widok źródeł", "Sources view"));
-            listTab.addActionListener(e -> showView(false));
-            recommendedTab.addActionListener(e -> showView(true));
-            tabs.add(listTab);
+            activeTab.addActionListener(e -> showView("active"));
+            foundTab.addActionListener(e -> showView("found"));
+            recommendedTab.addActionListener(e -> showView("recommended"));
+            tabs.add(activeTab);
+            tabs.add(foundTab);
             tabs.add(recommendedTab);
             JPanel both = new JPanel(new BorderLayout(0, 12));
             both.setOpaque(false);
@@ -351,50 +402,70 @@ final class Sources {
                 prose(Theme.label(PatchbayLauncher.t("Repozytoria GitHub, z których Launcher pobiera Patchbay, mody, urządzenia i motywy.",
                     "GitHub repositories the launcher gets Patchbay, mods, devices and themes from."), Theme.text(13f), Theme.MUTED)),
                 listActions, both, null, null), BorderLayout.CENTER);
-            showView(false);
-            buildRecommended();
+            showView("active");
+            buildOnline();
             repoField.setFont(Theme.mono(13f));
             filterField.setFont(Theme.mono(13f));
             rebuild();
         }
 
-        // ---------- Polecane: recommended sources to add ----------
+        // ---------- Lista źródeł and Polecane: sources on GitHub to add ----------
 
-        /** Gets the recommended sources from the launcher's repository (in the background). */
-        void loadSuggestions() {
-            new Thread(() -> {
-                List<Suggestion> found;
-                try {
-                    found = suggested();
-                } catch (IOException | RuntimeException none) {
-                    found = null; // no network or GitHub busy: the tab says the list couldn't be had
-                }
-                List<Suggestion> result = found;
-                SwingUtilities.invokeLater(() -> suggestionsLoaded(result));
-            }, "recommended-sources").start();
+        private static JScrollPane scrolled(JPanel column) {
+            column.setOpaque(false);
+            column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
+            JScrollPane scroll = new JScrollPane(column);
+            scroll.setBorder(BorderFactory.createEmptyBorder());
+            scroll.getViewport().setOpaque(false);
+            scroll.setOpaque(false);
+            scroll.getVerticalScrollBar().setUnitIncrement(16);
+            return scroll;
         }
 
-        private void suggestionsLoaded(List<Suggestion> found) {
-            suggestionsFailed = found == null;
-            suggestions = found == null ? List.of() : new ArrayList<>(found);
-            buildRecommended();
-            if (showingRecommended && isShowing()) markSeen(); else countUnseen();
+        /** Gets the recommended sources and searches GitHub by topic (in the background). */
+        void loadOnline() {
+            new Thread(() -> {
+                List<Suggestion> picked, topics;
+                try {
+                    picked = suggested();
+                } catch (IOException | RuntimeException none) {
+                    picked = null; // no network or GitHub busy: the tab says the list couldn't be had
+                }
+                try {
+                    topics = discovered();
+                } catch (IOException | RuntimeException none) {
+                    topics = null;
+                }
+                List<Suggestion> p = picked, t = topics;
+                SwingUtilities.invokeLater(() -> onlineLoaded(p, t));
+            }, "online-sources").start();
+        }
+
+        private void onlineLoaded(List<Suggestion> picked, List<Suggestion> topics) {
+            suggestionsFailed = picked == null;
+            suggestions = picked == null ? List.of() : new ArrayList<>(picked);
+            discoveredFailed = topics == null;
+            discovered = topics == null ? List.of() : new ArrayList<>(topics);
+            buildOnline();
+            if (view.equals("recommended") && isShowing()) markSeen(); else countUnseen();
         }
 
         /** The Sources section came on screen: recommended ones on view count as seen. */
         void shown() {
-            if (showingRecommended) markSeen();
+            if (view.equals("recommended")) markSeen();
         }
 
-        private void showView(boolean recommendedView) {
-            showingRecommended = recommendedView;
-            listTab.putClientProperty("current", !recommendedView);
-            recommendedTab.putClientProperty("current", recommendedView);
-            listTab.repaint();
+        private void showView(String which) {
+            view = which;
+            activeTab.putClientProperty("current", which.equals("active"));
+            foundTab.putClientProperty("current", which.equals("found"));
+            recommendedTab.putClientProperty("current", which.equals("recommended"));
+            activeTab.repaint();
+            foundTab.repaint();
             recommendedTab.repaint();
-            views.show(viewCards, recommendedView ? "recommended" : "list");
-            listActions.setVisible(!recommendedView);
-            if (recommendedView) markSeen();
+            views.show(viewCards, which);
+            listActions.setVisible(which.equals("active"));
+            if (which.equals("recommended")) markSeen();
         }
 
         private Set<String> seen() {
@@ -421,9 +492,33 @@ final class Sources {
             countUnseen();
         }
 
-        /** Polecane: one framed list like a group of sources, each with what it is and Add; a line when there are none. */
-        private void buildRecommended() {
-            recommended.removeAll();
+        private static String key(Suggestion x) { return x.group() + " " + x.repo().toLowerCase(Locale.ROOT); }
+
+        /**
+         * Lista źródeł: everything on GitHub to add, the recommended ones marked; Polecane: the recommended
+         * ones alone. Each in one framed list like a group of sources, with a line when there are none.
+         */
+        private void buildOnline() {
+            Set<String> picked = new HashSet<>();
+            if (suggestions != null) for (Suggestion x : suggestions) picked.add(key(x));
+            List<Suggestion> everything = null;
+            if (suggestions != null && discovered != null) {
+                Map<String, Suggestion> byKey = new LinkedHashMap<>();
+                for (Suggestion x : suggestions) byKey.put(key(x), x);
+                for (Suggestion x : discovered) byKey.putIfAbsent(key(x), x);
+                everything = new ArrayList<>(byKey.values());
+                everything.sort(Comparator.comparing((Suggestion x) -> GROUPS.indexOf(x.group())).thenComparing(x -> x.repo().toLowerCase(Locale.ROOT)));
+            }
+            fill(foundList, PatchbayLauncher.t("Lista źródeł", "Source list"),
+                PatchbayLauncher.t("repozytoria na GitHubie z tematem patchbay-mod, patchbay-devices albo patchbay-themes", "GitHub repositories with the topic patchbay-mod, patchbay-devices or patchbay-themes"),
+                everything, discoveredFailed && suggestionsFailed, picked, true);
+            fill(recommended, PatchbayLauncher.t("Polecane", "Recommended"),
+                PatchbayLauncher.t("sprawdzone przez autora Launchera, jeszcze nie na Twojej liście", "checked by the launcher's author, not on your list yet"),
+                suggestions, suggestionsFailed, picked, false);
+        }
+
+        private void fill(JPanel column, String title, String hint, List<Suggestion> items, boolean failed, Set<String> picked, boolean checkFirst) {
+            column.removeAll();
             JPanel box = new JPanel(new BorderLayout());
             box.setOpaque(false);
             box.setBorder(BorderFactory.createLineBorder(Theme.HAIR));
@@ -431,40 +526,43 @@ final class Sources {
             JPanel head = new JPanel(new BorderLayout(12, 0));
             head.setBackground(Theme.FRAME);
             head.setBorder(new EmptyBorder(8, 14, 8, 10));
-            head.add(Theme.row(10, Theme.label(PatchbayLauncher.t("Polecane", "Recommended"), Theme.bold(15f), Theme.TEXT),
-                Theme.label(PatchbayLauncher.t("sprawdzone przez autora Launchera, jeszcze nie na Twojej liście", "checked by the launcher's author, not on your list yet"),
-                    Theme.text(12f), Theme.MUTED)), BorderLayout.WEST);
+            head.add(Theme.row(10, Theme.label(title, Theme.bold(15f), Theme.TEXT), Theme.label(hint, Theme.text(12f), Theme.MUTED)), BorderLayout.WEST);
             box.add(head, BorderLayout.NORTH);
             JPanel list = new JPanel();
             list.setOpaque(false);
             list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
-            if (suggestions == null || suggestions.isEmpty()) {
-                String text = suggestions == null ? PatchbayLauncher.t("Sprawdzam polecane źródła…", "Checking the recommended sources…")
-                    : suggestionsFailed ? PatchbayLauncher.t("Nie udało się pobrać listy polecanych źródeł.", "Couldn't get the list of recommended sources.")
-                    : PatchbayLauncher.t("Brak nowych źródeł. Masz wszystkie polecane.", "No new sources. You have all the recommended ones.");
+            if (items == null || items.isEmpty()) {
+                String text = items == null ? PatchbayLauncher.t("Sprawdzam źródła na GitHubie…", "Checking the sources on GitHub…")
+                    : failed ? PatchbayLauncher.t("Nie udało się pobrać listy źródeł z GitHuba.", "Couldn't get the list of sources from GitHub.")
+                    : PatchbayLauncher.t("Brak nowych źródeł. Masz już wszystkie.", "No new sources. You have them all.");
                 JLabel none = Theme.label(text, Theme.text(12f), Theme.MUTED);
                 none.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(10, 14, 10, 12)));
                 none.setAlignmentX(LEFT_ALIGNMENT);
                 none.setMaximumSize(new Dimension(Integer.MAX_VALUE, none.getPreferredSize().height));
                 list.add(none);
             } else {
-                for (Suggestion x : suggestions) list.add(recommendedRow(x));
+                for (Suggestion x : items) list.add(onlineRow(x, checkFirst && picked.contains(key(x)), checkFirst && !picked.contains(key(x))));
             }
             box.add(list, BorderLayout.CENTER);
             box.setMaximumSize(new Dimension(Integer.MAX_VALUE, box.getPreferredSize().height));
-            recommended.add(box);
-            recommended.revalidate();
-            recommended.repaint();
+            column.add(box);
+            column.revalidate();
+            column.repaint();
         }
 
-        private JComponent recommendedRow(Suggestion x) {
+        /**
+         * One repository to add: its name, group and description, and Add. One found by topic alone is
+         * checked first: it is added only when it holds something the launcher can use.
+         */
+        private JComponent onlineRow(Suggestion x, boolean markPicked, boolean checkFirst) {
             JPanel row = new JPanel(new BorderLayout(12, 0));
             row.setBackground(Theme.WELL);
             row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.HAIR), new EmptyBorder(8, 14, 8, 12)));
             JPanel text = new JPanel();
             text.setOpaque(false);
             text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
-            JPanel top = Theme.row(8, Theme.label(x.repo(), Theme.mono(13f), Theme.TEXT), badge(groupName(x.group())));
+            JPanel top = markPicked ? Theme.row(8, Theme.label(x.repo(), Theme.mono(13f), Theme.TEXT), badge(groupName(x.group())), badge(PatchbayLauncher.t("polecane", "recommended")))
+                : Theme.row(8, Theme.label(x.repo(), Theme.mono(13f), Theme.TEXT), badge(groupName(x.group())));
             top.setAlignmentX(LEFT_ALIGNMENT);
             text.add(top);
             if (x.note() != null && !x.note().isBlank()) {
@@ -479,18 +577,28 @@ final class Sources {
             add.setFont(Theme.text(12f));
             add.getAccessibleContext().setAccessibleName(PatchbayLauncher.t("Dodaj źródło: ", "Add source: ") + x.repo());
             add.addActionListener(e -> {
-                try {
-                    Sources.add(x);
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(row, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                suggestions.remove(x);
-                sources = all();
-                rebuild();
-                buildRecommended();
-                countUnseen();
-                changed.run();
+                if (!checkFirst) { addOnline(x, row); return; }
+                add.setEnabled(false);
+                add.setText(PatchbayLauncher.t("Sprawdzam…", "Checking…"));
+                new Thread(() -> {
+                    int n;
+                    try {
+                        n = found(x);
+                    } catch (IOException | RuntimeException ex) {
+                        n = -1;
+                    }
+                    int count = n;
+                    SwingUtilities.invokeLater(() -> {
+                        if (count > 0) { addOnline(x, row); return; }
+                        add.setText(PatchbayLauncher.t("Dodaj", "Add"));
+                        add.setEnabled(true);
+                        JOptionPane.showMessageDialog(row, count < 0
+                            ? PatchbayLauncher.t("Nie udało się sprawdzić repozytorium. Spróbuj za chwilę.", "Couldn't check the repository. Try again in a moment.")
+                            : PatchbayLauncher.t("W tym repozytorium nie ma niczego, co Launcher umie pobrać (", "This repository holds nothing the launcher can get (")
+                                + groupName(x.group()) + PatchbayLauncher.t("). Źródło nie zostało dodane.", "). The source wasn't added."),
+                            "Patchbay Launcher", JOptionPane.INFORMATION_MESSAGE);
+                    });
+                }, "check-source").start();
             });
             JPanel right = new JPanel(new GridBagLayout());
             right.setOpaque(false);
@@ -498,6 +606,22 @@ final class Sources {
             row.add(right, BorderLayout.EAST);
             row.setMaximumSize(new Dimension(Integer.MAX_VALUE, row.getPreferredSize().height));
             return row;
+        }
+
+        private void addOnline(Suggestion x, JComponent row) {
+            try {
+                Sources.add(x);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(row, String.valueOf(ex.getMessage()), "Patchbay Launcher", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (suggestions != null) suggestions.removeIf(y -> key(y).equals(key(x)));
+            if (discovered != null) discovered.removeIf(y -> key(y).equals(key(x)));
+            sources = all();
+            rebuild();
+            buildOnline();
+            countUnseen();
+            changed.run();
         }
 
         private void rebuild() {
