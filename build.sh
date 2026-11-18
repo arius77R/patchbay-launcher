@@ -23,6 +23,7 @@ for f in discord.png github.png; do [ -f "res/$f" ] && cp "res/$f" "$OUT/classes
 mkdir -p "$OUT/classes/fonts" && cp res/fonts/* "$OUT/classes/fonts/"
 mkdir -p "$OUT/classes/icons" && cp res/icons/*.png "$OUT/classes/icons/"
 mkdir -p "$OUT/classes/guide" && cp res/guide/*.md "$OUT/classes/guide/"
+cp CHANGELOG.md "$OUT/classes/"
 jar cfm "$OUT/launcher.jar" manifest.txt -C "$OUT/classes" .
 echo "  launcher.jar"
 

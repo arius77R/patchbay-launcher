@@ -1390,9 +1390,24 @@ public final class PatchbayLauncher {
         launcherPage.repaint();
     }
 
-    /** The release's "What's new" section, or a line pointing to the release page. */
+    /** This version's part of the CHANGELOG built into the launcher, or null: what's new before the release is out or without internet. */
+    private static String bundledNotes() {
+        try (InputStream in = PatchbayLauncher.class.getResourceAsStream("/CHANGELOG.md")) {
+            if (in == null) return null;
+            String text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            int from = text.indexOf("\n## " + VERSION + "\n");
+            if (from < 0) return null;
+            from = text.indexOf('\n', from + 1) + 1;
+            int to = text.indexOf("\n## ", from);
+            return text.substring(from, to < 0 ? text.length() : to);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /** The release's "What's new" section, the built-in CHANGELOG's when there is no release, or a line pointing to the release page. */
     private static JComponent whatsNew(String releaseNotes) {
-        String notes = releaseNotes == null ? null : SelfUpdate.whatsNewHtml(releaseNotes);
+        String notes = SelfUpdate.whatsNewHtml(releaseNotes != null ? releaseNotes : bundledNotes());
         JEditorPane text = new JEditorPane("text/html", "<html><body style='font-family:" + Theme.text(13f).getFamily() + "; font-size:13pt; color:"
             + Theme.hex(Theme.TEXT) + ";'>" + (notes != null ? notes : "<p>" + t("Opis zmian jest na stronie wydania.", "The changes are described on the release page.") + "</p>")
             + "</body></html>");

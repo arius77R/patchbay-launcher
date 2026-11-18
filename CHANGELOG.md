@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.9.6
+
+- **Guide in the launcher:** a Guide button on the bottom bar; in English, Polish, German and French, works offline and always fits the version.
+- **Sources in three tabs:** **Active** (the sources you use), **Source list** (GitHub repositories with the topic `patchbay-mod`, `patchbay-devices` or `patchbay-themes`) and **Recommended** (the list kept in `arius77R/bitwig-mods-list`).
+- **Repository card:** a click on a repository shows its author, what it holds, last change, licence and stars, with **Add to active** and **Repository page**. A red count on the Sources tab says how many recommended ones are new.
+- **Refresh on every Sources tab:** reads the sources again.
+- **A source that no longer exists** on GitHub is marked "doesn't exist", with a button to the author's page. Nothing disappears by itself.
+- **Mods and devices removed from their repository:** installed ones are marked "removed" (with a one-time notice) and are no longer offered for install.
+- **Withdrawn by the author** (a `withdrawn.json` file): marked "withdrawn" with the reason, and the launcher offers once to switch them off.
+- **Installed mods not in any source** show in the list, so they can be switched off or uninstalled.
+- **Side panel in Mods and Devices:** All, Favourites and the categories with icons and counts; a star marks favourites; favourites are kept in the settings backup.
+- **Device type icons:** Audio FX, Instrument, Note FX, Note generator, Modulator, Grid module.
+- **Switch off and uninstall several at once:** tick mods, devices or themes and do it with one button; it works from a single item's details too.
+- **Launcher page in the main window:** version, update, what's new, and system information with Copy. "Report a problem" adds the system information. A warning before starting Patchbay on a Bitwig its maps don't cover.
+- **The window** opens scaled to the screen, and after that where and as big as it was closed.
+- **Fix:** a mod that is no longer in its repository isn't shown again from an old kept copy.
+
 ## 0.9.5
 
 - **Search in Mods and Devices:** type part of a name to narrow the list; the type and the author are searched too ("audio fx", "polarity").
