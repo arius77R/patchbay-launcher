@@ -358,6 +358,7 @@ public final class PatchbayLauncher {
     private final JButton dockButton = Theme.button(Platform.pinLabel(), "secondary");
     /** Opens the launcher's settings; it sits in the bottom bar, beside the dark / light switch. */
     private final JButton settingsButton = Theme.button(t("Ustawienia", "Settings"), "secondary");
+    private final JButton guideButton = Theme.button(t("Instrukcja", "Guide"), "secondary");
     private final CardLayout cards = new CardLayout();
     private final JPanel content = new JPanel(cards);
     private final Map<String, JButton> nav = new LinkedHashMap<>();
@@ -403,6 +404,8 @@ public final class PatchbayLauncher {
             e.getValue().repaint();
         }
         settingsButton.putClientProperty("current", key.equals("settings"));
+        guideButton.putClientProperty("current", key.equals("guide"));
+        guideButton.repaint();
         settingsButton.repaint();
         if (key.equals("devices")) devicesPanel.shown();
         if (key.equals("themes")) themesPanel.shown();
@@ -544,6 +547,13 @@ public final class PatchbayLauncher {
         left.add(settingsButton);
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
+        guideButton.putClientProperty("small", true);
+        guideButton.setFont(Theme.text(12f));
+        guideButton.setIcon(new BookIcon());
+        guideButton.setIconTextGap(6);
+        guideButton.setToolTipText(t("Jak korzystać z Launchera", "How to use the launcher"));
+        guideButton.addActionListener(e -> select("guide"));
+        right.add(guideButton);
         for (JComponent b : aboutButtons()) right.add(b);
         right.add(discord);
         bar.add(left, BorderLayout.WEST);
@@ -703,6 +713,27 @@ public final class PatchbayLauncher {
             }
             cog.subtract(new java.awt.geom.Area(new java.awt.geom.Ellipse2D.Float(-2.2f, -2.2f, 4.4f, 4.4f)));
             g2.fill(cog);
+            g2.dispose();
+        }
+    }
+
+    /** An open book, for the guide (drawn). */
+    private static final class BookIcon implements Icon {
+        @Override public int getIconWidth() { return 16; }
+        @Override public int getIconHeight() { return 16; }
+        @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            g2.translate(x, y);
+            g2.setColor(Theme.ACCENT);
+            g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            java.awt.geom.Path2D.Float left = new java.awt.geom.Path2D.Float(), right = new java.awt.geom.Path2D.Float();
+            left.moveTo(8f, 4.2f); left.curveTo(6.2f, 2.8f, 3.6f, 2.8f, 1.6f, 3.4f); left.lineTo(1.6f, 13f); left.curveTo(3.6f, 12.4f, 6.2f, 12.4f, 8f, 13.8f);
+            right.moveTo(8f, 4.2f); right.curveTo(9.8f, 2.8f, 12.4f, 2.8f, 14.4f, 3.4f); right.lineTo(14.4f, 13f); right.curveTo(12.4f, 12.4f, 9.8f, 12.4f, 8f, 13.8f);
+            g2.draw(left);
+            g2.draw(right);
+            g2.draw(new java.awt.geom.Line2D.Float(8f, 4.2f, 8f, 13.8f));
             g2.dispose();
         }
     }
@@ -1014,6 +1045,7 @@ public final class PatchbayLauncher {
         content.add(themesPanel, "themes");
         content.add(sourcesPanel, "sources");
         content.add(settingsPage(), "settings");
+        content.add(Guide.page(), "guide");
         content.add(launcherPage, "launcher");
         fillLauncherPage();
         JPanel root = new JPanel(new BorderLayout());

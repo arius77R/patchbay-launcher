@@ -22,6 +22,7 @@ cp res/icon-128.png res/icon-256.png "$OUT/classes/"
 for f in discord.png github.png; do [ -f "res/$f" ] && cp "res/$f" "$OUT/classes/"; done
 mkdir -p "$OUT/classes/fonts" && cp res/fonts/* "$OUT/classes/fonts/"
 mkdir -p "$OUT/classes/icons" && cp res/icons/*.png "$OUT/classes/icons/"
+mkdir -p "$OUT/classes/guide" && cp res/guide/*.md "$OUT/classes/guide/"
 jar cfm "$OUT/launcher.jar" manifest.txt -C "$OUT/classes" .
 echo "  launcher.jar"
 
