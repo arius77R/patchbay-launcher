@@ -9,14 +9,14 @@ import java.util.List;
 
 /**
  * The guide (Instrukcja): how to use this version, built into the launcher so it works offline and fits the
- * version in hand. Polish or English by the launcher's language; other languages read the English one.
+ * version in hand, in the launcher's language (Polish, English, German or French).
  */
 final class Guide {
     private Guide() { }
 
     /** The guide's text (a small Markdown: ## headings, paragraphs, - and 1. lists, | tables |, **bold**, `code`, [links](url)). */
     static String markdown() {
-        String lang = "pl".equals(I18n.lang()) ? "pl" : "en";
+        String lang = List.of("pl", "de", "fr").contains(I18n.lang()) ? I18n.lang() : "en";
         try (InputStream in = Guide.class.getResourceAsStream("/guide/guide-" + lang + ".md")) {
             return in == null ? "" : new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException unreadable) {
