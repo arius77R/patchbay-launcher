@@ -419,7 +419,7 @@ final class Devices {
             table.getColumnModel().getColumn(2).setMinWidth(124); // "Note generator" whole
             table.getColumnModel().getColumn(4).setCellRenderer(Theme.pillCells());
             SidePanel.starClicks(table, 1, r -> key(rows.get(r).item()), favourites, "favouriteDevices", this::rebuild);
-            table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) { showSelected(); refreshButtons(); } });
+            table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
 
@@ -455,10 +455,10 @@ final class Devices {
             checkAllButton.addActionListener(e -> checkAll());
             installButton.addActionListener(e -> installChecked());
             switchButton.addActionListener(e -> {
-                List<Row> mine = actedRows().stream().filter(r -> r.rank() != 2).toList();
+                List<Row> mine = checkedRows().stream().filter(r -> r.rank() != 2).toList();
                 switchDevices(mine.stream().map(Row::item).toList(), mine.stream().allMatch(r -> r.rank() == 3));
             });
-            removeButton.addActionListener(e -> removeDevices(actedRows().stream().filter(r -> r.rank() != 2).map(Row::item).toList()));
+            removeButton.addActionListener(e -> removeDevices(checkedRows().stream().filter(r -> r.rank() != 2).map(Row::item).toList()));
             refreshButton.addActionListener(e -> reload());
             folderButton.addActionListener(e -> {
                 try { Files.createDirectories(root()); } catch (Exception ignored) { }
@@ -585,14 +585,6 @@ final class Devices {
             List<Row> get = rows.stream().filter(Panel::downloadable).toList();
             return get.isEmpty() ? rows : get;
         }
-        /** The rows Switch off and Uninstall under the list act on: the ticked ones, or the highlighted one when none is ticked. */
-        private List<Row> actedRows() {
-            List<Row> ticked = checkedRows();
-            if (!ticked.isEmpty()) return ticked;
-            int r = table.getSelectedRow();
-            return r >= 0 && r < rows.size() ? List.of(rows.get(r)) : List.of();
-        }
-
         private List<Row> checkedRows() { return rows.stream().filter(r -> checked.contains(key(r.item()))).toList(); }
 
         private void checkAll() {
@@ -608,7 +600,7 @@ final class Devices {
             List<Row> all = checkable();
             List<Row> ticked = checkedRows();
             int toGet = (int) ticked.stream().filter(Panel::downloadable).count();
-            List<Row> mine = actedRows().stream().filter(r -> r.rank() != 2).toList();
+            List<Row> mine = ticked.stream().filter(r -> r.rank() != 2).toList();
             boolean allTicked = !all.isEmpty() && all.stream().allMatch(r -> checked.contains(key(r.item())));
             checkAllButton.setText(allTicked ? PatchbayLauncher.t("Odznacz wszystkie", "Untick all") : PatchbayLauncher.t("Zaznacz wszystkie", "Tick all"));
             checkAllButton.setEnabled(!busy && !all.isEmpty());

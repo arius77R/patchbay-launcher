@@ -740,7 +740,7 @@ final class Mods {
             table.getColumnModel().getColumn(6).setMinWidth(118);
             table.getColumnModel().getColumn(6).setMaxWidth(150);
             SidePanel.starClicks(table, 1, r -> rows.get(r).id(), favourites, "favouriteMods", this::refilter);
-            table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) { showSelected(); refreshButtons(); } });
+            table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
 
@@ -790,10 +790,10 @@ final class Mods {
 
             installButton.addActionListener(e -> installRows(checkedRows().stream().filter(this::installable).toList()));
             switchButton.addActionListener(e -> {
-                List<Row> mine = actedRows().stream().filter(r -> r.installed() != null).toList();
+                List<Row> mine = checkedRows().stream().filter(r -> r.installed() != null).toList();
                 switchMods(mine, mine.stream().noneMatch(r -> switchedOn.contains(r.id())));
             });
-            removeButton.addActionListener(e -> uninstallMods(actedRows().stream().filter(r -> r.installed() != null).toList()));
+            removeButton.addActionListener(e -> uninstallMods(checkedRows().stream().filter(r -> r.installed() != null).toList()));
             checkAllButton.addActionListener(e -> checkAll());
             updateAllButton.addActionListener(e -> installRows(all.stream().filter(r -> r.rank() == 0 && !unavailable(r)).toList()));
             refreshButton.addActionListener(e -> reload());
@@ -804,14 +804,6 @@ final class Mods {
         private Path modsDir() {
             String v = PatchbayLauncher.currentVersion();
             return v == null ? null : PatchbayLauncher.folderOf(v).resolve("mods");
-        }
-
-        /** The rows Switch off and Uninstall under the list act on: the ticked ones, or the highlighted one when none is ticked. */
-        private List<Row> actedRows() {
-            List<Row> ticked = checkedRows();
-            if (!ticked.isEmpty()) return ticked;
-            int r = table.getSelectedRow();
-            return r >= 0 && r < rows.size() ? List.of(rows.get(r)) : List.of();
         }
 
         private List<Row> checkedRows() {
@@ -1241,7 +1233,7 @@ final class Mods {
             List<Row> tickable = checkable();
             List<Row> ticked = checkedRows();
             int toInstall = (int) ticked.stream().filter(this::installable).count();
-            List<Row> mine = actedRows().stream().filter(r -> r.installed() != null).toList();
+            List<Row> mine = ticked.stream().filter(r -> r.installed() != null).toList();
             boolean allTicked = !tickable.isEmpty() && tickable.stream().allMatch(r -> checked.contains(r.id()));
             checkAllButton.setText(allTicked ? PatchbayLauncher.t("Odznacz wszystkie", "Untick all") : PatchbayLauncher.t("Zaznacz wszystkie", "Tick all"));
             checkAllButton.setEnabled(ready && !tickable.isEmpty());

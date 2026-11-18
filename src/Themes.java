@@ -541,7 +541,7 @@ final class Themes {
             table.getColumnModel().getColumn(3).setMinWidth(140);
             table.getColumnModel().getColumn(3).setMaxWidth(150);
             table.getColumnModel().getColumn(3).setCellRenderer(Theme.pillCells());
-            table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) { showSelected(); refreshButtons(); } });
+            table.getSelectionModel().addListSelectionListener(e -> { if (!e.getValueIsAdjusting()) showSelected(); });
 
             details.setBorder(new EmptyBorder(18, 18, 18, 18));
 
@@ -557,7 +557,7 @@ final class Themes {
 
             checkAllButton.addActionListener(e -> checkAll());
             installButton.addActionListener(e -> installChecked());
-            removeButton.addActionListener(e -> removeThemes(actedRows()));
+            removeButton.addActionListener(e -> removeThemes(checkedRows()));
             refreshButton.addActionListener(e -> reload());
             addFileButton.setToolTipText(PatchbayLauncher.t("Dodaj motyw z pliku .bte na tym komputerze (tylko motywy dla Bitwiga 6)",
                 "Add a theme from a .bte file on this computer (themes for Bitwig 6 only)"));
@@ -636,14 +636,6 @@ final class Themes {
         }
 
         private List<Row> checkable() { return rows.stream().filter(r -> r.rank() != 1).toList(); }
-        /** The rows Switch off and Uninstall under the list act on: the ticked ones, or the highlighted one when none is ticked. */
-        private List<Row> actedRows() {
-            List<Row> ticked = checkedRows();
-            if (!ticked.isEmpty()) return ticked;
-            int r = table.getSelectedRow();
-            return r >= 0 && r < rows.size() ? List.of(rows.get(r)) : List.of();
-        }
-
         private List<Row> checkedRows() { return rows.stream().filter(r -> checked.contains(key(r.item()))).toList(); }
 
         private void checkAll() {
@@ -665,7 +657,7 @@ final class Themes {
             checkAllButton.setEnabled(ready && !tickable.isEmpty());
             installButton.setText(PatchbayLauncher.t("Zainstaluj zaznaczone (", "Install ticked (") + toInstall + ")");
             installButton.setEnabled(ready && toInstall > 0);
-            removeButton.setEnabled(ready && actedRows().stream().anyMatch(r -> r.rank() != 2));
+            removeButton.setEnabled(ready && ticked.stream().anyMatch(r -> r.rank() != 2));
             folderButton.setEnabled(components() != null);
             addFileButton.setEnabled(ready);
             refreshButton.setEnabled(!busy);
