@@ -16,7 +16,7 @@ Dans Mods, vous choisissez, installez, mettez à jour, désactivez et désinstal
 - **Favoris :** cliquez sur l'étoile à côté d'un mod. Les favoris font partie de la sauvegarde des réglages.
 - **Catégorie :** elle vient du nom du mod (« Catégorie : Nom »). Un mod sans catégorie de la liste va dans Other.
 - **Afficher :** Tous, Compatibles, Installés, Mises à jour, Incompatibles, Supprimés du dépôt et Hors sources. Pour retirer d'un coup tous les mods hors sources : Afficher → Hors sources, « Tout cocher », puis « Désinstaller ».
-- **Installer :** cochez des mods et cliquez sur « Installer la sélection ». « Tout cocher » coche les mods à installer ou à mettre à jour. Quand la liste n'a rien à installer (par ex. Afficher → Hors sources ou Supprimés du dépôt), il coche tous les mods installés, sauf ceux de Patchbay.
+- **Installer :** cochez des mods et cliquez sur « Installer la sélection ». « Tout cocher » coche les mods à installer ou à mettre à jour. Quand la liste n'a rien à installer (par ex. Afficher → Hors sources ou Supprimés du dépôt), il coche tous les mods installés, sauf ceux de Patchbay. Les coches restent quand vous changez de catégorie, d'affichage ou de recherche : vous pouvez choisir des mods de plusieurs catégories et les installer ensemble.
 - **Désactiver / Activer :** le mod reste sur le disque, Patchbay ne le charge pas. Cochez-en un ou plusieurs et utilisez le bouton sous la liste.
 - **Désinstaller :** supprime les mods cochés du disque, après confirmation. Le lanceur prévient quand un autre mod activé en a besoin.
 - « Désactiver » et « Désinstaller » sont seulement sous la liste. Ils restent gris tant qu'aucun mod n'est coché.

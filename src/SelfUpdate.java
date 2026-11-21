@@ -166,55 +166,92 @@ final class SelfUpdate {
         long pid = ProcessHandle.current().pid();
         if (Platform.WINDOWS) {
             // PowerShell reads a script with a byte-order mark as UTF-8, so folder names with ł, ż… survive
-            Files.write(script, ("﻿" + windowsScript(pid, root, fresh, stage)).getBytes(StandardCharsets.UTF_8));
+            Files.write(script, ("﻿" + windowsScript(pid, root, fresh, stage, failedNote())).getBytes(StandardCharsets.UTF_8));
             start(List.of("powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", script.toString()), stage);
         } else {
-            Files.writeString(script, unixScript(pid, root, fresh, stage));
+            Files.writeString(script, unixScript(pid, root, fresh, stage, failedNote()));
             start(List.of("/bin/sh", script.toString()), stage);
         }
     }
 
+    /**
+     * Starts the swap script in the folder that holds the install, not inside it: Windows won't rename a
+     * folder that a running program has as its working folder, and the launcher's own is the install.
+     */
     private static void start(List<String> cmd, Path stage) throws IOException {
         Path log = PatchbayLauncher.data().resolve("logs").resolve("self-update.log");
         Files.createDirectories(log.getParent());
-        new ProcessBuilder(cmd).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.appendTo(log.toFile())).start();
+        Files.deleteIfExists(failedNote());
+        new ProcessBuilder(cmd).directory(stage.getParent().toFile())
+            .redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.appendTo(log.toFile())).start();
+    }
+
+    /** Written by the swap script when the new copy could not be put in place; the launcher reads it on its next start. */
+    static Path failedNote() {
+        return PatchbayLauncher.data().resolve("logs").resolve("self-update-failed.txt");
+    }
+
+    /** Why the last update failed, once (the note is removed), or null. */
+    static String takeFailure() {
+        try {
+            Path note = failedNote();
+            if (!Files.isRegularFile(note)) return null;
+            String why = Files.readString(note, StandardCharsets.UTF_8).replace("\ufeff", "").strip();
+            Files.deleteIfExists(note);
+            return why.isEmpty() ? "?" : why;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     private static String sh(Path p) { return "'" + p.toString().replace("'", "'\\''") + "'"; }
     private static String ps(Path p) { return "'" + p.toString().replace("'", "''") + "'"; }
 
     /** Waits for the launcher to quit, swaps the folders (the old one comes back if that fails), starts the launcher. */
-    static String unixScript(long pid, Path root, Path fresh, Path stage) {
+    static String unixScript(long pid, Path root, Path fresh, Path stage, Path failed) {
         Path old = root.resolveSibling(root.getFileName() + ".old-update");
         String start = Platform.MAC ? "/usr/bin/open " + sh(root)
             : "nohup " + sh(root.resolve("patchbay-launcher")) + " >/dev/null 2>&1 &";
         return "#!/bin/sh\n"
             + "# Patchbay Launcher update: wait for the launcher to quit, then put the new copy in place.\n"
+            + "cd " + sh(root.getParent()) + "\n"
             + "n=0\nwhile kill -0 " + pid + " 2>/dev/null && [ $n -lt 120 ]; do sleep 0.5; n=$((n+1)); done\n"
             + "rm -rf " + sh(old) + "\n"
+            + "fail=\n"
             + "if mv " + sh(root) + " " + sh(old) + "; then\n"
             + "  if mv " + sh(fresh) + " " + sh(root) + "; then rm -rf " + sh(old) + "; echo \"updated\"\n"
-            + "  else mv " + sh(old) + " " + sh(root) + "; echo \"could not put the new copy in place\"; fi\n"
-            + "else echo \"could not move the old copy\"; fi\n"
+            + "  else mv " + sh(old) + " " + sh(root) + "; fail=\"could not put the new copy in place\"; fi\n"
+            + "else fail=\"could not move the old copy\"; fi\n"
+            + "if [ -n \"$fail\" ]; then echo \"$fail\"; echo \"$fail\" > " + sh(failed) + "; fi\n"
             + "rm -rf " + sh(stage) + "\n"
             + start + "\n";
     }
 
-    static String windowsScript(long pid, Path root, Path fresh, Path stage) {
+    /**
+     * The Windows swap: works from the folder that holds the install, and tries the rename for about ten
+     * seconds, as an antivirus or Explorer may still hold the old folder for a moment after the launcher quits.
+     */
+    static String windowsScript(long pid, Path root, Path fresh, Path stage, Path failed) {
         String oldName = root.getFileName() + ".old-update";
         Path old = root.resolveSibling(oldName);
         return "# Patchbay Launcher update: wait for the launcher to quit, then put the new copy in place.\r\n"
+            + "Set-Location -LiteralPath " + ps(root.getParent()) + "\r\n"
             + "try { Wait-Process -Id " + pid + " -Timeout 60 -ErrorAction Stop } catch { }\r\n"
             + "Start-Sleep -Milliseconds 700\r\n"
             + "if (Test-Path -LiteralPath " + ps(old) + ") { Remove-Item -LiteralPath " + ps(old) + " -Recurse -Force -ErrorAction SilentlyContinue }\r\n"
-            + "try {\r\n"
-            + "  Rename-Item -LiteralPath " + ps(root) + " -NewName " + ps(Path.of(oldName)) + " -ErrorAction Stop\r\n"
+            + "$moved = $false; $fail = $null; $why = $null\r\n"
+            + "for ($i = 0; $i -lt 10 -and -not $moved; $i++) {\r\n"
+            + "  try { Rename-Item -LiteralPath " + ps(root) + " -NewName " + ps(Path.of(oldName)) + " -ErrorAction Stop; $moved = $true }\r\n"
+            + "  catch { $why = $_; Start-Sleep -Seconds 1 }\r\n"
+            + "}\r\n"
+            + "if ($moved) {\r\n"
             + "  try { Move-Item -LiteralPath " + ps(fresh) + " -Destination " + ps(root) + " -ErrorAction Stop; "
             + "Remove-Item -LiteralPath " + ps(old) + " -Recurse -Force -ErrorAction SilentlyContinue; 'updated' }\r\n"
-            + "  catch { Rename-Item -LiteralPath " + ps(old) + " -NewName " + ps(root.getFileName()) + "; 'could not put the new copy in place: ' + $_ }\r\n"
-            + "} catch { 'could not move the old copy: ' + $_ }\r\n"
+            + "  catch { Rename-Item -LiteralPath " + ps(old) + " -NewName " + ps(root.getFileName()) + "; $fail = 'could not put the new copy in place: ' + $_ }\r\n"
+            + "} else { $fail = 'could not move the old copy: ' + $why }\r\n"
+            + "if ($fail) { $fail; Set-Content -LiteralPath " + ps(failed) + " -Value $fail -Encoding UTF8 }\r\n"
             + "Remove-Item -LiteralPath " + ps(stage) + " -Recurse -Force -ErrorAction SilentlyContinue\r\n"
-            + "Start-Process -FilePath " + ps(root.resolve("Patchbay Launcher.exe")) + "\r\n";
+            + "Start-Process -FilePath " + ps(root.resolve("Patchbay Launcher.exe")) + " -WorkingDirectory " + ps(root) + "\r\n";
     }
 
     static String sha256(Path file) throws IOException {

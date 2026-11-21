@@ -212,6 +212,12 @@ final class I18n {
         add(" on GitHub. Check the connection and click Refresh.", " auf GitHub. Prüfe die Verbindung und klicke auf Neu laden.", " sur GitHub. Vérifiez la connexion et cliquez sur Actualiser.");
         add("The archive has no mods folder.", "Das Archiv hat keinen Ordner mods.", "L'archive n'a pas de dossier mods.");
         add("Patchbay's mods restored: ", "Patchbay-Mods wiederhergestellt: ", "Mods de Patchbay restaurés : ");
+        add("The new launcher version couldn't be put in place, so this one is still running (", "Die neue Launcher-Version konnte nicht eingesetzt werden, daher läuft weiter diese (", "La nouvelle version du lanceur n'a pas pu être mise en place, celle-ci tourne donc toujours (");
+        add("). Get the new version from the release page and replace the launcher's folder with it; settings, Patchbay and mods stay.",
+            "). Lade die neue Version von der Release-Seite und ersetze damit den Ordner des Launchers; Einstellungen, Patchbay und Mods bleiben.",
+            "). Téléchargez la nouvelle version sur la page de la version et remplacez le dossier du lanceur ; réglages, Patchbay et mods restent.");
+        add("Release page", "Release-Seite", "Page de la version");
+        add("Details: ", "Details: ", "Détails : ");
         add("a list: ", "eine Liste: ", "une liste : ");
         add(" theme repositories", " Theme-Repositorys", " dépôts de thèmes");
         add("withdrawn", "zurückgezogen", "retiré");
@@ -406,7 +412,6 @@ final class I18n {
         add("installed", "installiert", "installé");
         add("new", "neu", "nouveau");
         add("Refresh", "Neu laden", "Actualiser");
-        add("Release page", "Release-Seite", "Page de la version");
         add("Loading the mod list…", "Mod-Liste wird geladen…", "Chargement de la liste des mods…");
         add("Update all (", "Alle aktualisieren (", "Tout mettre à jour (");
         add("Mod updates: ", "Mod-Updates: ", "Mises à jour de mods : ");

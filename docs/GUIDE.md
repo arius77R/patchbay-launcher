@@ -20,7 +20,7 @@ In Mods you choose, install, update, switch off and uninstall mods for Patchbay.
 - **Favourites:** click the star beside a mod. Favourites are in the settings backup.
 - **Category:** comes from the mod's name ("Category: Name"). A mod without a category from the list goes under Other.
 - **Show:** All, Compatible, Installed, Updates, Incompatible, Removed from repo and Not in sources. To get rid of all mods not in sources at once: Show → Not in sources, "Tick all", then "Uninstall".
-- **Install:** tick mods and click "Install ticked". "Tick all" ticks the mods to install or update. When the list has nothing to install (e.g. Show → Not in sources or Removed from repo), it ticks all installed ones, except mods from Patchbay.
+- **Install:** tick mods and click "Install ticked". "Tick all" ticks the mods to install or update. When the list has nothing to install (e.g. Show → Not in sources or Removed from repo), it ticks all installed ones, except mods from Patchbay. Ticks stay when you change the category, Show or Search, so you can pick mods from several categories and install them together.
 - **Switch off / Switch on:** the mod stays on disk, Patchbay doesn't load it. Tick one or more and use the button under the list.
 - **Uninstall:** removes the ticked mods from disk, after you confirm. The launcher warns when another switched-on mod needs it.
 - "Switch off" and "Uninstall" are only under the list. They stay grey until a mod has a tick.

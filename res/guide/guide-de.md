@@ -16,7 +16,7 @@ Unter Mods wählst du Mods für Patchbay aus, installierst, aktualisierst, schal
 - **Favoriten:** Klicke auf den Stern neben einem Mod. Favoriten sind in der Sicherung der Einstellungen enthalten.
 - **Kategorie:** ergibt sich aus dem Namen des Mods („Kategorie: Name“). Ein Mod ohne Kategorie aus der Liste landet unter Other.
 - **Anzeigen:** Alle, Kompatibel, Installiert, Updates, Inkompatibel, Aus dem Repo entfernt und Nicht in Quellen. Um alle Mods, die nicht in Quellen sind, auf einmal loszuwerden: Anzeigen → Nicht in Quellen, „Alle auswählen“, dann „Deinstallieren“.
-- **Installieren:** Mods auswählen und „Ausgewählte installieren“ klicken. „Alle auswählen“ wählt die Mods zum Installieren oder Aktualisieren. Wenn die Liste nichts zum Installieren hat (z. B. Anzeigen → Nicht in Quellen oder Aus dem Repo entfernt), wählt es alle installierten, außer Mods aus Patchbay.
+- **Installieren:** Mods auswählen und „Ausgewählte installieren“ klicken. „Alle auswählen“ wählt die Mods zum Installieren oder Aktualisieren. Wenn die Liste nichts zum Installieren hat (z. B. Anzeigen → Nicht in Quellen oder Aus dem Repo entfernt), wählt es alle installierten, außer Mods aus Patchbay. Häkchen bleiben beim Wechsel von Kategorie, Anzeigen oder Suchen, so kannst du Mods aus mehreren Kategorien wählen und zusammen installieren.
 - **Ausschalten / Einschalten:** Der Mod bleibt auf dem Datenträger, Patchbay lädt ihn nicht. Markiere einen oder mehrere mit Häkchen und nutze die Schaltfläche unter der Liste.
 - **Deinstallieren:** entfernt die Mods mit Häkchen nach Bestätigung vom Datenträger. Der Launcher warnt, wenn ein anderer eingeschalteter Mod sie braucht.
 - „Ausschalten“ und „Deinstallieren“ sind nur unter der Liste. Sie bleiben grau, bis ein Mod ein Häkchen hat.

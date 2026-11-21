@@ -844,8 +844,9 @@ final class Mods {
                     "They came with Patchbay and other mods, devices and themes need them. Without them those may stop working. You can bring them back in the Patchbay tab (Restore Patchbay's mods).") + "\n\n";
         }
 
+        /** Every ticked mod, also those another category, Show or Search hides: ticks add up across them. */
         private List<Row> checkedRows() {
-            return rows.stream().filter(r -> checked.contains(r.id())).toList();
+            return all.stream().filter(r -> checked.contains(r.id())).toList();
         }
 
         /**
@@ -918,12 +919,11 @@ final class Mods {
             return verdict(row).state() == Compat.State.UNAVAILABLE;
         }
 
-        /** Ticks every row checkable() gives; unticks them all when they are all ticked. */
+        /** Ticks every row checkable() gives; unticks them when they are all ticked. Ticks in other categories stay. */
         private void checkAll() {
             List<Row> tickable = checkable();
             boolean allTicked = !tickable.isEmpty() && tickable.stream().allMatch(r -> checked.contains(r.id()));
-            checked.clear();
-            if (!allTicked) for (Row r : tickable) checked.add(r.id());
+            for (Row r : tickable) if (allTicked) checked.remove(r.id()); else checked.add(r.id());
             model.fireTableDataChanged();
             refreshButtons();
         }
@@ -1207,8 +1207,8 @@ final class Mods {
                     || part.equals(SidePanel.categoryKey(Categories.of(nameOf(r))))) rows.add(r);
             rows.sort(order(sortBox.getSelectedIndex()));
             Set<String> canTick = new HashSet<>();
-            for (Row r : rows) if (tickable(r)) canTick.add(r.id());
-            checked.retainAll(canTick);
+            for (Row r : all) if (tickable(r)) canTick.add(r.id());
+            checked.retainAll(canTick); // ticks in other categories stay
             model.fireTableDataChanged();
 
             int updates = (int) all.stream().filter(r -> r.rank() == 0 && !unavailable(r)).count();

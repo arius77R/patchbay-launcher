@@ -1130,6 +1130,7 @@ public final class PatchbayLauncher {
         content.setFocusable(true);
         content.requestFocusInWindow();
         checkReleases();
+        SwingUtilities.invokeLater(this::reportFailedUpdate);
         checkLauncher();
         modsPanel.reload();
     }
@@ -1496,6 +1497,20 @@ public final class PatchbayLauncher {
         launcherPage.add(Theme.page("Patchbay Launcher", state, actions, body, status, null), BorderLayout.CENTER);
         launcherPage.revalidate();
         launcherPage.repaint();
+    }
+
+    /** Says once, after a restart, that the last self-update could not put the new copy in place, and where to get it by hand. */
+    private void reportFailedUpdate() {
+        String why = SelfUpdate.takeFailure();
+        if (why == null) return;
+        Object[] choice = { t("Strona wydania", "Release page"), "OK" };
+        int pick = JOptionPane.showOptionDialog(frame, Theme.message(
+            t("Nie udało się zainstalować nowej wersji Launchera, więc działa dalej ta sama (", "The new launcher version couldn't be put in place, so this one is still running (")
+            + VERSION + t("). Pobierz nową wersję ze strony wydania i zastąp nią folder Launchera; ustawienia, Patchbay i mody zostaną.",
+                "). Get the new version from the release page and replace the launcher's folder with it; settings, Patchbay and mods stay.")
+            + "\n\n" + t("Szczegóły: ", "Details: ") + why),
+            "Patchbay Launcher", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, choice, choice[0]);
+        if (pick == 0) Platform.open(PROJECT + "/releases/latest");
     }
 
     /** This version's part of the CHANGELOG built into the launcher, or null: what's new before the release is out or without internet. */
@@ -1994,11 +2009,15 @@ public final class PatchbayLauncher {
             Files.writeString(jar, "");
             check(root.equals(SelfUpdate.rootFor(jar)), "install found from launcher.jar: " + SelfUpdate.rootFor(jar));
             check(SelfUpdate.rootFor(tmp.resolve("build").resolve("launcher.jar")) == null, "a jar outside an install can't update itself");
-            String unix = SelfUpdate.unixScript(4242, root, tmp.resolve("new"), tmp.resolve("stage"));
-            String win = SelfUpdate.windowsScript(4242, root, tmp.resolve("new"), tmp.resolve("stage"));
-            check(unix.contains("kill -0 4242") && unix.contains(".old-update") && unix.contains(Platform.MAC ? "/usr/bin/open" : "nohup"), "swap script for macOS and Linux");
-            check(win.contains("Wait-Process -Id 4242") && win.contains("Start-Process") && win.contains("Rename-Item"), "swap script for Windows");
-            check(SelfUpdate.unixScript(1, Path.of("/tmp/it's/X.app"), Path.of("/n"), Path.of("/s")).contains("'/tmp/it'\\''s/X.app'"), "quotes in folder names are escaped");
+            Path note = tmp.resolve("failed.txt");
+            String unix = SelfUpdate.unixScript(4242, root, tmp.resolve("new"), tmp.resolve("stage"), note);
+            String win = SelfUpdate.windowsScript(4242, root, tmp.resolve("new"), tmp.resolve("stage"), note);
+            check(unix.contains("kill -0 4242") && unix.contains(".old-update") && unix.contains(Platform.MAC ? "/usr/bin/open" : "nohup")
+                && unix.contains("cd '" + tmp), "swap script for macOS and Linux, run from the folder that holds the install");
+            check(win.contains("Wait-Process -Id 4242") && win.contains("Start-Process") && win.contains("Rename-Item")
+                && win.contains("Set-Location -LiteralPath '" + tmp + "'") && win.contains("$i -lt 10") && win.contains(note.toString()),
+                "swap script for Windows: run outside the install, rename retried, a failure noted for the next start");
+            check(SelfUpdate.unixScript(1, Path.of("/tmp/it's/X.app"), Path.of("/n"), Path.of("/s"), Path.of("/f")).contains("'/tmp/it'\\''s/X.app'"), "quotes in folder names are escaped");
         }
 
         static void sourcesTest() throws Exception {

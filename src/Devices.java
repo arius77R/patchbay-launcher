@@ -342,6 +342,8 @@ final class Devices {
         private record Row(Item item, int rank) { }
 
         private final List<Row> rows = new ArrayList<>();
+        /** Every device of the chosen build, also those a category or Search hides; ticks add up across them. */
+        private final List<Row> allRows = new ArrayList<>();
         private final Theme.TypeColours categories = new Theme.TypeColours();
         /** Keys of the devices marked with a star. */
         private final Set<String> favourites = SidePanel.favourites("favouriteDevices");
@@ -526,7 +528,8 @@ final class Devices {
         /** Rebuilds the rows for the chosen build; hashing the downloaded files happens off the event thread. */
         private void rebuild() {
             String typed = searchField.getText();
-            List<Item> found = visible(items, build()).stream().filter(i -> Mods.matches(typed, i.name(), i.type(), i.repo().substring(0, i.repo().indexOf('/')))).toList();
+            List<Item> inBuild = visible(items, build());
+            List<Item> found = inBuild.stream().filter(i -> Mods.matches(typed, i.name(), i.type(), i.repo().substring(0, i.repo().indexOf('/')))).toList();
             categories.reset(items.stream().map(Item::type));
             showSide(found);
             String part = side.selected();
@@ -534,12 +537,16 @@ final class Devices {
                 || part.equals(SidePanel.FAVOURITES) && favourites.contains(key(i)) || part.equals(SidePanel.categoryKey(i.type()))).toList();
             int sort = sortBox.getSelectedIndex();
             new Thread(() -> {
-                List<Row> fresh = new ArrayList<>();
-                for (Item i : shown) {
+                Set<String> shownKeys = new HashSet<>();
+                for (Item i : shown) shownKeys.add(key(i));
+                List<Row> every = new ArrayList<>(), fresh = new ArrayList<>();
+                for (Item i : inBuild) {
                     int rank = rank(i);
                     boolean pulled = withdrawn.containsKey(i.repo() + " " + i.fileName());
                     if (pulled && rank == 2) continue; // withdrawn by its author: not offered
-                    fresh.add(new Row(i, pulled && rank == 0 ? 1 : rank));
+                    Row row = new Row(i, pulled && rank == 0 ? 1 : rank);
+                    every.add(row);
+                    if (shownKeys.contains(key(i))) fresh.add(row);
                 }
                 fresh.sort(order(sort));
                 SwingUtilities.invokeLater(() -> {
@@ -547,9 +554,11 @@ final class Devices {
                     String keep = was >= 0 && was < rows.size() ? key(rows.get(was).item()) : null;
                     rows.clear();
                     rows.addAll(fresh);
+                    allRows.clear();
+                    allRows.addAll(every);
                     Set<String> canTick = new HashSet<>();
-                    for (Row r : rows) canTick.add(key(r.item()));
-                    checked.retainAll(canTick);
+                    for (Row r : allRows) canTick.add(key(r.item()));
+                    checked.retainAll(canTick); // ticks in other categories stay; another build's go
                     model.fireTableDataChanged();
                     long have = rows.stream().filter(r -> r.rank() != 2).count();
                     subtitle.setText(PatchbayLauncher.t("Na liście: ", "Listed: ") + rows.size()
@@ -585,13 +594,12 @@ final class Devices {
             List<Row> get = rows.stream().filter(Panel::downloadable).toList();
             return get.isEmpty() ? rows : get;
         }
-        private List<Row> checkedRows() { return rows.stream().filter(r -> checked.contains(key(r.item()))).toList(); }
+        private List<Row> checkedRows() { return allRows.stream().filter(r -> checked.contains(key(r.item()))).toList(); }
 
         private void checkAll() {
             List<Row> all = checkable();
             boolean allTicked = !all.isEmpty() && all.stream().allMatch(r -> checked.contains(key(r.item())));
-            checked.clear();
-            if (!allTicked) for (Row r : all) checked.add(key(r.item()));
+            for (Row r : all) if (allTicked) checked.remove(key(r.item())); else checked.add(key(r.item()));
             model.fireTableDataChanged();
             refreshButtons();
         }

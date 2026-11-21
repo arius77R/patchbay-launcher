@@ -16,7 +16,7 @@ W zakładce Mody wybierasz, instalujesz, aktualizujesz, wyłączasz i odinstalow
 - **Ulubione:** kliknij gwiazdkę przy modzie. Ulubione są w kopii zapasowej ustawień.
 - **Kategoria:** wynika z nazwy moda („Kategoria: Nazwa”). Mod bez kategorii z listy trafia do Other.
 - **Pokaż:** Wszystkie, Zgodne, Zainstalowane, Aktualizacje, Niezgodne, Usunięte z repo i Spoza źródeł. Żeby pozbyć się wszystkich modów spoza źródeł naraz: Pokaż → Spoza źródeł, „Zaznacz wszystkie”, potem „Odinstaluj”.
-- **Instalacja:** zaznacz mody i kliknij „Zainstaluj zaznaczone”. „Zaznacz wszystkie” zaznacza mody do zainstalowania albo aktualizacji. Gdy na liście nie ma nic do zainstalowania (np. Pokaż → Spoza źródeł albo Usunięte z repo), zaznacza wszystkie zainstalowane, oprócz modów z Patchbay.
+- **Instalacja:** zaznacz mody i kliknij „Zainstaluj zaznaczone”. „Zaznacz wszystkie” zaznacza mody do zainstalowania albo aktualizacji. Gdy na liście nie ma nic do zainstalowania (np. Pokaż → Spoza źródeł albo Usunięte z repo), zaznacza wszystkie zainstalowane, oprócz modów z Patchbay. Ptaszki zostają przy zmianie kategorii, Pokaż i Szukaj, więc możesz wybrać mody z kilku kategorii i zainstalować je razem.
 - **Wyłącz / Włącz:** mod zostaje na dysku, Patchbay go nie ładuje. Postaw ptaszek przy jednym lub kilku i użyj przycisku pod listą.
 - **Odinstaluj:** usuwa zaznaczone ptaszkiem mody z dysku, po potwierdzeniu. Launcher ostrzega, gdy inny włączony mod go potrzebuje.
 - Przyciski „Wyłącz” i „Odinstaluj” są tylko pod listą. Są szare, dopóki przy żadnym modzie nie ma ptaszka.
