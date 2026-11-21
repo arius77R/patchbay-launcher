@@ -1,4 +1,4 @@
-Patchbay Launcher instaluje i uruchamia Patchbay (BML) oraz pobiera mody, urządzenia i motywy do Bitwig Studio, bez Terminala. Wersja 0.9.6 porządkuje listy kategoriami i ulubionymi, pozwala wyłączać i odinstalowywać, dodaje nowe Źródła i ostrzega przed modami usuniętymi albo wycofanymi przez autorów.
+Patchbay Launcher instaluje i uruchamia Patchbay (BML) oraz pobiera mody, urządzenia i motywy do Bitwig Studio, bez Terminala. Porządkuje listy kategoriami i ulubionymi, pozwala wyłączać i odinstalowywać, dodaje nowe Źródła i ostrzega przed modami usuniętymi albo wycofanymi przez autorów.
 
 To nieoficjalny projekt Mariusa R, niezwiązany z Bitwig GmbH ani z autorem Patchbay.
 

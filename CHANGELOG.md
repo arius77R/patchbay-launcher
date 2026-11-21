@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.7
+
+- **Fixed: the launcher couldn't update itself on Windows.** It closed, reopened and was still the old version: Windows wouldn't rename the launcher's folder while the update script was working inside it. The script now works from the folder above, tries again for a few seconds if something holds the folder, and if the update still fails the launcher says why on its next start and links the release page. Thanks to Alban1806 for the report (#2).
+- **Ticks add up across categories:** in Mods and Devices, ticks stay when you change the category, Show or Search, so you can pick from several categories and install them together. Tick all adds the visible ones to the ticked; Untick all removes only those. Thanks to rjsmith for the idea (#1).
+
+**On Windows with 0.9.4–0.9.6:** please update by hand this once (download the Windows ZIP and replace the launcher's folder; settings, Patchbay and mods stay). From 0.9.7 on, updates work from the launcher.
+
 ## 0.9.6
 
 - **Guide in the launcher:** a Guide button on the bottom bar; in English, Polish, German and French, works offline and always fits the version.
