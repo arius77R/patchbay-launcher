@@ -188,7 +188,7 @@ final class SelfUpdate {
 
     /** Written by the swap script when the new copy could not be put in place; the launcher reads it on its next start. */
     static Path failedNote() {
-        return PatchbayLauncher.data().resolve("logs").resolve("self-update-failed.txt");
+        return PatchbayLauncher.data().resolve("logs").resolve("self-update-failed.txt").toAbsolutePath(); // the script works in another folder
     }
 
     /** Why the last update failed, once (the note is removed), or null. */
